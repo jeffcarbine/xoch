@@ -50,7 +50,7 @@ Wait for their detailed architectural input.
 
 ### Step 3: Analyze the Approach
 
-**Plan Phase Token Budget: 10,000 tokens**
+**Plan Phase Token Budget: 13,000 tokens**
 
 You need to read the codebase to understand architecture and provide meaningful analysis.
 
@@ -69,8 +69,8 @@ You need to read the codebase to understand architecture and provide meaningful 
    ```
 
 3. **Check against budget:**
-   - If estimated tokens < 9,000 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 9,000 (≥ 90% of budget): **Ask for guidance**
+   - If estimated tokens < 11,700 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 11,700 (≥ 90% of budget): **Ask for guidance**
 
 #### If at/over budget (≥ 90%), ask the engineer:
 
@@ -78,7 +78,7 @@ You need to read the codebase to understand architecture and provide meaningful 
 
 **[List with individual token estimates]**
 
-**Total: ~X tokens (Y% of 10,000 token budget)**
+**Total: ~X tokens (Y% of 13,000 token budget)**
 
 **Options:**
 1. **Which files are most important for architecture understanding?**
@@ -211,10 +211,10 @@ Create two files:
 ---
 
 ## Token Usage (Plan Phase)
-Budget: 10,000 tokens
+Budget: 13,000 tokens
 - [file1.js] - [X] tokens
 - [file2.js] - [Y] tokens
-**Total: [sum] / 10,000 ([percentage]%)**
+**Total: [sum] / 13,000 ([percentage]%)**
 
 ---
 

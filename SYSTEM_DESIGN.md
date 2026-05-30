@@ -130,10 +130,20 @@ To prevent context overflow and maintain efficient AI interactions, Xoch impleme
 
 | Phase | Budget | What It Covers |
 |-------|--------|----------------|
-| **Spec** | 5,000 tokens | Reading implementation files during requirements gathering |
-| **Plan** | 10,000 tokens | Reading codebase to understand architecture |
-| **Start** | 15,000 tokens | Initial milestone implementation deep-dive |
-| **Advance** | 10,000 tokens | Reading additional context beyond git diff |
+| **Spec** | 8,000 tokens | Reading implementation files during requirements gathering |
+| **Plan** | 13,000 tokens | Reading codebase to understand architecture |
+| **Start** | 18,000 tokens | Initial milestone implementation deep-dive |
+| **Advance** | 15,000 tokens | Reading additional context beyond git diff |
+| **Sidebar** | 8,000 tokens | Reading files to answer tangential questions |
+| **Replan** | 12,000 tokens | Reading context to adjust milestones when requirements change |
+| **Pause** | 5,000 tokens | Reading context files for status summary |
+| **Resume** | 8,000 tokens | Loading archived task context to resume work |
+| **Glossary** | 8,000 tokens | Reading existing glossaries for consistency |
+| **Finalize** | 12,000 tokens | Reading milestones to update READMEs |
+
+**Unlimited phases**: init-app, init-feature, validate, merge
+
+All budgets include prompt overhead (1.4K-4.5K tokens depending on the prompt).
 
 ### Token Estimation
 
@@ -144,31 +154,38 @@ To prevent context overflow and maintain efficient AI interactions, Xoch impleme
 
 ### Budget Enforcement
 
+**Budgets include prompt overhead** - Each phase's budget accounts for both the prompt itself (~3K-5K tokens) and the files you read.
+
 **Before reading files**, prompts:
 1. Identify which files need to be read
 2. Estimate token cost using the estimator
-3. Check if total ≥ 90% of phase budget
+3. Check if total ≥ 90% of phase budget (prompt + files)
 4. If over budget, ask engineer to prioritize files
 5. After reading, update token tracking in context documents
+
+**Token breakdown example (Spec phase, 8,000 budget):**
+- Prompt overhead: ~3,000 tokens
+- Available for reading files: ~5,000 tokens
+- 90% threshold: 7,200 tokens total
 
 ### Token Tracking in Context Files
 
 **In spec.md:**
 ```markdown
 ## Token Usage (Spec Phase)
-Budget: 5,000 tokens
+Budget: 8,000 tokens
 - src/middleware/auth.js - 1,200 tokens
 - src/utils/validator.js - 800 tokens
-**Total: 2,000 / 5,000 (40%)**
+**Total: 2,000 / 8,000 (25%)**
 ```
 
 **In plan.md:**
 ```markdown
 ## Token Usage (Plan Phase)
-Budget: 10,000 tokens
+Budget: 13,000 tokens
 - src/feature/controller.js - 2,500 tokens
 - src/feature/service.js - 1,800 tokens
-**Total: 4,300 / 10,000 (43%)**
+**Total: 4,300 / 13,000 (33%)**
 ```
 
 **In milestones.md (per milestone):**
@@ -176,14 +193,14 @@ Budget: 10,000 tokens
 ## Milestone 1: Database Schema
 
 ### Token Usage (Start Phase)
-Budget: 15,000 tokens
+Budget: 18,000 tokens
 - database/schema.sql - 3,000 tokens
-**Total: 3,000 / 15,000 (20%)**
+**Total: 3,000 / 18,000 (17%)**
 
 ### Token Usage (Advance Phase)
-Budget: 10,000 tokens
+Budget: 15,000 tokens
 - src/models/User.js - 1,500 tokens
-**Total: 1,500 / 10,000 (15%)**
+**Total: 1,500 / 15,000 (10%)**
 
 **Status**: ✅ Complete
 ```

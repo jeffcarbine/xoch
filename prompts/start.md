@@ -51,7 +51,7 @@ From `milestones.md`, find the current milestone:
 
 ### Step 4: Explain the Milestone
 
-**Start Phase Token Budget: 15,000 tokens**
+**Start Phase Token Budget: 18,000 tokens**
 
 You need to read code to provide clear context and implementation guidance.
 
@@ -70,8 +70,8 @@ You need to read code to provide clear context and implementation guidance.
    ```
 
 3. **Check against budget:**
-   - If estimated tokens < 13,500 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 13,500 (≥ 90% of budget): **Ask for guidance**
+   - If estimated tokens < 16,200 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 16,200 (≥ 90% of budget): **Ask for guidance**
 
 #### If at/over budget (≥ 90%), ask the engineer:
 
@@ -79,7 +79,7 @@ You need to read code to provide clear context and implementation guidance.
 
 **[List with individual token estimates]**
 
-**Total: ~X tokens (Y% of 15,000 token budget)**
+**Total: ~X tokens (Y% of 18,000 token budget)**
 
 **Options:**
 1. **Which files are most important for understanding the milestone?**
@@ -99,10 +99,10 @@ Add token tracking to the current milestone in `milestones.md`:
 ...
 
 ### Token Usage (Start Phase)
-Budget: 15,000 tokens
+Budget: 18,000 tokens
 - [file1.js] - [X] tokens
 - [file2.js] - [Y] tokens
-**Total: [sum] / 15,000 ([percentage]%)**
+**Total: [sum] / 18,000 ([percentage]%)**
 
 **Status**: In Progress
 ```

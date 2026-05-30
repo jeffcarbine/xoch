@@ -31,6 +31,47 @@ Stop execution.
 
 ---
 
+### Step 0.5: Token Budget Check (Before Reading Context)
+
+**Pause Phase Token Budget: 5,000 tokens**
+
+**Before reading task context** to show status summary:
+
+#### Files to read:
+- `.context/[task-id]/spec.md` - What the task is about
+- `.context/[task-id]/milestones.md` - Progress (if exists)
+
+#### Process:
+
+1. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch .context/[task-id]/spec.md .context/[task-id]/milestones.md
+   ```
+
+2. **Check against budget:**
+   - If estimated tokens < 4,500 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 4,500 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To show your current task status, I need to read:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 5,000 token budget)**
+
+**Options:**
+1. **Read minimal context** (just current.md and basic status)
+2. **Proceed anyway** (Read all context files)
+3. **Skip summary** (Just pause without detailed status)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 1: Show Current Task Status
 
 Display what's being paused:

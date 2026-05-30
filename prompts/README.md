@@ -381,17 +381,22 @@ Per-phase token limits prevent context overflow:
 
 | Phase | Budget | Purpose |
 |-------|--------|---------|
-| **Spec** | 5,000 | Reading implementation files |
-| **Plan** | 10,000 | Understanding architecture |
-| **Start** | 15,000 | Initial milestone deep-dive |
-| **Advance** | 10,000 | Additional context beyond git diff |
+| **Spec** | 8,000 | Reading implementation files |
+| **Plan** | 13,000 | Understanding architecture |
+| **Start** | 18,000 | Milestone deep-dive |
+| **Advance** | 15,000 | Additional context beyond git diff |
+| **Sidebar** | 8,000 | Answering tangential questions |
+| **Replan** | 12,000 | Adjusting milestones |
+| **Pause** | 5,000 | Status summary |
+| **Resume** | 8,000 | Loading archived context |
+| **Glossary** | 8,000 | Reading existing glossaries |
+| **Finalize** | 12,000 | Reading milestones for README updates |
 
-**Process:**
-1. Identify files to read
-2. Estimate: `bin/tokenEstimator.sh --batch file1 file2 ...`
-3. Check if ≥90% of budget
-4. Prioritize if over budget
-5. Track usage in context docs
+**Unlimited**: init-app, init-feature, validate, merge
+
+**Budgets include prompt overhead** (~1.4K-4.5K tokens) plus files you read.
+
+**Process:** Identify files → Estimate (`bin/tokenEstimator.sh --batch`) → Check if ≥90% → Prioritize if over
 
 ---
 

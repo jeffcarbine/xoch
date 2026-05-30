@@ -147,6 +147,48 @@ mv .context/archive/[task-id]-[date] .context/[task-id]
 
 ---
 
+### Step 4.5: Token Budget Check (Before Loading Context)
+
+**Resume Phase Token Budget: 8,000 tokens**
+
+**Before loading task context** files:
+
+#### Files to read:
+- `.context/[task-id]/spec.md` - Requirements
+- `.context/[task-id]/plan.md` - Implementation approach
+- `.context/[task-id]/milestones.md` - Progress tracker
+
+#### Process:
+
+1. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch .context/[task-id]/spec.md .context/[task-id]/plan.md .context/[task-id]/milestones.md
+   ```
+
+2. **Check against budget:**
+   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To resume this task, I need to load context from:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 8,000 token budget)**
+
+**Options:**
+1. **Load essential files** (spec.md and milestones.md only)
+2. **Proceed anyway** (Load all context files)
+3. **Provide brief summary** (Load minimal context, more detail on demand)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 5: Load Task Context
 
 Read all task files:

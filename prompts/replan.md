@@ -52,6 +52,48 @@ Found 4 milestones:
 
 ---
 
+### Step 2.5: Token Budget Check (Before Reading Context)
+
+**Replan Phase Token Budget: 12,000 tokens**
+
+**Before reading context files** to understand the current plan:
+
+#### Files to read:
+- `.context/[task-id]/spec.md` - Original requirements
+- `.context/[task-id]/plan.md` - Original architecture
+- `.context/[task-id]/milestone-N.md` - Any completed milestone snapshots
+
+#### Process:
+
+1. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch .context/[task-id]/spec.md .context/[task-id]/plan.md ...
+   ```
+
+2. **Check against budget:**
+   - If estimated tokens < 10,800 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 10,800 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To understand the current plan and adjust milestones, I need to read:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 12,000 token budget)**
+
+**Options:**
+1. **Prioritize critical files** (e.g., just spec.md and plan.md)
+2. **Proceed anyway** (Read all files)
+3. **Work from engineer-provided summary** (Skip some files)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 3: Read Existing Context
 
 Read these files to understand the original plan:

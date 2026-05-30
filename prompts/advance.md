@@ -104,7 +104,7 @@ Analyze the changes:
 
 ### Step 4.5: Token Budget Check (Before Reading Additional Files)
 
-**Advance Phase Token Budget: 10,000 tokens**
+**Advance Phase Token Budget: 15,000 tokens**
 
 You have the git diff showing what changed. This diff is your primary source.
 
@@ -153,7 +153,7 @@ You have the git diff showing what changed. This diff is your primary source.
 - **[file2]** (~B tokens) - To [reason]
 - **[file3]** (~C tokens) - To [reason]
 
-**Total: ~Y tokens (Z% of 10,000 token budget)**
+**Total: ~Y tokens (Z% of 15,000 token budget)**
 
 **Options:**
 1. **Skip additional files** (Review based on git diff only)
@@ -180,18 +180,18 @@ Budget: 15,000 tokens
 **Start Total: X / 15,000 (Y%)**
 
 ### Token Usage (Advance Phase)
-Budget: 10,000 tokens
-**Total: 0 / 10,000 (0%)**
+Budget: 15,000 tokens
+**Total: 0 / 15,000 (0%)**
 ```
 
 **After reading additional files**, update advance section:
 
 ```markdown
 ### Token Usage (Advance Phase)
-Budget: 10,000 tokens
+Budget: 15,000 tokens
 - [additional-file1] - A tokens - [reason for reading]
 - [additional-file2] - B tokens - [reason for reading]
-**Total: [sum] / 10,000 ([percentage]%)**
+**Total: [sum] / 15,000 ([percentage]%)**
 ```
 
 ---

@@ -83,6 +83,59 @@ For existing projects, initialize documentation:
 - `#xoch-replan` - Update milestones when requirements change
 - `#xoch-merge` - Resolve README conflicts
 
+---
+
+## Token Management
+
+Xoch includes **token budget management** to keep AI agent context efficient and prevent overflow.
+
+### Token Budgets by Phase
+
+| Phase | Budget | What It Covers |
+|-------|--------|----------------|
+| **spec** | 8,000 tokens | Prompt (~3K) + reading implementation files to clarify requirements |
+| **plan** | 13,000 tokens | Prompt (~3K) + reading codebase to understand architecture |
+| **start** | 18,000 tokens | Prompt (~2.5K) + deep-dive into files for first milestone |
+| **advance** | 15,000 tokens | Prompt (~4.5K) + reading additional context beyond git diff |
+| **sidebar** | 8,000 tokens | Prompt (~2.2K) + reading files to answer tangential questions |
+| **replan** | 12,000 tokens | Prompt (~4K) + reading context to adjust milestones |
+| **pause** | 5,000 tokens | Prompt (~1.4K) + reading context for status summary |
+| **resume** | 8,000 tokens | Prompt (~2.5K) + loading archived task context |
+| **glossary** | 8,000 tokens | Prompt (~3.3K) + reading existing glossaries |
+| **finalize** | 12,000 tokens | Prompt (~4.5K) + reading milestones to update READMEs |
+
+**Budgets include prompt overhead** - Each budget accounts for the prompt itself plus files you read.
+
+**Unlimited phases**: init-app, init-feature, validate, merge
+
+### Token Estimator Tool
+
+Check token usage before reading files:
+
+```bash
+# Single file
+bin/tokenEstimator.sh README.md
+
+# Multiple files
+bin/tokenEstimator.sh --batch file1.js file2.js file3.js
+```
+
+**README Token Limit**: 3,000 tokens (~10,500 characters) for feature READMEs.
+
+### How Budget Enforcement Works
+
+In budget-limited phases:
+
+1. Agent identifies files to read
+2. Runs `tokenEstimator.sh --batch` to estimate total tokens
+3. **If under 90% of budget**: Proceeds with reading
+4. **If at/over 90%**: Asks you to prioritize which files matter most
+5. Tracks token usage in context files (spec.md, plan.md, milestones.md)
+
+This prevents context overflow while maintaining visibility into what's being read.
+
+---
+
 ### Parallel Tasks
 
 Switch between multiple tasks:
@@ -92,17 +145,17 @@ Switch between multiple tasks:
 #xoch-resume [task]   # Resume paused/archived task
 ```
 
-### Additional Features
+---
 
-**Token budgets** prevent context overflow (5K-15K per phase):
-```bash
-bin/tokenEstimator.sh --batch file1.js file2.js  # Check before reading
-```
+## Glossaries
 
-**Glossaries** maintain consistent terminology:
+Maintain consistent terminology with project-specific glossaries:
+
 ```bash
 #xoch-glossary        # Add/update project terms
 ```
+
+Glossaries are stored in `./glossaries/` and committed to git for team-wide consistency.
 
 See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
 

@@ -114,7 +114,7 @@ Wait for their detailed specification.
 
 **Only applies if you need to read code files to clarify requirements**
 
-**Spec Phase Token Budget: 5,000 tokens**
+**Spec Phase Token Budget: 8,000 tokens**
 
 Most spec gathering is done through engineer interviews and doesn't require reading code.
 
@@ -136,8 +136,8 @@ Most spec gathering is done through engineer interviews and doesn't require read
    ```
 
 4. **Check against budget:**
-   - If estimated tokens < 4,500 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 4,500 (≥ 90% of budget): **Ask for guidance**
+   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
 
 #### If at/over budget (≥ 90%), ask the engineer:
 
@@ -145,7 +145,7 @@ Most spec gathering is done through engineer interviews and doesn't require read
 
 **[List with individual token estimates]**
 
-**Total: ~X tokens (Y% of 5,000 token budget)**
+**Total: ~X tokens (Y% of 8,000 token budget)**
 
 **Options:**
 1. **Which files are most important for understanding requirements?**
@@ -186,8 +186,8 @@ Review the specification and identify any ambiguities:
 - Unspecified error handling
 - Missing technical constraints
 Token Usage (Spec Phase)
-Budget: 5,000 tokens
-**Total: 0 / 5,000 (0%)**
+Budget: 8,000 tokens
+**Total: 0 / 8,000 (0%)**
 
 ---
 

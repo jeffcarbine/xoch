@@ -53,6 +53,54 @@ If file doesn't exist or is unclear:
 
 ---
 
+### Step 1.5: Token Budget Check (Before Loading Context)
+
+**Finalize Phase Token Budget: 12,000 tokens**
+
+**Before loading all context files** to understand what was implemented:
+
+#### Files to read:
+- `.context/[task-id]/spec.md`
+- `.context/[task-id]/plan.md`
+- `.context/[task-id]/milestones.md`
+- `.context/[task-id]/milestone-N.md` (for each milestone)
+- Feature README.md
+- Project README.md (if needed)
+- Glossary files (if they exist, from Step 0)
+
+#### Process:
+
+1. **Count milestone files** to estimate full context size
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch .context/[task-id]/*.md [feature]/README.md ...
+   ```
+
+3. **Check against budget:**
+   - If estimated tokens < 10,800 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 10,800 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To finalize and update READMEs, I need to read:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 12,000 token budget)**
+
+**Options:**
+1. **Read summary files** (spec, plan, milestones only - skip individual milestone snapshots)
+2. **Proceed anyway** (Read all context files)
+3. **Engineer-guided update** (You describe changes, I update READMEs)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 2: Load All Context Files
 
 Once Task ID is confirmed, read the complete implementation context:

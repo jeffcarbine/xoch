@@ -105,6 +105,45 @@ Wait for their response.
 
 ---
 
+### Step 4.5: Token Budget Check (Before Reading Files)
+
+**Sidebar Phase Token Budget: 8,000 tokens**
+
+**If you need to read files** to answer the sidebar question:
+
+#### Process:
+
+1. **List files** you want to read to answer their question
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch file1.js file2.js ...
+   ```
+
+3. **Check against budget:**
+   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To answer your question thoroughly, I'd like to read these files:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 8,000 token budget)**
+
+**Options:**
+1. **Prioritize which files** are most important for this question
+2. **Proceed anyway** (Read all files)
+3. **Provide high-level answer** without deep code reading
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 5: Help With Sidebar Topic
 
 Assist the engineer with whatever they need:

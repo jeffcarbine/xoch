@@ -101,6 +101,48 @@ Wait for their choice.
 
 ---
 
+### Step 3.5: Token Budget Check (Before Reading Glossaries)
+
+**Glossary Phase Token Budget: 8,000 tokens**
+
+**Before reading glossary files** to understand existing terms and format:
+
+#### Process:
+
+1. **Identify which glossaries to read** based on the term's category
+   - Quick-reference.md for core terms
+   - Domain-specific glossary for specialized terms
+   - README.md for glossary structure
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch glossaries/[file1].md glossaries/[file2].md ...
+   ```
+
+3. **Check against budget:**
+   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To add this term properly, I'd like to read existing glossaries:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 8,000 token budget)**
+
+**Options:**
+1. **Read essential files** (just the target glossary)
+2. **Proceed anyway** (Read all recommended glossaries)
+3. **Add term with minimal context** (Use engineer-provided format)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+---
+
 ### Step 4a: Add to Existing Glossary
 
 If engineer chooses to add to existing glossary:
