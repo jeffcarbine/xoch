@@ -122,6 +122,238 @@ Xoch uses task IDs (e.g., `IE-1285`) as the primary identifier for tasks. This p
 
 ---
 
+## Token Tracking & Budget System
+
+To prevent context overflow and maintain efficient AI interactions, Xoch implements per-phase token budgets.
+
+### Token Budgets by Phase
+
+| Phase | Budget | What It Covers |
+|-------|--------|----------------|
+| **Spec** | 5,000 tokens | Reading implementation files during requirements gathering |
+| **Plan** | 10,000 tokens | Reading codebase to understand architecture |
+| **Start** | 15,000 tokens | Initial milestone implementation deep-dive |
+| **Advance** | 10,000 tokens | Reading additional context beyond git diff |
+
+### Token Estimation
+
+**Token Estimator Script**: `bin/tokenEstimator.sh`
+- Estimates tokens before reading files (chars / 3.5)
+- Batch mode for multiple files: `tokenEstimator.sh --batch file1 file2 ...`
+- Single file mode: `tokenEstimator.sh file.js`
+
+### Budget Enforcement
+
+**Before reading files**, prompts:
+1. Identify which files need to be read
+2. Estimate token cost using the estimator
+3. Check if total ≥ 90% of phase budget
+4. If over budget, ask engineer to prioritize files
+5. After reading, update token tracking in context documents
+
+### Token Tracking in Context Files
+
+**In spec.md:**
+```markdown
+## Token Usage (Spec Phase)
+Budget: 5,000 tokens
+- src/middleware/auth.js - 1,200 tokens
+- src/utils/validator.js - 800 tokens
+**Total: 2,000 / 5,000 (40%)**
+```
+
+**In plan.md:**
+```markdown
+## Token Usage (Plan Phase)
+Budget: 10,000 tokens
+- src/feature/controller.js - 2,500 tokens
+- src/feature/service.js - 1,800 tokens
+**Total: 4,300 / 10,000 (43%)**
+```
+
+**In milestones.md (per milestone):**
+```markdown
+## Milestone 1: Database Schema
+
+### Token Usage (Start Phase)
+Budget: 15,000 tokens
+- database/schema.sql - 3,000 tokens
+**Total: 3,000 / 15,000 (20%)**
+
+### Token Usage (Advance Phase)
+Budget: 10,000 tokens
+- src/models/User.js - 1,500 tokens
+**Total: 1,500 / 10,000 (15%)**
+
+**Status**: ✅ Complete
+```
+
+### Benefits
+
+- **Prevents context overflow** - Stay within model limits
+- **Explicit cost awareness** - Engineers see token usage
+- **Prioritization** - Focus on most important files
+- **Historical tracking** - See token patterns over time
+
+---
+
+## Project Glossaries
+
+Xoch supports **project-specific terminology glossaries** to ensure consistent understanding of domain concepts across all development work.
+
+### Purpose
+
+- **Terminology consistency** - All team members and AI use the same terms
+- **Domain clarity** - Document project-specific concepts and data structures
+- **Entity mappings** - Map identifiers and fields between systems
+- **Onboarding** - New engineers learn terminology quickly
+- **AI accuracy** - Agents understand project-specific concepts correctly
+
+### Location
+
+Glossaries are stored in the project repository at `./glossaries/`:
+
+```
+project-root/
+├── glossaries/
+│   ├── README.md                 # Glossary index
+│   ├── quick-reference.md        # Core terminology (always read)
+│   ├── entities.md               # Entity mappings and schemas
+│   ├── integrations.md           # Third-party integrations
+│   └── [domain].md               # Domain-specific glossaries
+└── ...
+```
+
+### Discovery
+
+Prompts automatically check for `./glossaries/` directory and load relevant glossaries based on phase:
+
+**Prompts that always load glossaries** (if they exist):
+- `init-app` - Documenting with proper terminology
+- `init-feature` - Documenting with proper terminology
+- `spec` - Capturing requirements with correct terms
+- `finalize` - Final README validation
+
+**Prompts that conditionally load glossaries:**
+- `validate` - Only if validating terminology
+- `advance` - Only when updating READMEs
+
+**Prompts that never load glossaries:**
+- `plan`, `start`, `investigate`, `replan`, `pause`, `resume`, `merge`
+
+### Glossary Structure
+
+**Index (README.md)**: Lists all available glossaries and when to read each one
+
+**Quick Reference**: Core terminology used across project (always read when glossaries exist)
+
+**Domain-Specific Glossaries**: Detailed terminology for specific areas:
+- Entity schemas and relationships
+- Integration/API mappings
+- Field-level conventions
+
+### Managing Glossaries
+
+**Create glossaries:**
+- During `init-app` (offers to create structure)
+- Use `#xoch-glossary` prompt to add/update terms
+- Manually edit `.md` files in `./glossaries/`
+
+**Commit to git:**
+Glossaries are team documentation (not `.gitignored`) - commit them so everyone benefits.
+
+### Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Token efficiency** | Document terms once, reference everywhere (~2-3K tokens per session) |
+| **Consistency** | Same terminology across all phases and team members |
+| **Less repetition** | Avoid explaining domain concepts in every conversation |
+| **Knowledge capture** | Preserve domain knowledge in version control |
+
+---
+
+## Parallel Task Management
+
+Xoch supports working on multiple tasks simultaneously through pause/resume functionality.
+
+### Use Cases
+
+**Context switching:**
+- Working on feature A, urgent bug comes up
+- Pause feature A, fix bug, resume feature A
+
+**End of day:**
+- Pause current work
+- Resume next day exactly where you left off
+
+**Exploring alternatives:**
+- Pause current approach
+- Try alternative approach
+- Compare both, pick best
+
+### Pause Workflow
+
+**Command**: `#xoch-pause`
+
+**Process:**
+1. Shows current task status and progress
+2. Confirms with engineer
+3. Removes `.context/current.md` (clears active context)
+4. Preserves all task files in `.context/[task-id]/`
+
+**What's preserved:**
+- All specifications and requirements
+- Implementation plan and milestones
+- Completed milestone snapshots
+- Token usage tracking
+- All decisions and notes
+
+### Resume Workflow
+
+**Command**: `#xoch-resume` or `#xoch-resume [task-id]`
+
+**Process:**
+1. Checks for existing active task (must pause first if exists)
+2. Scans for paused tasks (`.context/*/`) and archived tasks (`.context/archive/*/`)
+3. Lists available tasks or uses provided task ID
+4. Restores archived task if needed (moves from archive)
+5. Recreates `.context/current.md` with selected task
+6. Shows task summary (spec, progress, next milestone)
+7. Guides engineer on next action
+
+**Task states:**
+- **Active**: Has entry in `.context/current.md`
+- **Paused**: Directory exists in `.context/[task-id]/`, no `current.md`
+- **Archived**: Directory in `.context/archive/[task-id]-[date]/`
+
+### Multiple Parallel Tasks
+
+You can have many tasks paused simultaneously:
+```
+.context/
+├── current.md                     # Points to feature-a (active)
+├── feature-a/                     # Active work
+├── feature-b/                     # Paused
+├── bug-fix-1/                     # Paused
+├── bug-fix-2/                     # Paused
+└── archive/
+    ├── feature-c-2026-05-20/     # Completed, archived
+    └── bug-fix-3-2026-05-22/     # Completed, archived
+```
+
+Switch between them with `#xoch-pause` and `#xoch-resume`.
+
+### Restoring Archived Tasks
+
+If additional work is needed on completed tasks:
+1. `#xoch-resume [archived-task-id]`
+2. Task moved from archive back to active context
+3. Add new milestones or adjust existing plan
+4. Continue with normal workflow
+
+---
+
 ## Development Workflow
 
 ### Bootstrapping Phase (One-Time Setup)

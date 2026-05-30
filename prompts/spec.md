@@ -15,6 +15,45 @@ Gather the specification details, create a task identifier, and analyze what wil
 
 ## Process
 
+### Step 0: Check for Project Glossaries
+
+**Before gathering the specification**, check if the project has terminology glossaries:
+
+**Look for glossaries at project root:**
+- Check if `./glossaries/` directory exists
+- If exists, check for `./glossaries/README.md`
+
+**If glossaries found:**
+1. Read `glossaries/README.md` to understand what each glossary covers
+2. Read `glossaries/quick-reference.md` if it exists (core terminology - always read)
+3. Note other available glossaries for potential reference during requirement gathering
+
+**Use glossaries when gathering/clarifying requirements:**
+- Use correct terminology from glossaries when asking clarifying questions
+- Reference entity mappings when discussing data models
+- Help engineer translate requirements into correct technical terms
+- Flag when requirements use ambiguous terms that glossary clarifies
+
+**If glossaries not found:**
+- Proceed normally without glossary reference
+- Note: Glossaries can be created later with `#xoch-glossary` or during `#xoch-init-app`
+
+---
+1.5: Check for Investigation Findings
+
+Check if `.context/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
+
+**If investigation.md EXISTS:**
+- Read the investigation findings
+- Note the root cause, location, and key findings
+- You will reference these when gathering the specification
+
+**If investigation.md DOES NOT exist:**
+- Proceed normally - this task didn't require investigation
+
+---
+
+### Step 
 ### Step 1: Get Task Identifier
 
 Ask the engineer:
@@ -37,7 +76,16 @@ Validate the Task ID:
 
 If the provided ID doesn't meet these criteria, suggest a normalized version.
 
----
+**If investigation.md exists,** say:
+
+**"I see you completed an investigation that identified: [one-line root cause from investigation].**
+
+**Now let's define the specification for fixing this. You can:**
+- **Describe how you want to fix the root cause**
+- **Copy/paste from an issue tracker if it includes solution approach**
+- **Provide acceptance criteria for the fix"**
+
+**If NO investigation.md,** a--
 
 ### Step 2: Identify the Feature
 
@@ -62,6 +110,72 @@ Wait for their detailed specification.
 
 ---
 
+### Step 4.5: Token Budget Check (Before Reading Code)
+
+**Only applies if you need to read code files to clarify requirements**
+
+**Spec Phase Token Budget: 5,000 tokens**
+
+Most spec gathering is done through engineer interviews and doesn't require reading code.
+
+**If you need to read implementation files** to ask better clarifying questions:
+
+#### Process:
+
+1. **Explain why** you need to read code files:
+   - To understand current implementation patterns?
+   - To identify technical constraints?
+   - To understand integration points?
+
+2. **List files** you want to read with justification
+
+3. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch file1.js file2.js ...
+   ```
+
+4. **Check against budget:**
+   - If estimated tokens < 4,500 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 4,500 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To ask more targeted clarifying questions, I'd like to read these code files:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 5,000 token budget)**
+
+**Options:**
+1. **Which files are most important for understanding requirements?**
+2. **Proceed anyway** (Read all files)
+3. **Skip code reading** (Continue with engineer-provided context only)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+#### Update Token Tracking (After Reading Files)
+
+**Every time you read implementation files**, update the token section in `spec.md`:
+
+1. **After reading files**, calculate actual tokens from batch estimator
+2. **Update the Token Usage section** in spec.md (see Step 6 for template)
+3. **On subsequent reads** in the same conversation:
+   - Read the existing token section from spec.md
+   - Add new files to the list
+   - Update the total
+
+**Notes:**
+- Feature README.md doesn't count toward this budget (always read it)
+- This budget is for reading implementation code during spec gathering
+- Most specs should be gathered through engineer conversation, not code reading
+- Code reading during spec phase should be minimal and targeted
+- **Always update token tracking** when reading files, even if under budget
+
+---
+
 ### Step 4: Clarify Requirements
 
 Review the specification and identify any ambiguities:
@@ -71,7 +185,13 @@ Review the specification and identify any ambiguities:
 - Undefined interactions with other features
 - Unspecified error handling
 - Missing technical constraints
+Token Usage (Spec Phase)
+Budget: 5,000 tokens
+**Total: 0 / 5,000 (0%)**
 
+---
+
+## 
 Ask targeted clarifying questions:
 
 **"I have some questions to ensure the spec is clear:**

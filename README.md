@@ -152,6 +152,97 @@ Resolve README conflicts (if merge conflicts occur).
 
 ---
 
+### Parallel Task Management
+
+Work on multiple tasks simultaneously with pause/resume:
+
+#### Pause Current Task
+```
+#xoch-pause
+```
+Pauses current task while preserving all context.
+- Useful for urgent interruptions, end of day, or trying alternative approaches
+- All task data preserved in `.context/[task-id]/`
+- Clears `.context/current.md` (no active task)
+
+#### Resume Paused/Archived Task
+```
+#xoch-resume [task-id]
+```
+Resume a previously paused or archived task.
+- Shows progress snapshot (milestones complete/remaining)
+- Restores active context
+- Guides next steps
+
+**Common workflow:**
+```bash
+# Working on feature-a
+#xoch-pause                    # Pause feature-a
+
+# Fix urgent bug
+#xoch-spec                     # Start bug fix
+#xoch-plan
+#xoch-start
+#xoch-advance
+#xoch-finalize                 # Complete bug fix
+
+# Resume feature-a
+#xoch-resume feature-a         # Back to feature-a
+#xoch-advance                  # Continue where you left off
+```
+
+---
+
+### Token Budget Management
+
+Xoch tracks token usage per phase to prevent context overflow:
+
+| Phase | Budget | Purpose |
+|-------|--------|---------|
+| **Spec** | 5,000 | Reading implementation files |
+| **Plan** | 10,000 | Understanding architecture |
+| **Start** | 15,000 | Initial milestone deep-dive |
+| **Advance** | 10,000 | Additional context beyond git diff |
+
+#### Check Token Usage Before Reading Files
+```bash
+# Single file
+bin/tokenEstimator.sh src/feature/file.js
+
+# Multiple files (batch mode)
+bin/tokenEstimator.sh --batch src/file1.js src/file2.js src/file3.js
+```
+
+Prompts automatically check token budgets and ask you to prioritize files if needed.
+
+---
+
+### Project Glossaries
+
+Document project-specific terminology for consistent understanding:
+
+#### Create Glossary Structure
+```
+#xoch-init-app
+```
+Offers to create `./glossaries/` structure during app initialization.
+
+#### Add/Update Terms
+```
+#xoch-glossary
+```
+Interactive prompt to add terminology to glossaries.
+
+**Glossary types:**
+- `quick-reference.md` - Core terminology (always loaded)
+- `entities.md` - Data models and schemas
+- `integrations.md` - Third-party system mappings
+- Custom domain-specific glossaries
+
+Prompts that read/write documentation automatically load glossaries (if they exist).
+
+---
+
 ## File Structure
 
 ### In Your Projects
@@ -161,6 +252,11 @@ When using Xoch, your projects will have:
 ```
 your-project/
 ├── README.md                           # Application-level README
+├── glossaries/                         # Project-specific terminology (optional)
+│   ├── README.md                       # Glossary index
+│   ├── quick-reference.md              # Core terms (always read)
+│   ├── entities.md                     # Data models
+│   └── integrations.md                 # Third-party mappings
 ├── .context/
 │   ├── current.md                      # Currently active task
 │   ├── [task-id]/
@@ -191,6 +287,10 @@ xoch/
 ├── README.md                           # This file
 ├── SYSTEM_DESIGN.md                    # Complete system specification
 ├── install.sh                          # Installation script
+├── bin/
+│   └── tokenEstimator.sh               # Token usage estimator
+├── glossaries/
+│   └── README.md                       # Glossary template
 └── prompts/
     ├── init-app.md                     # Initialize app README
     ├── init-feature.md                 # Initialize feature README
@@ -203,6 +303,9 @@ xoch/
     ├── replan.md                       # Update milestones
     ├── finalize.md                     # Update READMEs
     ├── merge.md                        # Resolve conflicts
+    ├── pause.md                        # Pause current task
+    ├── resume.md                       # Resume paused/archived task
+    ├── glossary.md                     # Add/update glossary terms
     ├── mod.md                          # Modify Xoch itself
     └── test-hello.md                   # Test installation
 ```

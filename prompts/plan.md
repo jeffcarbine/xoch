@@ -50,7 +50,52 @@ Wait for their detailed architectural input.
 
 ### Step 3: Analyze the Approach
 
-Review the engineer's plan against:
+**Plan Phase Token Budget: 10,000 tokens**
+
+You need to read the codebase to understand architecture and provide meaningful analysis.
+
+#### Token Budget Process:
+
+1. **Identify files needed** for architectural analysis:
+   - Related feature implementations
+   - Similar patterns in the codebase
+   - Integration points
+   - Configuration files
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch file1.js file2.js ...
+   ```
+
+3. **Check against budget:**
+   - If estimated tokens < 9,000 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 9,000 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To provide thorough architectural analysis, I'd like to read these files:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 10,000 token budget)**
+
+**Options:**
+1. **Which files are most important for architecture understanding?**
+2. **Proceed anyway** (Read all files)
+3. **Limited analysis** (Read only spec.md and feature README)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+#### After Reading Files:
+
+Update the token tracking in `plan.md` (see Step 6 for template).
+
+---
+
+Once files are read, review the engineer's plan against:
 - The specification requirements
 - The existing codebase structure
 - Potential integration issues
@@ -162,6 +207,14 @@ Create two files:
 **Date**: [Current Date]
 **Spec**: See spec.md
 **Task**: [Link from spec if available]
+
+---
+
+## Token Usage (Plan Phase)
+Budget: 10,000 tokens
+- [file1.js] - [X] tokens
+- [file2.js] - [Y] tokens
+**Total: [sum] / 10,000 ([percentage]%)**
 
 ---
 

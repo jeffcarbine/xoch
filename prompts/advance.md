@@ -15,6 +15,40 @@ Review completed work against milestone requirements, get engineer confirmation,
 
 ## Process
 
+### Step 0: Check for Project Glossaries (Conditional)
+
+**Glossary Loading (Conditional):**
+
+**Only load glossaries if:**
+- Milestone completion triggers README update (Step 13)
+- Changes introduce new domain terminology
+- Feature glossary section needs updates
+- You need to verify entity mappings or terminology
+
+**Most advance cycles DON'T need glossaries** - you're just reviewing code changes and git diff. Only load if updating documentation.
+
+**If README updates needed:**
+
+1. **Look for glossaries at project root:**
+   - Check if `./glossaries/` directory exists
+   - Check for `./glossaries/README.md`
+
+2. **If glossaries found:**
+   - Read `glossaries/README.md` to understand what each glossary covers
+   - Read `glossaries/quick-reference.md` if it exists (core terminology)
+   - Note other available glossaries for potential reference
+
+3. **Use glossaries when updating READMEs (Step 13):**
+   - Use correct terminology in README updates
+   - Reference entity mappings when documenting data model changes
+   - Follow naming conventions from glossaries
+   - Update feature glossary if new terms introduced
+
+**If glossaries not found or not needed:**
+- Proceed normally without glossary reference
+
+---
+
 ### Step 1: Identify Current Task
 
 First, try to read `.context/current.md` to get the current task:
@@ -65,6 +99,100 @@ Analyze the changes:
 - Which files were modified/created?
 - What functionality was added/changed?
 - Do the changes align with the milestone requirements?
+
+---
+
+### Step 4.5: Token Budget Check (Before Reading Additional Files)
+
+**Advance Phase Token Budget: 10,000 tokens**
+
+You have the git diff showing what changed. This diff is your primary source.
+
+**If you need to read additional files** (beyond the diff) to review the milestone:
+
+#### Identify Need for Additional Context
+
+**Valid reasons to read beyond diff:**
+- Understanding integration impact with unchanged files
+- Verifying related functionality wasn't broken
+- Gathering context for README updates
+- Checking consistency with architectural patterns
+
+**Invalid reasons (don't do this):**
+- General curiosity about codebase
+- Reading files unrelated to milestone
+- Re-reading files already in the diff
+
+#### Estimate and Check Budget
+
+1. **List additional files** you want to read (with reasons)
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch [additional-file1] [additional-file2] ...
+   ```
+
+3. **Calculate total:**
+   - Changed files (from diff): Approximate from diff size
+   - Additional files: From batch estimate
+   - Total estimated tokens
+
+4. **Check against budget:**
+   - If total < 9,000 tokens (< 90% of budget): **Proceed with reading**
+   - If total ≥ 9,000 tokens (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To review this milestone comprehensively, I need:**
+
+**Git diff context: ~X tokens**
+
+**Additional files I'd like to read:**
+- **[file1]** (~A tokens) - To [reason]
+- **[file2]** (~B tokens) - To [reason]
+- **[file3]** (~C tokens) - To [reason]
+
+**Total: ~Y tokens (Z% of 10,000 token budget)**
+
+**Options:**
+1. **Skip additional files** (Review based on git diff only)
+2. **Which additional files are most important?** (Prioritize subset)
+3. **Proceed anyway** (Read all files)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+#### Update Token Tracking (After Reading Files)
+
+**Every time you read additional files** beyond git diff, update the token section in `milestones.md` for the current milestone:
+
+**First advance cycle** - Add Advance Phase token tracking to the milestone:
+
+```markdown
+## Milestone 1: [Title]
+**Status**: 🔵 In Progress
+
+### Token Usage (Start Phase)
+Budget: 15,000 tokens
+- [files from start phase]
+**Start Total: X / 15,000 (Y%)**
+
+### Token Usage (Advance Phase)
+Budget: 10,000 tokens
+**Total: 0 / 10,000 (0%)**
+```
+
+**After reading additional files**, update advance section:
+
+```markdown
+### Token Usage (Advance Phase)
+Budget: 10,000 tokens
+- [additional-file1] - A tokens - [reason for reading]
+- [additional-file2] - B tokens - [reason for reading]
+**Total: [sum] / 10,000 ([percentage]%)**
+```
 
 ---
 

@@ -15,6 +15,30 @@ Update the feature README (and potentially project README) to document the compl
 
 ## Process
 
+### Step 0: Check for Project Glossaries
+
+**Before analyzing changes**, check if glossaries exist:
+
+**Look for glossaries at project root:**
+- Check if `./glossaries/` directory exists
+- If exists, check for `./glossaries/README.md`
+
+**If glossaries found:**
+1. Read `glossaries/README.md` to understand terminology organization
+2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+3. Note domain-specific glossaries relevant to this feature
+
+**Use glossaries when updating READMEs:**
+- Use correct terminology in README updates
+- Reference entity mappings when documenting data models
+- Follow naming conventions from glossaries
+- Identify new terms introduced that should be added to glossaries
+
+**If glossaries not found:**
+- Proceed normally without glossary reference
+
+---
+
 ### Step 1: Identify Current Task
 
 First, try to read `.context/current.md` to get the current task:

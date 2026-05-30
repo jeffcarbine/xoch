@@ -15,6 +15,30 @@ Analyze the feature's implementation, understand its purpose and behavior, and c
 
 ## Process
 
+### Step 0: Check for Project Glossaries
+
+**Before analyzing the feature**, check if glossaries exist:
+
+**Look for glossaries at project root:**
+- Check if `./glossaries/` directory exists
+- If exists, check for `./glossaries/README.md`
+
+**If glossaries found:**
+1. Read `glossaries/README.md` to understand terminology organization
+2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+3. Note domain-specific glossaries that might be relevant (entities, integrations, etc.)
+
+**Use glossaries during analysis:**
+- Use correct terminology when analyzing feature functionality
+- Reference entity mappings when examining data models
+- Follow naming conventions from glossaries
+- Note new feature-specific terms that should be documented
+
+**If glossaries not found:**
+- Proceed normally without glossary reference
+
+---
+
 ### Step 1: Identify Feature Directory
 
 Ask the engineer:

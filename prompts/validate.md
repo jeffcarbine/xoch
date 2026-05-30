@@ -15,6 +15,33 @@ Verify that documentation matches reality, so the engineer starts from a clear u
 
 ## Process
 
+### Step 0: Check for Project Glossaries (Conditional)
+
+**Glossary Loading (Conditional):**
+
+**Only load glossaries if:**
+- Engineer is validating glossary terminology specifically
+- Feature involves domain-specific terms that need verification
+- Engineer explicitly mentions checking terminology accuracy
+
+**Most validation cycles DON'T need glossaries** - you're comparing code against README, not validating terminology.
+
+**If glossaries ARE needed (ask engineer if unclear):**
+
+1. **Look for glossaries at project root:**
+   - Check if `./glossaries/` directory exists
+   - Check for `./glossaries/README.md`
+
+2. **If glossaries found:**
+   - Read `glossaries/README.md` to understand terminology
+   - Read `glossaries/quick-reference.md` if it exists
+   - Use correct terminology when identifying discrepancies
+
+**If glossaries not found or not needed:**
+- Proceed normally without glossary reference
+
+---
+
 ### Step 1: Identify the Feature
 
 Ask the engineer:

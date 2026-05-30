@@ -15,6 +15,30 @@ Analyze the application structure, understand its purpose and architecture, and 
 
 ## Process
 
+### Step 0: Check for Project Glossaries
+
+**Before analyzing the application**, check if glossaries already exist:
+
+**Look for glossaries at project root:**
+- Check if `./glossaries/` directory exists
+- If exists, check for `./glossaries/README.md`
+
+**If glossaries found:**
+1. Read `glossaries/README.md` to understand terminology organization
+2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+3. Note available glossaries for reference during analysis
+
+**Use glossaries during analysis:**
+- Use correct terminology when analyzing features
+- Reference entity mappings when examining data models
+- Follow naming conventions from glossaries
+- Note new terms that should be added to glossaries
+
+**If glossaries not found:**
+- Note for later: Offer to create glossaries after README is generated (Step 7)
+
+---
+
 ### Step 1: Read Existing README
 
 Check if `README.md` exists in the application root.
@@ -422,6 +446,128 @@ Next Steps:
    - After major architectural changes
    - When adding new features
    - When patterns or conventions change
+```
+
+---
+
+### Step 11: Offer Glossary Creation (If Not Exists)
+
+**If glossaries directory was NOT found in Step 0:**
+
+After successfully creating/updating the README, ask:
+
+**"Would you like to create a glossaries directory to document project-specific terminology?**
+
+**Benefits:**
+- **Consistency** - All team members use the same terms
+- **Onboarding** - New engineers learn domain concepts quickly
+- **AI accuracy** - Xoch prompts understand project terminology
+- **Less repetition** - Document terms once, reference everywhere
+
+**What happens:**
+- Creates `./glossaries/` directory
+- Creates `./glossaries/README.md` (glossary index and guidelines)
+- Creates `./glossaries/quick-reference.md` (starter template for core terms)
+
+**Options:**
+1. **Yes, create glossaries** - Set up glossary structure now
+2. **No, not now** - Skip (can create later with `#xoch-glossary`)
+
+**What's your preference?"**
+
+Wait for response.
+
+---
+
+#### If "Yes, create glossaries":
+
+1. **Create `./glossaries/` directory**
+
+2. **Copy template README** from xoch installation to `./glossaries/README.md`
+
+3. **Create `./glossaries/quick-reference.md`** with starter template:
+
+```markdown
+# Quick Reference Glossary
+
+Core terminology used across the project.
+
+---
+
+## Business Domain
+
+_Add business domain terms here_
+
+Example:
+- **User** - End-user account with authentication credentials
+- **Workspace** - Collaboration environment for teams
+
+---
+
+## Identifiers
+
+_Add identifier types and formats here_
+
+Example:
+- **UUID** - Primary identifiers for all entities (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+- **Slug** - URL-friendly identifier (lowercase, hyphenated)
+
+---
+
+## System Architecture
+
+_Add system component definitions here_
+
+Example:
+- **API Gateway** - Entry point for all client requests
+- **Worker** - Background job processor
+
+---
+
+## Acronyms
+
+_Add project acronyms here_
+
+Example:
+- **MFA** - Multi-Factor Authentication
+- **RBAC** - Role-Based Access Control
+```
+
+4. **Confirm to engineer:**
+
+```
+✅ Glossary structure created!
+
+Files created:
+- ./glossaries/README.md - Glossary index and guidelines
+- ./glossaries/quick-reference.md - Core terminology (starter template)
+
+---
+
+Next Steps:
+
+1. **Populate the glossaries** with project-specific terms:
+   - Use `#xoch-glossary` to add terms interactively
+   - Or edit ./glossaries/*.md files directly
+
+2. **Common glossaries to consider:**
+   - `entities.md` - Data models and field mappings
+   - `integrations.md` - Third-party API terminology
+   - `[domain].md` - Domain-specific glossaries
+
+3. **Commit to git** so your team benefits:
+   ```
+   git add glossaries/
+   git commit -m "docs: initialize project glossaries"
+   ```
+
+Xoch prompts will automatically use these glossaries when documenting or implementing features!
+```
+
+#### If "No, not now":
+
+```
+No problem! You can create glossaries later with `#xoch-glossary` whenever needed.
 ```
 
 ---

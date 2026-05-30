@@ -51,7 +51,65 @@ From `milestones.md`, find the current milestone:
 
 ### Step 4: Explain the Milestone
 
-Provide a comprehensive explanation of what needs to be done:
+**Start Phase Token Budget: 15,000 tokens**
+
+You need to read code to provide clear context and implementation guidance.
+
+#### Token Budget Process:
+
+1. **Identify files needed** to explain the milestone:
+   - Files that will be modified
+   - Related implementations for patterns
+   - Test files for examples
+   - Configuration files
+
+2. **Estimate token cost:**
+   
+   ```bash
+   bin/tokenEstimator.sh --batch file1.js file2.js ...
+   ```
+
+3. **Check against budget:**
+   - If estimated tokens < 13,500 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 13,500 (≥ 90% of budget): **Ask for guidance**
+
+#### If at/over budget (≥ 90%), ask the engineer:
+
+**"To provide comprehensive milestone explanation, I'd like to read these files:**
+
+**[List with individual token estimates]**
+
+**Total: ~X tokens (Y% of 15,000 token budget)**
+
+**Options:**
+1. **Which files are most important for understanding the milestone?**
+2. **Proceed anyway** (Read all files)
+3. **High-level guidance only** (Explain milestone without reading implementation)
+
+**What's your preference?"**
+
+**Wait for response** and adjust accordingly.
+
+#### After Reading Files:
+
+Add token tracking to the current milestone in `milestones.md`:
+
+```markdown
+## Milestone 1: [Title]
+...
+
+### Token Usage (Start Phase)
+Budget: 15,000 tokens
+- [file1.js] - [X] tokens
+- [file2.js] - [Y] tokens
+**Total: [sum] / 15,000 ([percentage]%)**
+
+**Status**: In Progress
+```
+
+---
+
+Once files are read, provide a comprehensive explanation of what needs to be done:
 
 ```
 🎯 CURRENT MILESTONE: [N] - [Title]
