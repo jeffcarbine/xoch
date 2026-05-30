@@ -244,7 +244,80 @@ Project README remains unchanged.
 
 ---
 
-### Step 9: Apply README Updates
+### Step 9: Suggest Glossary Terms
+
+**If glossaries exist** in the project (checked in Step 0), analyze the work for new terminology.
+
+**Review completed work for domain terms:**
+1. Read through all milestone snapshots
+2. Review spec.md for domain concepts
+3. Review plan.md for technical terms
+4. Identify terms that appear in:
+   - Entity names (models, tables, data structures)
+   - Business concepts (domain-specific terminology)
+   - Integration mappings (external system terms)
+   - Technical patterns (architecture-specific terms)
+
+**Check if terms already documented:**
+- Compare against existing glossary files
+- Focus on terms that appear multiple times
+- Prioritize terms that might confuse new engineers
+
+**If potential terms found:**
+
+```
+💡 GLOSSARY SUGGESTIONS
+
+Based on this implementation, consider adding these terms to the project glossaries:
+
+---
+
+SUGGESTED TERMS:
+
+**[term-name]**
+- Type: [Entity / Concept / Integration / Pattern]
+- Context: [Where it appears in the implementation]
+- Why: [Why this would help the team]
+- Target glossary: [entities.md / quick-reference.md / integrations.md / etc]
+
+**[term-name-2]**
+- Type: [...]
+- Context: [...]
+- Why: [...]
+- Target glossary: [...]
+
+[Continue for 3-5 most valuable terms]
+
+---
+
+These are optional suggestions. You can:
+1. Add them now with #xoch-glossary
+2. Add them later
+3. Skip if not needed
+
+Would you like to add any of these terms to the glossary?
+```
+
+**If no new terms found:**
+
+```
+ℹ️ GLOSSARY CHECK
+
+Reviewed implementation for new terminology.
+No new glossary terms suggested - existing terminology covers this work well.
+```
+
+**Engineer options:**
+- **"Add [term]"** - Guide them to use `#xoch-glossary` (don't add directly)
+- **"Skip"** - Continue to next step
+- **"Show me more details on [term]"** - Explain why the term is valuable
+
+**If no glossaries exist:**
+- Skip this step entirely (glossaries not set up for this project)
+
+---
+
+### Step 10: Apply README Updates
 
 Once all updates are approved:
 
@@ -270,7 +343,7 @@ Commit: [commit hash]
 
 ---
 
-### Step 10: Archive Context
+### Step 11: Archive Context
 
 Now that READMEs are updated, ask about archiving:
 
@@ -289,7 +362,7 @@ Wait for confirmation.
 
 ---
 
-### Step 11: Perform Archive (If Confirmed)
+### Step 12: Perform Archive (If Confirmed)
 
 If engineer confirms:
 
@@ -320,7 +393,7 @@ The archive is preserved for historical reference and can be deleted anytime.
 
 ---
 
-### Step 12: Final Confirmation
+### Step 13: Final Confirmation
 
 ```
 🎉 FINALIZATION COMPLETE!

@@ -250,8 +250,15 @@ Handle special situations anytime:
 **Process:**
 1. Loads project glossaries
 2. Verifies READMEs are current (should be updated by final advance)
-3. Archives context to `.context/archive/[task-id]-YYYY-MM-DD/`
-4. Clears `.context/current.md`
+3. **Suggests new glossary terms** based on completed work (if glossaries exist)
+4. Archives context to `.context/archive/[task-id]-YYYY-MM-DD/`
+5. Clears `.context/current.md`
+
+**Glossary suggestions:**
+- Analyzes milestones for domain-specific terms
+- Checks against existing glossaries
+- Suggests 3-5 valuable terms to add
+- Optional - can add with `#xoch-glossary` or skip
 
 **Use when:**
 - All milestones complete
