@@ -56,509 +56,143 @@ You should see a test greeting confirming the installation.
 
 ## Usage
 
-### First Time Setup (Existing Codebase)
+### First Time Setup
 
-If you're adding Xoch to an existing project:
+For existing projects, initialize documentation:
 
-**1. Initialize application README:**
-```
-#xoch-init-app
-```
-→ Analyzes your codebase and creates/updates the application-level README
-
-**2. Initialize feature READMEs:**
-```
-#xoch-init-feature
-```
-→ Analyzes individual feature directories and creates feature-level READMEs
-
-Run this for each major feature in your application.
-
----
-
-### Development Workflow (New Features)
-
-Once READMEs exist, use the main workflow for all new development:
-
-#### Phase 1: Validate
-```
-#xoch-validate
-```
-Verify README accuracy before starting work.
-
-#### Phase 2: Specify
-```
-#xoch-spec
-```
-Capture task identifier and requirements interactively.
-- Creates `.context/current.md` (tracks active task)
-- Creates `.context/[task-id]/spec.md` (requirements)
-
-#### Phase 3: Plan
-```
-#xoch-plan
-```
-Architect solution and break into milestones.
-- Creates `.context/[task-id]/plan.md` (architecture)
-- Creates `.context/[task-id]/milestones.md` (milestone tracker)
-
-#### Phase 4: Start
-```
-#xoch-start
-```
-Begin implementation of current milestone.
-
-#### Phase 5: Advance (Repeat for each milestone)
-```
-#xoch-advance
-```
-Complete current milestone and advance to next.
-- Reviews changes against requirements
-- Creates milestone snapshot
-- Advances to next milestone
-
-**Optional - Sidebar:**
-```
-#xoch-sidebar
-```
-Pause milestone work to explore related questions.
-- Use anytime during development
-- Returns to milestone with `#xoch-advance`
-
-**Optional - Replan:**
-```
-#xoch-replan
-```
-Update milestones when new requirements emerge.
-- Preserves completed milestones
-- Adds/modifies remaining milestones
-- Continue with `#xoch-advance`
-
-#### Phase 6: Finalize
-```
-#xoch-finalize
-```
-Update READMEs and archive context (after all milestones complete).
-- Updates feature README
-- Updates application README (if needed)
-- Archives context to `.context/archive/[task-id]-YYYY-MM-DD/`
-- Clears `.context/current.md`
-
-#### Phase 7: Merge (Optional)
-```
-#xoch-merge
-```
-Resolve README conflicts (if merge conflicts occur).
-
----
-
-### Parallel Task Management
-
-Work on multiple tasks simultaneously with pause/resume:
-
-#### Pause Current Task
-```
-#xoch-pause
-```
-Pauses current task while preserving all context.
-- Useful for urgent interruptions, end of day, or trying alternative approaches
-- All task data preserved in `.context/[task-id]/`
-- Clears `.context/current.md` (no active task)
-
-#### Resume Paused/Archived Task
-```
-#xoch-resume [task-id]
-```
-Resume a previously paused or archived task.
-- Shows progress snapshot (milestones complete/remaining)
-- Restores active context
-- Guides next steps
-
-**Common workflow:**
 ```bash
-# Working on feature-a
-#xoch-pause                    # Pause feature-a
-
-# Fix urgent bug
-#xoch-spec                     # Start bug fix
-#xoch-plan
-#xoch-start
-#xoch-advance
-#xoch-finalize                 # Complete bug fix
-
-# Resume feature-a
-#xoch-resume feature-a         # Back to feature-a
-#xoch-advance                  # Continue where you left off
+#xoch-init-app        # Create application README
+#xoch-init-feature    # Create feature READMEs (run for each feature)
 ```
 
----
+### Main Workflow
 
-### Token Budget Management
+**Flow**: `spec → plan → start → advance (repeat) → finalize`
 
-Xoch tracks token usage per phase to prevent context overflow:
-
-| Phase | Budget | Purpose |
-|-------|--------|---------|
-| **Spec** | 5,000 | Reading implementation files |
-| **Plan** | 10,000 | Understanding architecture |
-| **Start** | 15,000 | Initial milestone deep-dive |
-| **Advance** | 10,000 | Additional context beyond git diff |
-
-#### Check Token Usage Before Reading Files
 ```bash
-# Single file
-bin/tokenEstimator.sh src/feature/file.js
-
-# Multiple files (batch mode)
-bin/tokenEstimator.sh --batch src/file1.js src/file2.js src/file3.js
+#xoch-spec            # Capture requirements
+#xoch-plan            # Create milestones
+#xoch-start           # Begin milestone
+#xoch-advance         # Complete milestone, advance to next (repeat)
+#xoch-finalize        # Archive when all milestones done
 ```
 
-Prompts automatically check token budgets and ask you to prioritize files if needed.
+**Optional prompts:**
+- `#xoch-validate` - Verify README accuracy
+- `#xoch-sidebar` - Explore tangential questions
+- `#xoch-replan` - Update milestones when requirements change
+- `#xoch-merge` - Resolve README conflicts
+
+### Parallel Tasks
+
+Switch between multiple tasks:
+
+```bash
+#xoch-pause           # Pause current task
+#xoch-resume [task]   # Resume paused/archived task
+```
+
+### Additional Features
+
+**Token budgets** prevent context overflow (5K-15K per phase):
+```bash
+bin/tokenEstimator.sh --batch file1.js file2.js  # Check before reading
+```
+
+**Glossaries** maintain consistent terminology:
+```bash
+#xoch-glossary        # Add/update project terms
+```
+
+See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
 
 ---
 
-### Project Glossaries
+## Project Structure
 
-Document project-specific terminology for consistent understanding:
-
-#### Create Glossary Structure
-```
-#xoch-init-app
-```
-Offers to create `./glossaries/` structure during app initialization.
-
-#### Add/Update Terms
-```
-#xoch-glossary
-```
-Interactive prompt to add terminology to glossaries.
-
-**Glossary types:**
-- `quick-reference.md` - Core terminology (always loaded)
-- `entities.md` - Data models and schemas
-- `integrations.md` - Third-party system mappings
-- Custom domain-specific glossaries
-
-Prompts that read/write documentation automatically load glossaries (if they exist).
-
----
-
-## File Structure
-
-### In Your Projects
-
-When using Xoch, your projects will have:
+Xoch uses `.context/` for working files (add to `.gitignore`):
 
 ```
 your-project/
-├── README.md                           # Application-level README
-├── glossaries/                         # Project-specific terminology (optional)
-│   ├── README.md                       # Glossary index
-│   ├── quick-reference.md              # Core terms (always read)
-│   ├── entities.md                     # Data models
-│   └── integrations.md                 # Third-party mappings
-├── .context/
-│   ├── current.md                      # Currently active task
-│   ├── [task-id]/
-│   │   ├── spec.md                     # Requirements
-│   │   ├── plan.md                     # Architecture approach
-│   │   ├── milestones.md               # Milestone tracker
-│   │   ├── milestone-1.md              # Completed milestone snapshot
-│   │   ├── milestone-2.md              # Completed milestone snapshot
-│   │   └── replan-YYYY-MM-DD.md        # Replan records (if any)
-│   └── archive/
-│       └── [task-id]-YYYY-MM-DD/       # Archived completed work
-├── src/
-│   └── feature-name/
-│       └── README.md                   # Feature-level README
-└── .gitignore                          # Add .context/ to ignore
-
+├── README.md                    # Application spec
+├── glossaries/                  # Project terminology (optional)
+│   ├── README.md
+│   └── quick-reference.md
+├── .context/                    # Working context (gitignored)
+│   ├── current.md               # Active task
+│   ├── [task-id]/               # Task context
+│   │   ├── spec.md
+│   │   ├── plan.md
+│   │   └── milestones.md
+│   └── archive/                 # Completed tasks
+└── src/feature/
+    └── README.md                # Feature spec
 ```
 
-**Important:** Add `.context/` to your `.gitignore`:
+Add to `.gitignore`:
 ```bash
 echo ".context/" >> .gitignore
 ```
 
-### In Xoch Repository
-
-```
-xoch/
-├── README.md                           # This file
-├── SYSTEM_DESIGN.md                    # Complete system specification
-├── install.sh                          # Installation script
-├── bin/
-│   └── tokenEstimator.sh               # Token usage estimator
-├── glossaries/
-│   └── README.md                       # Glossary template
-└── prompts/
-    ├── init-app.md                     # Initialize app README
-    ├── init-feature.md                 # Initialize feature README
-    ├── validate.md                     # Verify README accuracy
-    ├── spec.md                         # Capture requirements
-    ├── plan.md                         # Create milestones
-    ├── start.md                        # Begin milestone
-    ├── advance.md                      # Complete & advance
-    ├── sidebar.md                      # Explore tangents
-    ├── replan.md                       # Update milestones
-    ├── finalize.md                     # Update READMEs
-    ├── merge.md                        # Resolve conflicts
-    ├── pause.md                        # Pause current task
-    ├── resume.md                       # Resume paused/archived task
-    ├── glossary.md                     # Add/update glossary terms
-    ├── mod.md                          # Modify Xoch itself
-    └── test-hello.md                   # Test installation
-```
-
 ---
 
-## Workflow Examples
-
-### Simple Feature (3 milestones)
+## Example Workflow
 
 ```bash
-# Start new feature
-#xoch-spec          # Capture task requirements
+# New feature
+#xoch-spec          # Requirements
+#xoch-plan          # Break into milestones
+#xoch-start         # Begin M1
+#xoch-advance       # Complete M1 → M2
+#xoch-advance       # Complete M2 → M3
+#xoch-advance       # Complete M3 (updates READMEs)
+#xoch-finalize      # Archive
 
-#xoch-plan          # Break into 3 milestones
-                       # → Milestone 1: Backend API
-                       # → Milestone 2: Frontend UI
-                       # → Milestone 3: Testing
+# Requirements change mid-feature
+#xoch-replan        # Update remaining milestones
+#xoch-advance       # Continue
 
-#xoch-start         # Begin Milestone 1
-
-# Work on Milestone 1...
-#xoch-advance       # Complete M1, advance to M2
-
-# Work on Milestone 2...
-#xoch-advance       # Complete M2, advance to M3
-
-# Work on Milestone 3...
-#xoch-advance       # Complete M3
-                       # → "All milestones complete!"
-
-#xoch-finalize      # Update READMEs, archive context
-```
-
-### Complex Feature (requirements evolve)
-
-```bash
-#xoch-spec          # Capture task requirements
-#xoch-plan          # 4 milestones planned
-
-#xoch-start         # Begin Milestone 1
-#xoch-advance       # Complete M1
-#xoch-advance       # Complete M2
-
-# Discover need for additional work...
-#xoch-replan        # Add 2 new milestones
-                       # → Now 6 milestones total
-
-#xoch-advance       # Complete M3
-#xoch-advance       # Complete M4
-
-# Have a question...
-#xoch-sidebar       # "How does auth work?"
-                       # [Discussion happens]
-#xoch-advance       # Resume M5
-
-#xoch-advance       # Complete M5
-#xoch-advance       # Complete M6
-
-#xoch-finalize      # Update READMEs, archive context
+# Context switching
+#xoch-pause         # Pause feature-a
+#xoch-spec          # Start bug-fix
+# ... fix bug ...
+#xoch-finalize      # Complete bug
+#xoch-resume        # Back to feature-a
 ```
 
 ---
 
-## Available Prompts
+## Documentation
 
-| Prompt | Purpose | When to Use |
-|--------|---------|-------------|
-| `init-app` | Create/update application README | First-time setup or major refactor |
-| `init-feature` | Create/update feature README | Document existing features |
-| `validate` | Verify README accuracy | Before starting new work |
-| `spec` | Capture task requirements | Start new feature work |
-| `plan` | Create architecture + milestones | After spec is clear |
-| `start` | Begin current milestone | After planning |
-| `advance` | Complete milestone, move to next | After each milestone |
-| `sidebar` | Explore related questions | Anytime (pause current work) |
-| `replan` | Update milestone structure | When requirements evolve |
-| `finalize` | Update READMEs, archive | After all milestones complete |
-| `merge` | Resolve README conflicts | If merge conflicts occur |
-| `mod` | Modify Xoch itself | Maintain/extend Xoch |
-| `test-hello` | Test installation | Verify setup |
+- **[prompts/README.md](prompts/README.md)** - Detailed prompt documentation
+- **[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)** - Complete system specification
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
 
 ---
 
-## Modifying Xoch
+## Key Features
 
-Want to customize Xoch or add new prompts?
-
-```
-#xoch-mod
-```
-
-This meta-prompt helps you:
-- **Modify existing prompts** - Update workflow steps or behavior
-- **Create new prompts** - Add new phases to the workflow
-- **View prompts** - Understand how existing prompts work
-- **Update documentation** - Keep SYSTEM_DESIGN.md current
-
-The `mod` prompt guides you through the process and automatically updates the installation.
-
----
-
-## Design Principles
-
-### 1. READMEs Are Source of Truth
-- READMEs always reflect current state
-- No need for massive changelogs
-- Living documentation
-
-### 2. Incremental Progress
-- Break work into milestones
-- Complete one milestone at a time
-- Capture decisions along the way
-
-### 3. Context Preservation
-- All decisions documented in `.context/`
-- Replan records explain why plans changed
-- Milestone snapshots preserve history
-
-### 4. Engineer Control
-- Agent assessments are advisory
-- Engineer has final say on all decisions
-- Can iterate at any step
-
-### 5. Quality Gates
-- README validation before starting
-- Requirements review on every advance
-- Documentation updates on finalize
-
----
-
-## Best Practices
-
-### Context Management
-- ✅ **DO** add `.context/` to `.gitignore`
-- ✅ **DO** archive completed work in `.context/archive/`
-- ✅ **DO** keep `current.md` up to date
-- ❌ **DON'T** commit `.context/` to git (personal workspace state)
-
-### Milestone Planning
-- ✅ **DO** break large features into 3-7 milestones
-- ✅ **DO** make each milestone independently testable
-- ✅ **DO** replan when requirements evolve
-- ❌ **DON'T** make milestones too granular (not one per file)
-
-### README Maintenance
-- ✅ **DO** update READMEs in `finalize` phase
-- ✅ **DO** describe how features work, not how they changed
-- ✅ **DO** include testing scenarios in feature READMEs
-- ❌ **DON'T** let READMEs drift from implementation
-
-### Using Sidebar
-- ✅ **DO** use sidebar for exploratory questions
-- ✅ **DO** use sidebar to understand existing code
-- ✅ **DO** return with `advance` when done
-- ❌ **DON'T** use sidebar for implementation (use milestones)
-
----
-
-## Agents Supported
-
-### GitHub Copilot (VS Code)
-- ✅ Built-in VS Code integration
-- ✅ Use `.prompt.md` files via chat
-- ✅ Invocation: `#xoch-[name]`
-
-### Cursor
-- ✅ VS Code fork with Copilot built-in
-- ✅ Uses same prompts as Copilot
-- ✅ Invocation: `#xoch-[name]`
-
-### Codex (OpenAI CLI)
-- ✅ Requires `SKILL.md` format + metadata
-- ✅ Installer handles conversion automatically
-- ✅ Invocation: `$xoch-[name]`
+- **Token budgets** per phase prevent context overflow
+- **Project glossaries** maintain terminology consistency
+- **Pause/resume** for parallel task management
+- **Milestone snapshots** preserve decision history
+- **Living READMEs** eliminate changelogs
 
 ---
 
 ## Troubleshooting
 
-### "Prompt not found"
-1. Run `./install.sh` from xoch directory
-2. Restart VS Code or Codex
-3. Try the test prompt: `#xoch-test-hello`
+**Prompt not found**: Run `./install.sh` and restart VS Code/Codex
 
-### "Context files not found"
-- Ensure you've run `#xoch-spec` to create context
-- Check that `.context/current.md` exists
-- Verify Task ID is correct
+**Context files not found**: Run `#xoch-spec` to create initial context
 
-### "README conflicts on merge"
-- Use `#xoch-merge` to harmonize README changes
-- Agent will analyze both versions and propose merged content
-
----
-
-## Contributing
-
-Want to improve Xoch?
-
-1. **Modify prompts**: Use `#xoch-mod` for guided changes
-2. **Update documentation**: Keep SYSTEM_DESIGN.md aligned with prompts
-3. **Test changes**: Verify with real projects before committing
-4. **Share feedback**: Open issues or PRs with improvements
-
----
-
-## Philosophy
-
-> "The best documentation is the code itself... and a README that explains why."
-
-Xoch embraces this by:
-- Making READMEs the specification AND documentation
-- Capturing the "why" in context files
-- Eliminating duplicate documentation efforts
-- Keeping documentation alive through enforcement
+**README conflicts**: Use `#xoch-merge` to resolve
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
-
----
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to:
-- Modify existing prompts
-- Create new workflow phases
-- Improve documentation
-- Report issues or suggest features
-
----
-
-## Credits
-
-Created for development teams who want:
-- 📖 Living documentation that stays current
-- 🎯 Spec-driven development with AI assistance
-- 📝 Historical context without massive changelogs
-- 🤖 Workflow automation that respects engineer autonomy
-
-**Maintained with Xoch** - This project uses itself for development!
-
----
-
-## Support
-
-- 📖 [Read the documentation](README.md)
-- 🐛 [Report issues](https://github.com/jeffcarbine/xoch/issues)
-- 💬 [Join discussions](https://github.com/jeffcarbine/xoch/discussions)
-- ⭐ Star the project if you find it useful!
+MIT License - See [LICENSE](LICENSE)
 
 ---
 
