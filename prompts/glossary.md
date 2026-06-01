@@ -373,7 +373,7 @@ After completing the glossary update:
 
 ### This is a Sidebar Operation
 
-- Does **NOT** affect `.context/current.md`
+- Does **NOT** affect `.xoch/current.md`
 - Does **NOT** create task context files
 - Does **NOT** require Task ID
 - Can be used anytime during development

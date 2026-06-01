@@ -17,7 +17,7 @@ Load a task back into active context, whether it was paused for parallel work or
 
 ### Step 0: Check for Existing Active Task
 
-Read `.context/current.md` to see if there's already an active task.
+Read `.xoch/current.md` to see if there's already an active task.
 
 **If active task exists:**
 
@@ -44,12 +44,12 @@ Wait for their choice. If they choose to pause, guide them to use `#xoch-pause` 
 
 **Scan for paused tasks:**
 ```bash
-ls .context/ | grep -v current.md | grep -v archive
+ls .xoch/ | grep -v current.md | grep -v archive
 ```
 
 **Scan for archived tasks:**
 ```bash
-ls .context/archive/ 2>/dev/null
+ls .xoch/archive/ 2>/dev/null
 ```
 
 **If no tasks found:**
@@ -77,11 +77,11 @@ Stop execution.
 ```
 📋 AVAILABLE TASKS
 
-Paused Tasks (.context/):
+Paused Tasks (.xoch/):
   • [task-id-1] - [feature-name-1]
   • [task-id-2] - [feature-name-2]
 
-Archived Tasks (.context/archive/):
+Archived Tasks (.xoch/archive/):
   • [task-id-3] - [feature-name-3] (completed [date])
   • [task-id-4] - [feature-name-4] (completed [date])
 
@@ -97,8 +97,8 @@ Wait for their response.
 ### Step 3: Locate Task Files
 
 Try these locations in order:
-1. `.context/[task-id]/` (paused task)
-2. `.context/archive/[task-id]-[date]/` (archived task - try most recent)
+1. `.xoch/[task-id]/` (paused task)
+2. `.xoch/archive/[task-id]-[date]/` (archived task - try most recent)
 
 **If task not found:**
 
@@ -106,8 +106,8 @@ Try these locations in order:
 ❌ TASK NOT FOUND
 
 Task [task-id] not found in:
-- .context/[task-id]/
-- .context/archive/[task-id]-*/
+- .xoch/[task-id]/
+- .xoch/archive/[task-id]-*/
 
 Available tasks: [list from Step 2]
 
@@ -138,11 +138,11 @@ Wait for confirmation.
 
 If yes:
 ```bash
-mv .context/archive/[task-id]-[date] .context/[task-id]
+mv .xoch/archive/[task-id]-[date] .xoch/[task-id]
 ```
 
 ```
-✅ Task restored from archive to .context/[task-id]/
+✅ Task restored from archive to .xoch/[task-id]/
 ```
 
 ---
@@ -154,16 +154,16 @@ mv .context/archive/[task-id]-[date] .context/[task-id]
 **Before loading task context** files:
 
 #### Files to read:
-- `.context/[task-id]/spec.md` - Requirements
-- `.context/[task-id]/plan.md` - Implementation approach
-- `.context/[task-id]/milestones.md` - Progress tracker
+- `.xoch/[task-id]/spec.md` - Requirements
+- `.xoch/[task-id]/plan.md` - Implementation approach
+- `.xoch/[task-id]/milestones.md` - Progress tracker
 
 #### Process:
 
 1. **Estimate token cost:**
    
    ```bash
-   bin/tokenEstimator.sh --batch .context/[task-id]/spec.md .context/[task-id]/plan.md .context/[task-id]/milestones.md
+   bin/tokenEstimator.sh --batch .xoch/[task-id]/spec.md .xoch/[task-id]/plan.md .xoch/[task-id]/milestones.md
    ```
 
 2. **Check against budget:**
@@ -192,9 +192,9 @@ mv .context/archive/[task-id]-[date] .context/[task-id]
 ### Step 5: Load Task Context
 
 Read all task files:
-1. `.context/[task-id]/spec.md` - Requirements
-2. `.context/[task-id]/plan.md` - Implementation approach
-3. `.context/[task-id]/milestones.md` - Progress tracker
+1. `.xoch/[task-id]/spec.md` - Requirements
+2. `.xoch/[task-id]/plan.md` - Implementation approach
+3. `.xoch/[task-id]/milestones.md` - Progress tracker
 
 ---
 
@@ -211,7 +211,7 @@ Create a clear picture of where the task stands.
 
 ### Step 7: Set as Current Task
 
-Create `.context/current.md`:
+Create `.xoch/current.md`:
 
 ```markdown
 # Current Task
@@ -269,7 +269,7 @@ Milestone 1 ([name]):
 Milestone 2 ([name]):
 - [Key accomplishments]
 
-(See .context/[task-id]/milestone-1.md and milestone-2.md for details)
+(See .xoch/[task-id]/milestone-1.md and milestone-2.md for details)
 
 ---
 
@@ -334,7 +334,7 @@ Less common - reopening completed work for additional changes:
 
 **Engineer**: `#xoch-resume auth-oauth`
 
-**Agent**: [Finds task in .context/auth-oauth/]
+**Agent**: [Finds task in .xoch/auth-oauth/]
 
 [Reads context files, determines status]
 
@@ -388,11 +388,11 @@ What's your preference?
 ```
 📋 AVAILABLE TASKS
 
-Paused Tasks (.context/):
+Paused Tasks (.xoch/):
   • auth-oauth - User authentication (Milestone 2 of 4)
   • payment-refunds - Payment processing (Milestone 1 of 3)
 
-Archived Tasks (.context/archive/):
+Archived Tasks (.xoch/archive/):
   • bug-404 - Fix 404 error page (completed 2026-05-26)
 
 Which task would you like to resume?
@@ -427,7 +427,7 @@ Proceed with restore? (y/n)
 
 **Agent**:
 ```
-✅ Task restored from archive to .context/bug-404/
+✅ Task restored from archive to .xoch/bug-404/
 
 ---
 
@@ -475,8 +475,8 @@ Task restored from archive, ready for new milestones.
 ### Parallel Development
 
 Working on multiple features:
-- Feature A paused: `.context/feature-a/`
-- Feature B paused: `.context/feature-b/`
-- Feature C paused: `.context/feature-c/`
+- Feature A paused: `.xoch/feature-a/`
+- Feature B paused: `.xoch/feature-b/`
+- Feature C paused: `.xoch/feature-c/`
 
 Switch between them with `#xoch-resume [feature-name]`

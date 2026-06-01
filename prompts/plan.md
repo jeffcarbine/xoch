@@ -17,7 +17,7 @@ Guide the engineer through planning HOW to implement the spec, then analyze thei
 
 ### Step 1: Identify Current Task
 
-First, try to read `.context/current.md` to get the current task:
+First, try to read `.xoch/current.md` to get the current task:
 
 If file exists and contains a Task ID:
 - Use that Task ID automatically
@@ -28,7 +28,7 @@ If file doesn't exist or is unclear:
 - Wait for response
 
 Once Task ID is confirmed, read:
-1. `.context/[task-id]/spec.md` to understand WHAT needs to be built
+1. `.xoch/[task-id]/spec.md` to understand WHAT needs to be built
 2. The feature's README.md (path from spec.md) to understand the current state
 3. Summarize the task briefly to confirm understanding
 
@@ -199,7 +199,7 @@ Iterate until milestones are finalized.
 
 Create two files:
 
-#### File 1: `.context/[task-id]/plan.md`
+#### File 1: `.xoch/[task-id]/plan.md`
 
 ```markdown
 # Implementation Plan - [task-id]
@@ -260,7 +260,7 @@ Budget: 13,000 tokens
 [Engineer's final approved architectural approach after discussion]
 ```
 
-#### File 2: `.context/[task-id]/milestones.md`
+#### File 2: `.xoch/[task-id]/milestones.md`
 
 ```markdown
 # Milestones - [Feature Name]
@@ -311,8 +311,8 @@ Confirm to the engineer:
 
 ```
 ✅ Implementation plan created:
-   .context/[task-id]/plan.md
-   .context/[task-id]/milestones.md
+   .xoch/[task-id]/plan.md
+   .xoch/[task-id]/milestones.md
 
 Milestones:
 1. [Milestone 1 title]
@@ -425,8 +425,8 @@ Proposed Milestones:
 **Agent**:
 ```
 ✅ Implementation plan created:
-   .context/authentication/plan.md
-   .context/authentication/milestones.md
+   .xoch/authentication/plan.md
+   .xoch/authentication/milestones.md
 
 Milestones:
 1. Database schema and migrations

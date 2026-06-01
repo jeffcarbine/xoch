@@ -163,7 +163,7 @@ See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
 
 ## Project Structure
 
-Xoch uses `.context/` for working files (add to `.gitignore`):
+Xoch uses `.xoch/` for working files (add to `.gitignore`):
 
 ```
 your-project/
@@ -171,7 +171,7 @@ your-project/
 ├── glossaries/                  # Project terminology (optional)
 │   ├── README.md
 │   └── quick-reference.md
-├── .context/                    # Working context (gitignored)
+├── .xoch/                    # Working context (gitignored)
 │   ├── current.md               # Active task
 │   ├── [task-id]/               # Task context
 │   │   ├── spec.md
@@ -184,7 +184,7 @@ your-project/
 
 Add to `.gitignore`:
 ```bash
-echo ".context/" >> .gitignore
+echo ".xoch/" >> .gitignore
 ```
 
 ---

@@ -30,7 +30,7 @@ Xoch is a lightweight, spec-driven development system where README files serve a
 - READMEs describe how features work NOW
 - Specs describe what will CHANGE
 - Milestones track incremental progress
-- Context preserved in .context/ directories
+- Context preserved in .xoch/ directories
 - Agents guide workflow phases
 
 ---
@@ -335,8 +335,8 @@ description: Brief one-line description (shown in agent list)
 5. **Example Interaction**: Show it in action
 
 ### Consistency Rules
-- **Auto-detect current task**: Try reading `.context/current.md` first
-- **Use Task ID for context**: `.context/[task-id]/` pattern
+- **Auto-detect current task**: Try reading `.xoch/current.md` first
+- **Use Task ID for context**: `.xoch/[task-id]/` pattern
 - **Read before asking**: Get info from context files when possible
 - **Provide context**: Show engineer where they are
 - **Interactive confirmation**: Engineer has final say
@@ -347,7 +347,7 @@ description: Brief one-line description (shown in agent list)
 
 ### File Naming
 - Prompt files: `[name].md` (becomes `xoch-[name]`)
-- Context files: `.context/[task-id]/[name].md`
+- Context files: `.xoch/[task-id]/[name].md`
 - Milestone snapshots: `milestone-[N].md`
 - Special files: `current.md`, `milestones.md`, `spec.md`, `plan.md`
 
@@ -457,5 +457,5 @@ After any modification or creation:
 - `/Users/jcarbine/Projects/xoch/SYSTEM_DESIGN.md` - Complete specification
 - `/Users/jcarbine/Projects/xoch/prompts/*.md` - All prompt files
 - `/Users/jcarbine/Projects/xoch/install.sh` - Installation script
-- `~/.context/current.md` - Active task tracker (in projects using Xoch)
-- `~/.context/[task-id]/*` - Feature context files (in projects using Xoch)
+- `~/.xoch/current.md` - Active task tracker (in projects using Xoch)
+- `~/.xoch/[task-id]/*` - Feature context files (in projects using Xoch)

@@ -142,7 +142,7 @@ The README accurately describes:
 
 No discrepancies found.
 
-✅ Context directory created: .context/authentication/
+✅ Context directory created: .xoch/authentication/
 
 Ready to proceed with #xoch-spec
 ```

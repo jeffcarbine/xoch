@@ -17,7 +17,7 @@ When engineers discover new requirements or complexities while working on a feat
 
 ### Step 1: Auto-Detect Current Task
 
-Read `.context/current.md` to identify:
+Read `.xoch/current.md` to identify:
 - task ID
 - Feature name
 - Feature README path
@@ -33,7 +33,7 @@ Wait for response and locate the context directory.
 
 ### Step 2: Read Current Milestone Status
 
-Read `.context/[task-id]/milestones.md`
+Read `.xoch/[task-id]/milestones.md`
 
 Identify:
 - How many total milestones exist
@@ -59,16 +59,16 @@ Found 4 milestones:
 **Before reading context files** to understand the current plan:
 
 #### Files to read:
-- `.context/[task-id]/spec.md` - Original requirements
-- `.context/[task-id]/plan.md` - Original architecture
-- `.context/[task-id]/milestone-N.md` - Any completed milestone snapshots
+- `.xoch/[task-id]/spec.md` - Original requirements
+- `.xoch/[task-id]/plan.md` - Original architecture
+- `.xoch/[task-id]/milestone-N.md` - Any completed milestone snapshots
 
 #### Process:
 
 1. **Estimate token cost:**
    
    ```bash
-   bin/tokenEstimator.sh --batch .context/[task-id]/spec.md .context/[task-id]/plan.md ...
+   bin/tokenEstimator.sh --batch .xoch/[task-id]/spec.md .xoch/[task-id]/plan.md ...
    ```
 
 2. **Check against budget:**
@@ -97,9 +97,9 @@ Found 4 milestones:
 ### Step 3: Read Existing Context
 
 Read these files to understand the original plan:
-- `.context/[task-id]/spec.md` - Original requirements
-- `.context/[task-id]/plan.md` - Original architectural approach and milestone structure
-- `.context/[task-id]/milestone-N.md` - Any completed milestone snapshots
+- `.xoch/[task-id]/spec.md` - Original requirements
+- `.xoch/[task-id]/plan.md` - Original architectural approach and milestone structure
+- `.xoch/[task-id]/milestone-N.md` - Any completed milestone snapshots
 
 Understand what was originally planned and what's been accomplished.
 
@@ -259,7 +259,7 @@ Continue iterating until engineer approves.
 
 ### Step 8: Update Milestones File
 
-Once approved, update `.context/[task-id]/milestones.md`:
+Once approved, update `.xoch/[task-id]/milestones.md`:
 
 1. **Preserve completed milestones** - Keep their full descriptions intact
 2. **Update current milestone** - If modified
@@ -353,7 +353,7 @@ What to implement:
 
 ### Step 9: Create Replan Record
 
-Create `.context/[task-id]/replan-[date].md` to document why the plan changed:
+Create `.xoch/[task-id]/replan-[date].md` to document why the plan changed:
 
 ```markdown
 # Replan - [Date]
@@ -441,8 +441,8 @@ NEW MILESTONES ADDED:
 - Milestone [N+2]: [Title]
 
 FILES UPDATED:
-- .context/[task-id]/milestones.md (updated structure)
-- .context/[task-id]/replan-[date].md (replan record)
+- .xoch/[task-id]/milestones.md (updated structure)
+- .xoch/[task-id]/replan-[date].md (replan record)
 
 ---
 
@@ -593,8 +593,8 @@ NEW MILESTONES ADDED:
 - Milestone 6: Frontend and admin message display
 
 FILES UPDATED:
-- .context/payment-fix/milestones.md (updated structure)
-- .context/payment-fix/replan-2026-05-26.md (replan record)
+- .xoch/payment-fix/milestones.md (updated structure)
+- .xoch/payment-fix/replan-2026-05-26.md (replan record)
 
 NEXT STEPS:
 1. Continue working on Milestone 4 (backend testing + API prep)

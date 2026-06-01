@@ -1,5 +1,5 @@
 # Xoch context files (developer workspace state)
-.context/
+.xoch/
 
 # Node modules (if testing)
 node_modules/

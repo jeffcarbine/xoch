@@ -34,11 +34,11 @@ Core development workflow for implementing features:
 
 | Prompt | Purpose | Output |
 |--------|---------|--------|
-| **spec** | Capture requirements | `.context/current.md`, `spec.md` |
+| **spec** | Capture requirements | `.xoch/current.md`, `spec.md` |
 | **plan** | Architect solution + milestones | `plan.md`, `milestones.md` |
 | **start** | Begin milestone work | - |
 | **advance** | Complete milestone, move to next | `milestone-N.md`, updated READMEs |
-| **finalize** | Archive completed work | `.context/archive/[task-id]-YYYY-MM-DD/` |
+| **finalize** | Archive completed work | `.xoch/archive/[task-id]-YYYY-MM-DD/` |
 | **merge** | Resolve README conflicts | Merged README.md |
 
 **Flow:**
@@ -143,8 +143,8 @@ Handle special situations anytime:
 6. Token budget check before reading files (5,000 limit)
 
 **Creates:**
-- `.context/current.md` - Active task tracker
-- `.context/[task-id]/spec.md` - Requirements document
+- `.xoch/current.md` - Active task tracker
+- `.xoch/[task-id]/spec.md` - Requirements document
 
 **Features:**
 - Token tracking to prevent context overflow
@@ -166,8 +166,8 @@ Handle special situations anytime:
 6. Estimates complexity
 
 **Creates:**
-- `.context/[task-id]/plan.md` - Architecture approach
-- `.context/[task-id]/milestones.md` - Milestone tracker
+- `.xoch/[task-id]/plan.md` - Architecture approach
+- `.xoch/[task-id]/milestones.md` - Milestone tracker
 
 **Milestone structure:**
 - Clear, testable deliverables
@@ -251,8 +251,8 @@ Handle special situations anytime:
 1. Loads project glossaries
 2. Verifies READMEs are current (should be updated by final advance)
 3. **Suggests new glossary terms** based on completed work (if glossaries exist)
-4. Archives context to `.context/archive/[task-id]-YYYY-MM-DD/`
-5. Clears `.context/current.md`
+4. Archives context to `.xoch/archive/[task-id]-YYYY-MM-DD/`
+5. Clears `.xoch/current.md`
 
 **Glossary suggestions:**
 - Analyzes milestones for domain-specific terms
@@ -294,7 +294,7 @@ Handle special situations anytime:
 **Process:**
 1. Shows task status
 2. Confirms pause
-3. Removes `.context/current.md`
+3. Removes `.xoch/current.md`
 4. Preserves all task files
 
 **Preserved:**
@@ -316,7 +316,7 @@ Handle special situations anytime:
 2. Lists available paused/archived tasks
 3. Asks which to resume (or uses provided task-id)
 4. Restores from archive if needed
-5. Recreates `.context/current.md`
+5. Recreates `.xoch/current.md`
 6. Shows task summary and next steps
 
 **Use when:**
@@ -326,8 +326,8 @@ Handle special situations anytime:
 
 **Task states:**
 - **Active**: Entry in `current.md`
-- **Paused**: Directory in `.context/[task-id]/`
-- **Archived**: Directory in `.context/archive/[task-id]-[date]/`
+- **Paused**: Directory in `.xoch/[task-id]/`
+- **Archived**: Directory in `.xoch/archive/[task-id]-[date]/`
 
 ---
 
@@ -425,8 +425,8 @@ Switch between tasks with `#xoch-pause` and `#xoch-resume`.
 
 **States:**
 - **Active**: Entry in `current.md`
-- **Paused**: Directory in `.context/[task-id]/`
-- **Archived**: Directory in `.context/archive/[task-id]-[date]/`
+- **Paused**: Directory in `.xoch/[task-id]/`
+- **Archived**: Directory in `.xoch/archive/[task-id]-[date]/`
 
 **Example:**
 ```bash

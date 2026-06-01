@@ -25,7 +25,7 @@ Provide context about what they're working on, then help with whatever they need
 
 ### Step 1: Auto-Detect Current Task
 
-Read `.context/current.md` to identify:
+Read `.xoch/current.md` to identify:
 - task ID
 - Feature name
 - Feature README path
@@ -42,9 +42,9 @@ Then skip to Step 4.
 ### Step 2: Read Current Milestone Context
 
 If task is active, read:
-- `.context/[task-id]/spec.md` - What you're building
-- `.context/[task-id]/plan.md` - How you're building it
-- `.context/[task-id]/milestones.md` - Current progress
+- `.xoch/[task-id]/spec.md` - What you're building
+- `.xoch/[task-id]/plan.md` - How you're building it
+- `.xoch/[task-id]/milestones.md` - Current progress
 
 Identify:
 - Current milestone number and title

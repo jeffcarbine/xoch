@@ -41,7 +41,7 @@ Gather the specification details, create a task identifier, and analyze what wil
 ---
 1.5: Check for Investigation Findings
 
-Check if `.context/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
+Check if `.xoch/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
 
 **If investigation.md EXISTS:**
 - Read the investigation findings
@@ -244,8 +244,8 @@ Ask the engineer:
 
 Once the specification is complete and clear:
 
-1. Create `.context/[task-id]/` directory
-2. Create `.context/current.md` containing:
+1. Create `.xoch/[task-id]/` directory
+2. Create `.xoch/current.md` containing:
 
 ```markdown
 # Current Task
@@ -256,7 +256,7 @@ Once the specification is complete and clear:
 **Started**: [Current Date]
 ```
 
-3. Create `.context/[task-id]/spec.md` containing:
+3. Create `.xoch/[task-id]/spec.md` containing:
 
 ```markdown
 # Specification - [task-id]
@@ -308,7 +308,7 @@ Confirm to the engineer:
 ✅ Specification captured!
 
 Task ID: [task-id]
-Context: .context/[task-id]/
+Context: .xoch/[task-id]/
 Current task set: [task-id]
 
 Changes: [brief summary]
@@ -382,7 +382,7 @@ Impact Assessment:
 
 **Agent**:
 ```
-✅ Specification captured: .context/auth-oauth/spec.md
+✅ Specification captured: .xoch/auth-oauth/spec.md
 
 Task ID: auth-oauth
 Changes: Add OAuth2 (Google, GitHub), multi-provider support

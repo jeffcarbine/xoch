@@ -51,7 +51,7 @@ Review completed work against milestone requirements, get engineer confirmation,
 
 ### Step 1: Identify Current Task
 
-First, try to read `.context/current.md` to get the current task:
+First, try to read `.xoch/current.md` to get the current task:
 
 If file exists and contains a Task ID:
 - Use that Task ID automatically
@@ -67,9 +67,9 @@ If file doesn't exist or is unclear:
 
 Once Task ID is confirmed, read:
 
-1. `.context/[task-id]/spec.md` - Overall requirements
-2. `.context/[task-id]/plan.md` - Implementation approach
-3. `.context/[task-id]/milestones.md` - Milestone tracker (to find current milestone)
+1. `.xoch/[task-id]/spec.md` - Overall requirements
+2. `.xoch/[task-id]/plan.md` - Implementation approach
+3. `.xoch/[task-id]/milestones.md` - Milestone tracker (to find current milestone)
 
 ---
 
@@ -317,7 +317,7 @@ Stop here. Do not proceed with snapshot or advancement.
 
 ### Step 9: If Engineer Says "Yes" - Create Snapshot
 
-Create `.context/[task-id]/milestone-[N].md`:
+Create `.xoch/[task-id]/milestone-[N].md`:
 
 ```markdown
 # Milestone [N] - [Title]
@@ -391,7 +391,7 @@ Create `.context/[task-id]/milestone-[N].md`:
 
 ### Step 10: Update Milestones Tracker
 
-Update `.context/[task-id]/milestones.md`:
+Update `.xoch/[task-id]/milestones.md`:
 
 1. Change milestone N status from "In Progress" to "Complete"
 2. Add completion checkmark: `**Status**: ✅ Complete`

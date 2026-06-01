@@ -45,7 +45,7 @@ This approach ensures consistency, gathers all necessary context, and guides eng
 ```
 application/
 ├── README.md                              # Project-level specification
-├── .context/                              # Working context (gitignored)
+├── .xoch/                              # Working context (gitignored)
 │   ├── current.md                         # Current active task (Task ID)
 │   ├── user-auth/                        # Active task context (by Task ID)
 │   │   ├── validate.md                    # Validation findings
@@ -97,7 +97,7 @@ Xoch uses task IDs (e.g., `IE-1285`) as the primary identifier for tasks. This p
 
 ### Current Task File
 
-`.context/current.md` tracks the active task:
+`.xoch/current.md` tracks the active task:
 
 ```markdown
 # Current Task
@@ -115,7 +115,7 @@ Xoch uses task IDs (e.g., `IE-1285`) as the primary identifier for tasks. This p
 - Supports switching between multiple tasks
 
 **Prompt Behavior:**
-1. Read `.context/current.md` to get Task ID
+1. Read `.xoch/current.md` to get Task ID
 2. If found and valid, use that task context automatically
 3. If not found or unclear, ask engineer for Task ID
 4. Continue with identified task
@@ -316,8 +316,8 @@ Xoch supports working on multiple tasks simultaneously through pause/resume func
 **Process:**
 1. Shows current task status and progress
 2. Confirms with engineer
-3. Removes `.context/current.md` (clears active context)
-4. Preserves all task files in `.context/[task-id]/`
+3. Removes `.xoch/current.md` (clears active context)
+4. Preserves all task files in `.xoch/[task-id]/`
 
 **What's preserved:**
 - All specifications and requirements
@@ -332,23 +332,23 @@ Xoch supports working on multiple tasks simultaneously through pause/resume func
 
 **Process:**
 1. Checks for existing active task (must pause first if exists)
-2. Scans for paused tasks (`.context/*/`) and archived tasks (`.context/archive/*/`)
+2. Scans for paused tasks (`.xoch/*/`) and archived tasks (`.xoch/archive/*/`)
 3. Lists available tasks or uses provided task ID
 4. Restores archived task if needed (moves from archive)
-5. Recreates `.context/current.md` with selected task
+5. Recreates `.xoch/current.md` with selected task
 6. Shows task summary (spec, progress, next milestone)
 7. Guides engineer on next action
 
 **Task states:**
-- **Active**: Has entry in `.context/current.md`
-- **Paused**: Directory exists in `.context/[task-id]/`, no `current.md`
-- **Archived**: Directory in `.context/archive/[task-id]-[date]/`
+- **Active**: Has entry in `.xoch/current.md`
+- **Paused**: Directory exists in `.xoch/[task-id]/`, no `current.md`
+- **Archived**: Directory in `.xoch/archive/[task-id]-[date]/`
 
 ### Multiple Parallel Tasks
 
 You can have many tasks paused simultaneously:
 ```
-.context/
+.xoch/
 ├── current.md                     # Points to feature-a (active)
 ├── feature-a/                     # Active work
 ├── feature-b/                     # Paused
@@ -468,8 +468,8 @@ Context directory will be created in the spec phase once Task ID is known.
 9. Agent stores all information in context
 
 **Outputs**:
-- `.context/current.md` - Tracks current active task (Task ID + feature info)
-- `.context/[task-id]/spec.md` containing:
+- `.xoch/current.md` - Tracks current active task (Task ID + feature info)
+- `.xoch/[task-id]/spec.md` containing:
   - task URL and ID
   - Full specification
   - Analysis of changes vs. current state
@@ -502,13 +502,13 @@ All subsequent prompts will read `current.md` to identify the active task automa
 8. Agent creates formal plan document with approved milestones
 
 **Outputs**:
-- `.context/[task-id]/plan.md` containing:
+- `.xoch/[task-id]/plan.md` containing:
   - Architectural approach
   - Files to be modified/created
   - Implementation strategy
   - Potential risks identified
   - Engineer's final approved approach
-- `.context/[task-id]/milestones.md` tracking file:
+- `.xoch/[task-id]/milestones.md` tracking file:
   - List of all milestones
   - Current milestone indicator
   - Status for each (Not Started / In Progress / Complete)
@@ -546,8 +546,8 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process**:
 1. Engineer invokes the `start` prompt
-2. Agent reads `.context/current.md` to identify the task (Task ID)
-3. Agent reads `.context/[task-id]/milestones.md`
+2. Agent reads `.xoch/current.md` to identify the task (Task ID)
+3. Agent reads `.xoch/[task-id]/milestones.md`
 4. Agent identifies current milestone (first "In Progress" or "Not Started")
 5. Agent provides detailed summary:
    - What needs to be implemented
@@ -588,7 +588,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
    - **If no**: Engineer can continue working, invoke `advance` again later
    - **If yes**: Agent proceeds
 8. Agent creates milestone snapshot and advances:
-   - Creates `.context/[feature-name]/milestone-N.md` with:
+   - Creates `.xoch/[feature-name]/milestone-N.md` with:
      - What was implemented
      - Key decisions made
      - Git commit references
@@ -601,7 +601,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
    - **If all milestones complete**: Confirms all work done, ready for final review
 
 **Outputs**:
-- `.context/[task-id]/milestone-N.md` (snapshot of completed work)
+- `.xoch/[task-id]/milestone-N.md` (snapshot of completed work)
 - Updated `milestones.md` with progress
 - Explanation of next milestone (if any)
 
@@ -624,7 +624,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process**:
 1. Engineer invokes the `sidebar` prompt (can be used anytime during development)
-2. Agent reads `.context/current.md` and milestone context
+2. Agent reads `.xoch/current.md` and milestone context
 3. Agent provides summary of current work state:
    - What task you're on
    - Current milestone and progress
@@ -668,7 +668,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process** (Interactive):
 1. Engineer invokes the `replan` prompt
-2. Agent reads `.context/current.md` to identify task
+2. Agent reads `.xoch/current.md` to identify task
 3. Agent reads `milestones.md` to understand current progress:
    - Which milestones are complete
    - Current milestone position
@@ -691,15 +691,15 @@ All subsequent prompts will read `current.md` to identify the active task automa
 10. Engineer reviews and either approves or requests modifications
 11. Agent iterates until engineer approves
 12. Agent updates `milestones.md` with new structure
-13. Agent creates `.context/[task-id]/replan-[date].md` documenting:
+13. Agent creates `.xoch/[task-id]/replan-[date].md` documenting:
     - Why replan occurred
     - What changed
     - Before/after milestone structures
     - Impact assessment
 
 **Outputs**:
-- Updated `.context/[task-id]/milestones.md` with new milestone structure
-- `.context/[task-id]/replan-[date].md` documenting the changes
+- Updated `.xoch/[task-id]/milestones.md` with new milestone structure
+- `.xoch/[task-id]/replan-[date].md` documenting the changes
 - Clear path forward with adjusted plan
 
 **Post-Replan**: Continue using `advance` normally with the updated milestone structure. Can replan again if more requirements emerge.
@@ -731,14 +731,14 @@ All subsequent prompts will read `current.md` to identify the active task automa
 6. Engineer reviews and either approves or provides feedback
 7. Agent revises if needed, then commits README updates to branch
 8. **Archive context**: Agent asks: "Ready to archive this context? (You can delete it later if desired)"
-9. If yes, agent moves `.context/[feature-name]/` to `.context/archive/[feature-name]-YYYY-MM-DD/`
+9. If yes, agent moves `.xoch/[feature-name]/` to `.xoch/archive/[feature-name]-YYYY-MM-DD/`
 
 **Outputs**:
 - Updated feature README.md
 - Updated project README.md (if necessary)
-- `.context/archive/[task-id]-YYYY-MM-DD/` (archived for reference)
-- `.context/current.md` cleared (task complete)
-- Clean `.context/` directory ready for next task
+- `.xoch/archive/[task-id]-YYYY-MM-DD/` (archived for reference)
+- `.xoch/current.md` cleared (task complete)
+- Clean `.xoch/` directory ready for next task
 
 **Timing**: README updates and context archiving happen AFTER all milestones complete, BEFORE merge to master.
 
@@ -772,9 +772,9 @@ All subsequent prompts will read `current.md` to identify the active task automa
 ### Context Handoff Between Engineers
 
 **Process**:
-1. New engineer reads `.context/current.md` to identify the active task
+1. New engineer reads `.xoch/current.md` to identify the active task
 2. New engineer reads feature README.md (current state)
-3. New engineer reads `.context/[task-id]/milestones.md` (current progress)
+3. New engineer reads `.xoch/[task-id]/milestones.md` (current progress)
 4. New engineer reads latest completed milestone snapshot (e.g., `milestone-2.md`)
 5. New engineer understands:
    - What the feature currently does
@@ -788,7 +788,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 ### Abandoned Work / Reverted Changes
 
 **Process**:
-- If work is abandoned before merge: Delete `.context/[task-id]/` directory and clear `current.md`
+- If work is abandoned before merge: Delete `.xoch/[task-id]/` directory and clear `current.md`
 - README never updated, so no cleanup needed
 - If work is merged then reverted: Create new ticket to update feature to new state
 - No special rollback mechanism - Git handles code, new work handles README updates
@@ -805,7 +805,7 @@ Optional configuration file to define project-specific conventions:
 {
   "projectReadme": "README.md",
   "featureReadmePattern": "**/README.md",
-  "contextDirectory": ".context",
+  "contextDirectory": ".xoch",
   "taskBaseUrl": "https://your-issue-tracker.com/tasks/",
   "prompts": {
     "validate": ".xoch/prompts/validate.md",
@@ -859,12 +859,12 @@ To ensure this system works with any AI agent (GitHub Copilot, Cursor, Aider, et
 
 **`.gitignore` additions**:
 ```
-.context/
+.xoch/
 .xoch-local
 ```
 
 **Workflow**:
-- `.context/` is never committed (working space only)
+- `.xoch/` is never committed (working space only)
 - README updates are committed to feature branch
 - README updates merge with code changes
 - Conflicts handled via standard git merge + `merge` prompt
@@ -919,9 +919,9 @@ To ensure this system works with any AI agent (GitHub Copilot, Cursor, Aider, et
 8. merge (resolve README conflicts if needed)
 
 **Context Lifecycle**:
-- `.context/current.md` - Identifies active task by Task ID
-- `.context/[task-id]/` - Active work directory (named by Task ID)
-- `.context/archive/[task-id]-YYYY-MM-DD/` - Historical reference after merge
+- `.xoch/current.md` - Identifies active task by Task ID
+- `.xoch/[task-id]/` - Active work directory (named by Task ID)
+- `.xoch/archive/[task-id]-YYYY-MM-DD/` - Historical reference after merge
 - Archives can be manually deleted anytime by engineer
 
 ---
