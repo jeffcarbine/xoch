@@ -42,12 +42,12 @@ The installer will:
 
 In VS Code or Cursor:
 ```
-#xoch-test-hello
+#xoch-meow
 ```
 
 In Codex:
 ```
-$xoch-test-hello
+$xoch-meow
 ```
 
 You should see a test greeting confirming the installation.

@@ -104,7 +104,7 @@ Main Workflow:
   • merge.md - Resolve README conflicts
 
 Utilities:
-  • test-hello.md - Installation test
+  • meow.md - Installation test
   • mod.md - This prompt (modify Xoch)
 ```
 

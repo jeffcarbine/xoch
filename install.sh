@@ -29,6 +29,64 @@ PROMPT_COUNT=$(find "$PROMPTS_DIR" -name "*.md" -type f | wc -l | tr -d ' ')
 echo "Found $PROMPT_COUNT prompt(s) to install"
 echo ""
 
+# Clean up orphaned Copilot prompts
+cleanup_copilot() {
+    COPILOT_DIR="$HOME/Library/Application Support/Code/User/prompts"
+    
+    if [ ! -d "$COPILOT_DIR" ]; then
+        return
+    fi
+    
+    local removed=0
+    
+    for installed in "$COPILOT_DIR"/xoch-*.prompt.md; do
+        if [ -f "$installed" ] || [ -L "$installed" ]; then
+            # Extract the prompt name (e.g., xoch-meow.prompt.md → meow)
+            installed_name=$(basename "$installed" .prompt.md | sed 's/^xoch-//')
+            
+            # Check if source file exists
+            if [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+                rm "$installed"
+                echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
+                removed=$((removed + 1))
+            fi
+        fi
+    done
+    
+    if [ $removed -gt 0 ]; then
+        echo ""
+    fi
+}
+
+# Clean up orphaned Codex skills
+cleanup_codex() {
+    CODEX_DIR="$HOME/.codex/skills"
+    
+    if [ ! -d "$CODEX_DIR" ]; then
+        return
+    fi
+    
+    local removed=0
+    
+    for installed in "$CODEX_DIR"/xoch-*; do
+        if [ -d "$installed" ]; then
+            # Extract the skill name (e.g., xoch-meow → meow)
+            installed_name=$(basename "$installed" | sed 's/^xoch-//')
+            
+            # Check if source file exists
+            if [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+                rm -rf "$installed"
+                echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
+                removed=$((removed + 1))
+            fi
+        fi
+    done
+    
+    if [ $removed -gt 0 ]; then
+        echo ""
+    fi
+}
+
 # Install for GitHub Copilot (VS Code)
 install_copilot() {
     COPILOT_DIR="$HOME/Library/Application Support/Code/User/prompts"
@@ -99,6 +157,8 @@ EOF
 
 # Main installation
 echo ""
+cleanup_copilot
+cleanup_codex
 install_copilot
 echo ""
 install_codex
@@ -107,8 +167,8 @@ echo ""
 echo -e "${GREEN}Installation complete!${NC}"
 echo ""
 echo "Usage:"
-echo "  GitHub Copilot: Type #xoch-test-hello in chat"
-echo "  Codex: Type \$xoch-test-hello in chat"
-echo "  Cursor: Type #xoch-test-hello in chat (uses VS Code prompts)"
+echo "  GitHub Copilot: Type #xoch-meow in chat"
+echo "  Codex: Type \$xoch-meow in chat"
+echo "  Cursor: Type #xoch-meow in chat (uses VS Code prompts)"
 echo ""
 echo "Note: You may need to restart VS Code or Codex for changes to take effect."

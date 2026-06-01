@@ -67,7 +67,7 @@ Handle special situations anytime:
 | Prompt | Purpose |
 |--------|---------|
 | **mod** | Modify Xoch itself (create/update prompts) |
-| **test-hello** | Verify Xoch installation |
+| **meow** | Verify Xoch installation |
 
 ---
 
@@ -365,9 +365,9 @@ Handle special situations anytime:
 
 ---
 
-### test-hello
+### meow
 
-**Purpose**: Verify Xoch installation.
+**Purpose**: Verify Xoch installation (named after Xoch the cat!).
 
 **Output:** Test greeting confirming prompts are accessible.
 
