@@ -560,6 +560,39 @@ If you have other features to document:
 
 ---
 
+### Final Step: Check .gitignore Configuration
+
+After documenting the feature, verify that `.gitignore` is properly configured for Xoch:
+
+1. **Check if `.gitignore` exists** in project root
+
+2. **Look for `.xoch` patterns** in the file
+
+**If `.gitignore` exists and has `.xoch` pattern:**
+- Do nothing (already configured)
+
+**If `.gitignore` doesn't exist OR doesn't have `.xoch` pattern:**
+
+Ask the engineer:
+
+**"I notice your `.gitignore` isn't configured for Xoch yet. How would you like to handle .xoch files?**
+
+**Options:**
+
+1. **Solo development** - Ignore everything (`.xoch/`)
+2. **Share glossaries only** - Ignore context (`.xoch/context/`)  
+3. **Share glossaries + context** - Enable task handoff (`.xoch/context/current.md`)
+
+**What's your workflow?"**
+
+Wait for their choice, then update `.gitignore` following the same process as Step 12 in `init-app.md`:
+
+- Add the appropriate pattern based on their choice
+- Create `.gitignore` if it doesn't exist
+- Confirm the configuration
+
+---
+
 ## Important Notes
 
 - **Be specific about behavior** - Don't just list functions, explain what they do

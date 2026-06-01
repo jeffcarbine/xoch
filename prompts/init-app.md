@@ -572,6 +572,111 @@ No problem! You can create glossaries later with `#xoch-glossary` whenever neede
 
 ---
 
+### Step 12: Configure .gitignore for .xoch Workflow
+
+After setting up the project, ask the engineer about their workflow preference:
+
+**"How would you like to handle .xoch files in version control?**
+
+**Options:**
+
+1. **Solo development (default)** - Ignore everything in `.xoch/`
+   - Best for: Individual developers, personal projects
+   - Pattern: `.xoch/`
+   
+2. **Share glossaries only** - Ignore context, commit glossaries
+   - Best for: Teams wanting shared terminology without task handoff
+   - Pattern: `.xoch/context/`
+   
+3. **Share glossaries + context folders** - Enable task handoff
+   - Best for: Teams that need to hand off tasks between engineers
+   - Pattern: `.xoch/context/current.md`
+   
+**What's your workflow?"**
+
+Wait for their choice.
+
+---
+
+#### Process gitignore update:
+
+1. **Check if `.gitignore` exists** in project root
+
+2. **If `.gitignore` exists:**
+   - Read existing `.gitignore` content
+   - Check if `.xoch` patterns already exist
+   - If `.xoch` patterns found, remove them (we'll replace with new pattern)
+
+3. **If `.gitignore` doesn't exist:**
+   - Will create new `.gitignore` file
+
+4. **Add the appropriate pattern** based on user's choice:
+
+**For Option 1 (Solo development):**
+```bash
+# Add to .gitignore:
+# Xoch workspace (solo development)
+.xoch/
+```
+
+**For Option 2 (Share glossaries):**
+```bash
+# Add to .gitignore:
+# Xoch context (share glossaries only)
+.xoch/context/
+```
+
+**For Option 3 (Share glossaries + context):**
+```bash
+# Add to .gitignore:
+# Xoch active task pointer (share glossaries and context folders)
+.xoch/context/current.md
+```
+
+5. **Write/update the `.gitignore` file**
+
+6. **Confirm to engineer:**
+
+For Option 1:
+```
+✅ .gitignore updated!
+
+Pattern added: .xoch/
+Behavior: All Xoch files are local (not committed)
+
+Your .xoch/ directory is now gitignored for solo development.
+```
+
+For Option 2:
+```
+✅ .gitignore updated!
+
+Pattern added: .xoch/context/
+Behavior: Glossaries are committed, context folders are local
+
+Your team can share terminology while keeping task context private.
+
+To share glossaries with your team:
+git add .xoch/glossaries/
+git commit -m "docs: add project glossaries"
+```
+
+For Option 3:
+```
+✅ .gitignore updated!
+
+Pattern added: .xoch/context/current.md
+Behavior: Glossaries and context folders are committed, active task pointer is local
+
+Your team can hand off tasks by sharing context folders:
+git add .xoch/
+git commit -m "docs: add glossaries and task context"
+
+Each engineer will have their own active task in .xoch/context/current.md (not committed).
+```
+
+---
+
 ## Important Notes
 
 - **Be thorough but concise** - Don't create unnecessary bloat
