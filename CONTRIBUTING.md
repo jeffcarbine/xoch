@@ -126,7 +126,7 @@ All Xoch prompts should follow these patterns:
 ```markdown
 ### Step 1: Auto-Detect Current Task
 
-Read `.xoch/current.md` to identify:
+Read `.xoch/context/current.md` to identify:
 - task ID
 - Feature name
 - Feature README path
@@ -141,7 +141,7 @@ Get information from context files when possible. Don't re-ask for things alread
 
 **✅ Good:**
 ```markdown
-Read `.xoch/[task-id]/spec.md` to get the Task URL
+Read `.xoch/context/[task-id]/spec.md` to get the Task URL
 ```
 
 **❌ Bad:**
@@ -182,7 +182,7 @@ Engineer always has final say:
 Create `.md` files in the context directory:
 
 ```markdown
-Create `.xoch/[task-id]/[artifact].md` containing:
+Create `.xoch/context/[task-id]/[artifact].md` containing:
 [Content structure]
 ```
 
@@ -216,18 +216,18 @@ Use four dashes and indentation for copyable blocks:
 
 | File | Purpose | Created By | Modified By |
 |------|---------|-----------|-------------|
-| `.xoch/current.md` | Track active task | `spec` | `finalize` (clears) |
-| `.xoch/[task-id]/spec.md` | Requirements | `spec` | - |
-| `.xoch/[task-id]/plan.md` | Architecture | `plan` | - |
-| `.xoch/[task-id]/milestones.md` | Tracker | `plan` | `advance`, `replan` |
-| `.xoch/[task-id]/milestone-N.md` | Snapshot | `advance` | - |
-| `.xoch/[task-id]/replan-DATE.md` | Replan record | `replan` | - |
-| `.xoch/archive/[task-id]-DATE/` | Archived | `finalize` | - |
+| `.xoch/context/current.md` | Track active task | `spec` | `finalize` (clears) |
+| `.xoch/context/[task-id]/spec.md` | Requirements | `spec` | - |
+| `.xoch/context/[task-id]/plan.md` | Architecture | `plan` | - |
+| `.xoch/context/[task-id]/milestones.md` | Tracker | `plan` | `advance`, `replan` |
+| `.xoch/context/[task-id]/milestone-N.md` | Snapshot | `advance` | - |
+| `.xoch/context/[task-id]/replan-DATE.md` | Replan record | `replan` | - |
+| `.xoch/context/archive/[task-id]-DATE/` | Archived | `finalize` | - |
 
 ### Naming Conventions
 
 - **Prompt files**: `[name].md` → becomes `xoch-[name]`
-- **Context directory**: `.xoch/[task-id]/`
+- **Context directory**: `.xoch/context/[task-id]/`
 - **Task ID**: Extracted from URL between `/browse/` and `?`
 - **Date format**: `YYYY-MM-DD` for archives and replan records
 - **Milestone files**: `milestone-[N].md` where N is 1-indexed
@@ -288,7 +288,7 @@ Analyze the output:
 ### Reading Context Files
 
 ```markdown
-Read `.xoch/[task-id]/milestones.md`
+Read `.xoch/context/[task-id]/milestones.md`
 
 Identify:
 - Current milestone number
@@ -299,7 +299,7 @@ Identify:
 ### Creating Files
 
 ```markdown
-Create `.xoch/[task-id]/[filename].md`:
+Create `.xoch/context/[task-id]/[filename].md`:
 
 \`\`\`markdown
 # [Title]

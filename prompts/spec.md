@@ -20,12 +20,12 @@ Gather the specification details, create a task identifier, and analyze what wil
 **Before gathering the specification**, check if the project has terminology glossaries:
 
 **Look for glossaries at project root:**
-- Check if `./glossaries/` directory exists
-- If exists, check for `./glossaries/README.md`
+- Check if `.xoch/glossaries/` directory exists
+- If exists, check for `.xoch/glossaries/README.md`
 
 **If glossaries found:**
-1. Read `glossaries/README.md` to understand what each glossary covers
-2. Read `glossaries/quick-reference.md` if it exists (core terminology - always read)
+1. Read `.xoch/glossaries/README.md` to understand what each glossary covers
+2. Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology - always read)
 3. Note other available glossaries for potential reference during requirement gathering
 
 **Use glossaries when gathering/clarifying requirements:**
@@ -41,7 +41,7 @@ Gather the specification details, create a task identifier, and analyze what wil
 ---
 1.5: Check for Investigation Findings
 
-Check if `.xoch/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
+Check if `.xoch/context/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
 
 **If investigation.md EXISTS:**
 - Read the investigation findings
@@ -58,23 +58,31 @@ Check if `.xoch/[task-id]/investigation.md` exists (from a previous `#xoch-inves
 
 Ask the engineer:
 
-**"What identifier would you like to use for this task? This will be used for context file organization."**
+**"What identifier would you like to use for this task? (Leave blank to auto-generate)"**
 
 Examples:
 - Feature name: `user-authentication`
 - Bug ID: `bug-404`
 - Issue tracker reference: `PROJ-123`
 - Descriptive name: `add-dark-mode`
+- **Leave blank**: Auto-generates unique ID like `myproject-20260601-1430-a8k2`
 
-Wait for their response. This Task ID will be used as the identifier for all context files.
+Wait for their response.
 
-Validate the Task ID:
-- Should be lowercase
-- Use hyphens instead of spaces
-- No special characters except hyphens
-- Short and descriptive
+**If they provide an ID**, validate and clean it:
+```bash
+bin/generateTaskId.sh --id "[their-provided-id]"
+```
 
-If the provided ID doesn't meet these criteria, suggest a normalized version.
+**If they don't provide an ID**, auto-generate one:
+```bash
+bin/generateTaskId.sh
+```
+
+The tool will:
+- Clean user-provided IDs (lowercase, replace special chars with hyphens)
+- Auto-generate unique timestamp-based IDs (format: `projectname-YYYYMMDD-HHMM-xxxx`)
+- Ensure no collisions when sharing context folders across team
 
 **If investigation.md exists,** say:
 
@@ -244,8 +252,8 @@ Ask the engineer:
 
 Once the specification is complete and clear:
 
-1. Create `.xoch/[task-id]/` directory
-2. Create `.xoch/current.md` containing:
+1. Create `.xoch/context/[task-id]/` directory
+2. Create `.xoch/context/current.md` containing:
 
 ```markdown
 # Current Task
@@ -256,7 +264,7 @@ Once the specification is complete and clear:
 **Started**: [Current Date]
 ```
 
-3. Create `.xoch/[task-id]/spec.md` containing:
+3. Create `.xoch/context/[task-id]/spec.md` containing:
 
 ```markdown
 # Specification - [task-id]
@@ -308,7 +316,7 @@ Confirm to the engineer:
 ✅ Specification captured!
 
 Task ID: [task-id]
-Context: .xoch/[task-id]/
+Context: .xoch/context/[task-id]/
 Current task set: [task-id]
 
 Changes: [brief summary]
@@ -382,7 +390,7 @@ Impact Assessment:
 
 **Agent**:
 ```
-✅ Specification captured: .xoch/auth-oauth/spec.md
+✅ Specification captured: .xoch/context/auth-oauth/spec.md
 
 Task ID: auth-oauth
 Changes: Add OAuth2 (Google, GitHub), multi-provider support

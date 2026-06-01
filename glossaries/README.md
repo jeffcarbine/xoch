@@ -98,7 +98,7 @@ This prompt helps you:
 
 ### Option 3: Manual creation
 
-1. Create `glossaries/quick-reference.md` first (core terms)
+1. Create `.xoch/glossaries/quick-reference.md` first (core terms)
 2. Add domain-specific glossaries as needed
 3. Update this README with your glossary index
 

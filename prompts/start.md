@@ -17,7 +17,7 @@ Provide clear context on the current milestone and offer to implement it or guid
 
 ### Step 1: Identify Current Task
 
-First, try to read `.xoch/current.md` to get the current task:
+First, try to read `.xoch/context/current.md` to get the current task:
 
 If file exists and contains a Task ID:
 - Use that Task ID automatically
@@ -33,9 +33,9 @@ If file doesn't exist or is unclear:
 
 Once Task ID is confirmed, read:
 
-1. `.xoch/[task-id]/spec.md` - What needs to be built (requirements)
-2. `.xoch/[task-id]/plan.md` - Overall implementation approach
-3. `.xoch/[task-id]/milestones.md` - Milestone breakdown and current status
+1. `.xoch/context/[task-id]/spec.md` - What needs to be built (requirements)
+2. `.xoch/context/[task-id]/plan.md` - Overall implementation approach
+3. `.xoch/context/[task-id]/milestones.md` - Milestone breakdown and current status
 
 ---
 
@@ -162,7 +162,7 @@ Wait for their response.
 
 Before proceeding with implementation:
 
-Update `.xoch/[task-id]/milestones.md`:
+Update `.xoch/context/[task-id]/milestones.md`:
 - Change the current milestone's status from "Not Started" to "In Progress"
 - Confirm the "Current Milestone: N" marker is correct
 

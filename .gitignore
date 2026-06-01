@@ -1,5 +1,9 @@
-# Xoch context files (developer workspace state)
+# Xoch workspace
 .xoch/
+
+# Alternative gitignore patterns (choose based on your team's needs):
+# .xoch/context/              # Share glossaries, ignore context
+# .xoch/context/current.md    # Share glossaries + context folders, ignore active task pointer
 
 # Node modules (if testing)
 node_modules/

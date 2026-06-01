@@ -18,17 +18,17 @@ Work with the engineer to define new terminology, understand its context, and in
 ### Step 0: Check for Project Glossaries
 
 **Look for glossaries at project root:**
-- Check if `./glossaries/` directory exists
+- Check if `.xoch/glossaries/` directory exists
 - If exists, list all `.md` files
-- Read `./glossaries/README.md` to understand current organization
+- Read `.xoch/glossaries/README.md` to understand current organization
 
 **If glossaries directory found:**
 - Note available glossaries and their purposes
 - Continue to Step 1
 
 **If glossaries directory doesn't exist:**
-- Ask: **"No glossaries directory found. Would you like to create `./glossaries/` to start documenting project terminology?"**
-- If yes: Create `./glossaries/` directory and default files (see Step 4b)
+- Ask: **"No glossaries directory found. Would you like to create `.xoch/glossaries/` to start documenting project terminology?"**
+- If yes: Create `.xoch/glossaries/` directory and default files (see Step 4b)
 - If no: Stop execution
 
 ---
@@ -91,7 +91,7 @@ Based on the term's category and context, suggest which glossary file should con
 **"Based on your description, I recommend adding this to `[filename].md` because `[reason]`.**
 
 **Available options:**
-1. **Add to existing glossary**: `[recommended-file]` in `./glossaries/`
+1. **Add to existing glossary**: `[recommended-file]` in `.xoch/glossaries/`
 2. **Create new glossary**: If this represents a new domain area
 3. **Update existing term**: If this term already exists but needs correction
 
@@ -147,7 +147,7 @@ Wait for their choice.
 
 If engineer chooses to add to existing glossary:
 
-1. **Read the target glossary file** from `./glossaries/[filename]`
+1. **Read the target glossary file** from `.xoch/glossaries/[filename]`
 2. **Identify the appropriate section** (based on glossary structure)
 3. **Format the term entry** following the existing format:
 
@@ -211,8 +211,8 @@ Wait for their response.
 
 ### Step 4b.1: Create the New Glossary File
 
-1. **Ensure glossaries directory exists**: Create `./glossaries/` if it doesn't exist
-2. **Create the glossary file** at `./glossaries/[filename].md` with this structure:
+1. **Ensure glossaries directory exists**: Create `.xoch/glossaries/` if it doesn't exist
+2. **Create the glossary file** at `.xoch/glossaries/[filename].md` with this structure:
 
 ```markdown
 # [Title]
@@ -247,7 +247,7 @@ Wait for their response.
 
 ### Step 4b.2: Update Glossary Index
 
-Update `./glossaries/README.md` to include the new glossary:
+Update `.xoch/glossaries/README.md` to include the new glossary:
 
 **Read current README.md**, then add new glossary entry in the "Domain-Specific Glossaries" section:
 
@@ -270,11 +270,11 @@ Confirm completion: **"✅ Created new glossary: glossaries/[filename.md]"**
 
 If creating the very first glossary for this project:
 
-1. **Create `./glossaries/` directory**
+1. **Create `.xoch/glossaries/` directory**
 
-2. **Create `./glossaries/README.md`** with template content (see glossaries/README.md in xoch repo)
+2. **Create `.xoch/glossaries/README.md`** with template content (see .xoch/glossaries/README.md in xoch repo)
 
-3. **Create `./glossaries/quick-reference.md`** with starter template:
+3. **Create `.xoch/glossaries/quick-reference.md`** with starter template:
 
 ```markdown
 # Quick Reference Glossary
@@ -316,7 +316,7 @@ Core terminology used across the project.
 
 If engineer chooses to update existing term:
 
-1. **Search for the term** in `./glossaries/*.md` files
+1. **Search for the term** in `.xoch/glossaries/*.md` files
 2. **Show current definition**:
 
 ```
@@ -373,7 +373,7 @@ After completing the glossary update:
 
 ### This is a Sidebar Operation
 
-- Does **NOT** affect `.xoch/current.md`
+- Does **NOT** affect `.xoch/context/current.md`
 - Does **NOT** create task context files
 - Does **NOT** require Task ID
 - Can be used anytime during development

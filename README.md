@@ -155,7 +155,7 @@ Maintain consistent terminology with project-specific glossaries:
 #xoch-glossary        # Add/update project terms
 ```
 
-Glossaries are stored in `./glossaries/` and committed to git for team-wide consistency.
+Glossaries are stored in `.xoch/glossaries/` and committed to git for team-wide consistency.
 
 See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
 
@@ -163,28 +163,36 @@ See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
 
 ## Project Structure
 
-Xoch uses `.xoch/` for working files (add to `.gitignore`):
+Xoch uses `.xoch/` for all working files:
 
 ```
 your-project/
 ├── README.md                    # Application spec
-├── glossaries/                  # Project terminology (optional)
-│   ├── README.md
-│   └── quick-reference.md
-├── .xoch/                    # Working context (gitignored)
-│   ├── current.md               # Active task
-│   ├── [task-id]/               # Task context
-│   │   ├── spec.md
-│   │   ├── plan.md
-│   │   └── milestones.md
-│   └── archive/                 # Completed tasks
+├── .xoch/                       # Xoch workspace (flexible gitignore)
+│   ├── glossaries/              # Project terminology (shareable)
+│   │   ├── README.md
+│   │   └── quick-reference.md
+│   └── context/                 # Task context (flexible gitignore)
+│       ├── current.md           # Active task
+│       ├── [task-id]/           # Task context
+│       │   ├── spec.md
+│       │   ├── plan.md
+│       │   └── milestones.md
+│       └── archive/             # Completed tasks
 └── src/feature/
     └── README.md                # Feature spec
 ```
 
-Add to `.gitignore`:
+Add to `.gitignore` (choose your sharing preference):
 ```bash
+# Option 1: Ignore everything (default - solo development)
 echo ".xoch/" >> .gitignore
+
+# Option 2: Share glossaries only (ignore context)
+echo ".xoch/context/" >> .gitignore
+
+# Option 3: Share glossaries + context folders (ignore active task pointer)
+echo ".xoch/context/current.md" >> .gitignore
 ```
 
 ---

@@ -20,12 +20,12 @@ Analyze the feature's implementation, understand its purpose and behavior, and c
 **Before analyzing the feature**, check if glossaries exist:
 
 **Look for glossaries at project root:**
-- Check if `./glossaries/` directory exists
-- If exists, check for `./glossaries/README.md`
+- Check if `.xoch/glossaries/` directory exists
+- If exists, check for `.xoch/glossaries/README.md`
 
 **If glossaries found:**
-1. Read `glossaries/README.md` to understand terminology organization
-2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+1. Read `.xoch/glossaries/README.md` to understand terminology organization
+2. Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology)
 3. Note domain-specific glossaries that might be relevant (entities, integrations, etc.)
 
 **Use glossaries during analysis:**

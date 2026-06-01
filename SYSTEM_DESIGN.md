@@ -45,24 +45,27 @@ This approach ensures consistency, gathers all necessary context, and guides eng
 ```
 application/
 ├── README.md                              # Project-level specification
-├── .xoch/                              # Working context (gitignored)
-│   ├── current.md                         # Current active task (Task ID)
-│   ├── user-auth/                        # Active task context (by Task ID)
-│   │   ├── validate.md                    # Validation findings
-│   │   ├── spec.md                        # task requirements
-│   │   ├── plan.md                        # Architecture + approach
-│   │   ├── milestones.md                  # Milestone tracker (current status)
-│   │   ├── milestone-1.md                 # Completed milestone snapshots
-│   │   ├── milestone-2.md
-│   │   ├── milestone-N.md
-│   │   └── finalize.md                    # Documentation updates
-│   ├── bug-404/                           # Another task context
-│   │   └── ...
-│   ├── archive/                           # Completed tasks (historical)
-│   │   ├── user-auth-2026-05-26/          # Archived context (Task ID + date)
-│   │   └── bug-404-2026-05-27/
-│   └── .gitignore
-├── .xoch                               # Configuration file (optional)
+├── .xoch/                                 # Xoch workspace
+│   ├── glossaries/                        # Project terminology (shareable)
+│   │   ├── README.md                      # Glossary documentation
+│   │   ├── quick-reference.md             # Core terms
+│   │   ├── entities.md                    # Data models (optional)
+│   │   └── integrations.md                # Third-party systems (optional)
+│   └── context/                           # Task context (flexible gitignore)
+│       ├── current.md                     # Current active task (Task ID)
+│       ├── user-auth/                     # Active task context (by Task ID)
+│       │   ├── spec.md                    # Task requirements
+│       │   ├── plan.md                    # Architecture + approach
+│       │   ├── milestones.md              # Milestone tracker (current status)
+│       │   ├── milestone-1.md             # Completed milestone snapshots
+│       │   ├── milestone-2.md
+│       │   └── milestone-N.md
+│       ├── bug-404/                       # Another task context
+│       │   └── ...
+│       └── archive/                       # Completed tasks (historical)
+│           ├── user-auth-2026-05-26/      # Archived context (Task ID + date)
+│           └── bug-404-2026-05-27/
+├── .xochconfig                            # Configuration file (optional)
 └── path/to/feature/
     └── README.md                          # Feature-level specification
 ```
@@ -89,23 +92,46 @@ application/
 
 ## Context Tracking
 
-Xoch uses task IDs (e.g., `IE-1285`) as the primary identifier for tasks. This provides:
-- **Unique identification** - Task IDs are globally unique
-- **Traceability** - Direct link to requirements and project management
-- **Clean naming** - Short, consistent directory names
-- **Source of truth** - Issue tracker is the authoritative task source
+### Task ID System
+
+Xoch uses task IDs as the primary identifier for tasks. Task IDs can be:
+1. **User-provided** - From issue trackers (e.g., `JIRA-1285`) or manual assignment (e.g., `oauth-integration`)
+2. **Auto-generated** - Unique timestamp-based IDs when no ID is provided
+
+**Task ID Generation Tool**: `bin/generateTaskId.sh`
+
+```bash
+# User-provided ID (cleaned and validated)
+bin/generateTaskId.sh --id "User Auth Feature"
+# Output: user-auth-feature
+
+# Auto-generated ID (project-YYYYMMDD-HHMM-xxxx)
+bin/generateTaskId.sh
+# Output: myproject-20260601-1430-a8k2
+```
+
+**Auto-generated ID format:**
+- `projectname` - Current directory name (cleaned)
+- `YYYYMMDD-HHMM` - Timestamp for chronological sorting
+- `xxxx` - Random 4-character suffix for uniqueness
+
+**Benefits:**
+- **Unique identification** - Auto-generated IDs avoid collisions
+- **Shareable context** - Teams can share `.xoch/context/` directories without ID conflicts
+- **Traceability** - User-provided IDs link to issue trackers
+- **Flexibility** - Works for solo developers and teams
 
 ### Current Task File
 
-`.xoch/current.md` tracks the active task:
+`.xoch/context/current.md` tracks the active task:
 
 ```markdown
 # Current Task
 
-**Task ID**: IE-1285
+**Task ID**: user-auth-20260601-1430-a8k2
 **Feature**: User Authentication OAuth
 **Feature README**: src/authentication/README.md
-**Started**: 2026-05-26
+**Started**: 2026-06-01
 ```
 
 **Benefits:**
@@ -115,9 +141,9 @@ Xoch uses task IDs (e.g., `IE-1285`) as the primary identifier for tasks. This p
 - Supports switching between multiple tasks
 
 **Prompt Behavior:**
-1. Read `.xoch/current.md` to get Task ID
+1. Read `.xoch/context/current.md` to get Task ID
 2. If found and valid, use that task context automatically
-3. If not found or unclear, ask engineer for Task ID
+3. If not found, ask engineer for Task ID or generate one
 4. Continue with identified task
 
 ---
@@ -228,7 +254,7 @@ Xoch supports **project-specific terminology glossaries** to ensure consistent u
 
 ### Location
 
-Glossaries are stored in the project repository at `./glossaries/`:
+Glossaries are stored in the project repository at `.xoch/glossaries/`:
 
 ```
 project-root/
@@ -243,7 +269,7 @@ project-root/
 
 ### Discovery
 
-Prompts automatically check for `./glossaries/` directory and load relevant glossaries based on phase:
+Prompts automatically check for `.xoch/glossaries/` directory and load relevant glossaries based on phase:
 
 **Prompts that always load glossaries** (if they exist):
 - `init-app` - Documenting with proper terminology
@@ -271,13 +297,17 @@ Prompts automatically check for `./glossaries/` directory and load relevant glos
 
 ### Managing Glossaries
 
+**Location**: `.xoch/glossaries/` (inside `.xoch/` directory)
+
 **Create glossaries:**
 - During `init-app` (offers to create structure)
 - Use `#xoch-glossary` prompt to add/update terms
-- Manually edit `.md` files in `./glossaries/`
+- Manually edit `.md` files in `.xoch/glossaries/`
 
-**Commit to git:**
-Glossaries are team documentation (not `.gitignored`) - commit them so everyone benefits.
+**Sharing options:**
+- **Shareable by default** - Use `.xoch/context/` in `.gitignore` to share glossaries while keeping context private
+- **Team documentation** - Commit glossaries so everyone benefits from shared terminology
+- **Version controlled** - Track terminology evolution alongside code
 
 ### Benefits
 
@@ -316,8 +346,8 @@ Xoch supports working on multiple tasks simultaneously through pause/resume func
 **Process:**
 1. Shows current task status and progress
 2. Confirms with engineer
-3. Removes `.xoch/current.md` (clears active context)
-4. Preserves all task files in `.xoch/[task-id]/`
+3. Removes `.xoch/context/current.md` (clears active context)
+4. Preserves all task files in `.xoch/context/[task-id]/`
 
 **What's preserved:**
 - All specifications and requirements
@@ -332,17 +362,17 @@ Xoch supports working on multiple tasks simultaneously through pause/resume func
 
 **Process:**
 1. Checks for existing active task (must pause first if exists)
-2. Scans for paused tasks (`.xoch/*/`) and archived tasks (`.xoch/archive/*/`)
+2. Scans for paused tasks (`.xoch/*/`) and archived tasks (`.xoch/context/archive/*/`)
 3. Lists available tasks or uses provided task ID
 4. Restores archived task if needed (moves from archive)
-5. Recreates `.xoch/current.md` with selected task
+5. Recreates `.xoch/context/current.md` with selected task
 6. Shows task summary (spec, progress, next milestone)
 7. Guides engineer on next action
 
 **Task states:**
-- **Active**: Has entry in `.xoch/current.md`
-- **Paused**: Directory exists in `.xoch/[task-id]/`, no `current.md`
-- **Archived**: Directory in `.xoch/archive/[task-id]-[date]/`
+- **Active**: Has entry in `.xoch/context/current.md`
+- **Paused**: Directory exists in `.xoch/context/[task-id]/`, no `current.md`
+- **Archived**: Directory in `.xoch/context/archive/[task-id]-[date]/`
 
 ### Multiple Parallel Tasks
 
@@ -468,8 +498,8 @@ Context directory will be created in the spec phase once Task ID is known.
 9. Agent stores all information in context
 
 **Outputs**:
-- `.xoch/current.md` - Tracks current active task (Task ID + feature info)
-- `.xoch/[task-id]/spec.md` containing:
+- `.xoch/context/current.md` - Tracks current active task (Task ID + feature info)
+- `.xoch/context/[task-id]/spec.md` containing:
   - task URL and ID
   - Full specification
   - Analysis of changes vs. current state
@@ -502,13 +532,13 @@ All subsequent prompts will read `current.md` to identify the active task automa
 8. Agent creates formal plan document with approved milestones
 
 **Outputs**:
-- `.xoch/[task-id]/plan.md` containing:
+- `.xoch/context/[task-id]/plan.md` containing:
   - Architectural approach
   - Files to be modified/created
   - Implementation strategy
   - Potential risks identified
   - Engineer's final approved approach
-- `.xoch/[task-id]/milestones.md` tracking file:
+- `.xoch/context/[task-id]/milestones.md` tracking file:
   - List of all milestones
   - Current milestone indicator
   - Status for each (Not Started / In Progress / Complete)
@@ -546,8 +576,8 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process**:
 1. Engineer invokes the `start` prompt
-2. Agent reads `.xoch/current.md` to identify the task (Task ID)
-3. Agent reads `.xoch/[task-id]/milestones.md`
+2. Agent reads `.xoch/context/current.md` to identify the task (Task ID)
+3. Agent reads `.xoch/context/[task-id]/milestones.md`
 4. Agent identifies current milestone (first "In Progress" or "Not Started")
 5. Agent provides detailed summary:
    - What needs to be implemented
@@ -601,7 +631,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
    - **If all milestones complete**: Confirms all work done, ready for final review
 
 **Outputs**:
-- `.xoch/[task-id]/milestone-N.md` (snapshot of completed work)
+- `.xoch/context/[task-id]/milestone-N.md` (snapshot of completed work)
 - Updated `milestones.md` with progress
 - Explanation of next milestone (if any)
 
@@ -624,7 +654,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process**:
 1. Engineer invokes the `sidebar` prompt (can be used anytime during development)
-2. Agent reads `.xoch/current.md` and milestone context
+2. Agent reads `.xoch/context/current.md` and milestone context
 3. Agent provides summary of current work state:
    - What task you're on
    - Current milestone and progress
@@ -668,7 +698,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 
 **Process** (Interactive):
 1. Engineer invokes the `replan` prompt
-2. Agent reads `.xoch/current.md` to identify task
+2. Agent reads `.xoch/context/current.md` to identify task
 3. Agent reads `milestones.md` to understand current progress:
    - Which milestones are complete
    - Current milestone position
@@ -691,15 +721,15 @@ All subsequent prompts will read `current.md` to identify the active task automa
 10. Engineer reviews and either approves or requests modifications
 11. Agent iterates until engineer approves
 12. Agent updates `milestones.md` with new structure
-13. Agent creates `.xoch/[task-id]/replan-[date].md` documenting:
+13. Agent creates `.xoch/context/[task-id]/replan-[date].md` documenting:
     - Why replan occurred
     - What changed
     - Before/after milestone structures
     - Impact assessment
 
 **Outputs**:
-- Updated `.xoch/[task-id]/milestones.md` with new milestone structure
-- `.xoch/[task-id]/replan-[date].md` documenting the changes
+- Updated `.xoch/context/[task-id]/milestones.md` with new milestone structure
+- `.xoch/context/[task-id]/replan-[date].md` documenting the changes
 - Clear path forward with adjusted plan
 
 **Post-Replan**: Continue using `advance` normally with the updated milestone structure. Can replan again if more requirements emerge.
@@ -731,13 +761,13 @@ All subsequent prompts will read `current.md` to identify the active task automa
 6. Engineer reviews and either approves or provides feedback
 7. Agent revises if needed, then commits README updates to branch
 8. **Archive context**: Agent asks: "Ready to archive this context? (You can delete it later if desired)"
-9. If yes, agent moves `.xoch/[feature-name]/` to `.xoch/archive/[feature-name]-YYYY-MM-DD/`
+9. If yes, agent moves `.xoch/[feature-name]/` to `.xoch/context/archive/[feature-name]-YYYY-MM-DD/`
 
 **Outputs**:
 - Updated feature README.md
 - Updated project README.md (if necessary)
-- `.xoch/archive/[task-id]-YYYY-MM-DD/` (archived for reference)
-- `.xoch/current.md` cleared (task complete)
+- `.xoch/context/archive/[task-id]-YYYY-MM-DD/` (archived for reference)
+- `.xoch/context/current.md` cleared (task complete)
 - Clean `.xoch/` directory ready for next task
 
 **Timing**: README updates and context archiving happen AFTER all milestones complete, BEFORE merge to master.
@@ -772,9 +802,9 @@ All subsequent prompts will read `current.md` to identify the active task automa
 ### Context Handoff Between Engineers
 
 **Process**:
-1. New engineer reads `.xoch/current.md` to identify the active task
+1. New engineer reads `.xoch/context/current.md` to identify the active task
 2. New engineer reads feature README.md (current state)
-3. New engineer reads `.xoch/[task-id]/milestones.md` (current progress)
+3. New engineer reads `.xoch/context/[task-id]/milestones.md` (current progress)
 4. New engineer reads latest completed milestone snapshot (e.g., `milestone-2.md`)
 5. New engineer understands:
    - What the feature currently does
@@ -788,7 +818,7 @@ All subsequent prompts will read `current.md` to identify the active task automa
 ### Abandoned Work / Reverted Changes
 
 **Process**:
-- If work is abandoned before merge: Delete `.xoch/[task-id]/` directory and clear `current.md`
+- If work is abandoned before merge: Delete `.xoch/context/[task-id]/` directory and clear `current.md`
 - README never updated, so no cleanup needed
 - If work is merged then reverted: Create new ticket to update feature to new state
 - No special rollback mechanism - Git handles code, new work handles README updates
@@ -808,14 +838,14 @@ Optional configuration file to define project-specific conventions:
   "contextDirectory": ".xoch",
   "taskBaseUrl": "https://your-issue-tracker.com/tasks/",
   "prompts": {
-    "validate": ".xoch/prompts/validate.md",
-    "spec": ".xoch/prompts/spec.md",
-    "plan": ".xoch/prompts/plan.md",
-    "start": ".xoch/prompts/start.md",
-    "advance": ".xoch/prompts/advance.md",
-    "finalize": ".xoch/prompts/finalize.md",
-    "finalize": ".xoch/prompts/finalize.md",
-    "merge": ".xoch/prompts/merge.md"
+    "validate": ".xoch/context/prompts/validate.md",
+    "spec": ".xoch/context/prompts/spec.md",
+    "plan": ".xoch/context/prompts/plan.md",
+    "start": ".xoch/context/prompts/start.md",
+    "advance": ".xoch/context/prompts/advance.md",
+    "finalize": ".xoch/context/prompts/finalize.md",
+    "finalize": ".xoch/context/prompts/finalize.md",
+    "merge": ".xoch/context/prompts/merge.md"
   }
 }
 ```
@@ -857,14 +887,31 @@ To ensure this system works with any AI agent (GitHub Copilot, Cursor, Aider, et
 
 ### Git Integration
 
-**`.gitignore` additions**:
-```
+**Flexible `.gitignore` patterns** for different team workflows:
+
+```bash
+# Option 1: Solo development (default)
+# Ignore everything in .xoch/ - no sharing
 .xoch/
-.xoch-local
+
+# Option 2: Share glossaries only
+# Team benefits from shared terminology, context stays local
+.xoch/context/
+
+# Option 3: Share glossaries + context folders  
+# Enable task handoffs, but each engineer has their own active task
+.xoch/context/current.md
 ```
 
+**Benefits of sharing context folders**:
+- **Task handoff** - Engineers can pick up where others left off
+- **Collaborative debugging** - Multiple people can work on same task context
+- **Team learning** - See how others break down and approach problems
+- **Unique IDs prevent conflicts** - Auto-generated IDs ensure no collisions
+
 **Workflow**:
-- `.xoch/` is never committed (working space only)
+- Glossaries in `.xoch/glossaries/` are shareable team documentation
+- Context in `.xoch/context/` can be shared or kept private
 - README updates are committed to feature branch
 - README updates merge with code changes
 - Conflicts handled via standard git merge + `merge` prompt
@@ -919,9 +966,9 @@ To ensure this system works with any AI agent (GitHub Copilot, Cursor, Aider, et
 8. merge (resolve README conflicts if needed)
 
 **Context Lifecycle**:
-- `.xoch/current.md` - Identifies active task by Task ID
-- `.xoch/[task-id]/` - Active work directory (named by Task ID)
-- `.xoch/archive/[task-id]-YYYY-MM-DD/` - Historical reference after merge
+- `.xoch/context/current.md` - Identifies active task by Task ID
+- `.xoch/context/[task-id]/` - Active work directory (named by Task ID)
+- `.xoch/context/archive/[task-id]-YYYY-MM-DD/` - Historical reference after merge
 - Archives can be manually deleted anytime by engineer
 
 ---

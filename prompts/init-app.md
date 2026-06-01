@@ -20,12 +20,12 @@ Analyze the application structure, understand its purpose and architecture, and 
 **Before analyzing the application**, check if glossaries already exist:
 
 **Look for glossaries at project root:**
-- Check if `./glossaries/` directory exists
-- If exists, check for `./glossaries/README.md`
+- Check if `.xoch/glossaries/` directory exists
+- If exists, check for `.xoch/glossaries/README.md`
 
 **If glossaries found:**
-1. Read `glossaries/README.md` to understand terminology organization
-2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+1. Read `.xoch/glossaries/README.md` to understand terminology organization
+2. Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology)
 3. Note available glossaries for reference during analysis
 
 **Use glossaries during analysis:**
@@ -465,9 +465,9 @@ After successfully creating/updating the README, ask:
 - **Less repetition** - Document terms once, reference everywhere
 
 **What happens:**
-- Creates `./glossaries/` directory
-- Creates `./glossaries/README.md` (glossary index and guidelines)
-- Creates `./glossaries/quick-reference.md` (starter template for core terms)
+- Creates `.xoch/glossaries/` directory
+- Creates `.xoch/glossaries/README.md` (glossary index and guidelines)
+- Creates `.xoch/glossaries/quick-reference.md` (starter template for core terms)
 
 **Options:**
 1. **Yes, create glossaries** - Set up glossary structure now
@@ -481,11 +481,11 @@ Wait for response.
 
 #### If "Yes, create glossaries":
 
-1. **Create `./glossaries/` directory**
+1. **Create `.xoch/glossaries/` directory**
 
-2. **Copy template README** from xoch installation to `./glossaries/README.md`
+2. **Copy template README** from xoch installation to `.xoch/glossaries/README.md`
 
-3. **Create `./glossaries/quick-reference.md`** with starter template:
+3. **Create `.xoch/glossaries/quick-reference.md`** with starter template:
 
 ```markdown
 # Quick Reference Glossary
@@ -539,8 +539,8 @@ Example:
 ✅ Glossary structure created!
 
 Files created:
-- ./glossaries/README.md - Glossary index and guidelines
-- ./glossaries/quick-reference.md - Core terminology (starter template)
+- ./.xoch/glossaries/README.md - Glossary index and guidelines
+- ./.xoch/glossaries/quick-reference.md - Core terminology (starter template)
 
 ---
 

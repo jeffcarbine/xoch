@@ -30,12 +30,12 @@ Review completed work against milestone requirements, get engineer confirmation,
 **If README updates needed:**
 
 1. **Look for glossaries at project root:**
-   - Check if `./glossaries/` directory exists
-   - Check for `./glossaries/README.md`
+   - Check if `.xoch/glossaries/` directory exists
+   - Check for `.xoch/glossaries/README.md`
 
 2. **If glossaries found:**
-   - Read `glossaries/README.md` to understand what each glossary covers
-   - Read `glossaries/quick-reference.md` if it exists (core terminology)
+   - Read `.xoch/glossaries/README.md` to understand what each glossary covers
+   - Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology)
    - Note other available glossaries for potential reference
 
 3. **Use glossaries when updating READMEs (Step 13):**
@@ -51,7 +51,7 @@ Review completed work against milestone requirements, get engineer confirmation,
 
 ### Step 1: Identify Current Task
 
-First, try to read `.xoch/current.md` to get the current task:
+First, try to read `.xoch/context/current.md` to get the current task:
 
 If file exists and contains a Task ID:
 - Use that Task ID automatically
@@ -67,9 +67,9 @@ If file doesn't exist or is unclear:
 
 Once Task ID is confirmed, read:
 
-1. `.xoch/[task-id]/spec.md` - Overall requirements
-2. `.xoch/[task-id]/plan.md` - Implementation approach
-3. `.xoch/[task-id]/milestones.md` - Milestone tracker (to find current milestone)
+1. `.xoch/context/[task-id]/spec.md` - Overall requirements
+2. `.xoch/context/[task-id]/plan.md` - Implementation approach
+3. `.xoch/context/[task-id]/milestones.md` - Milestone tracker (to find current milestone)
 
 ---
 
@@ -317,7 +317,7 @@ Stop here. Do not proceed with snapshot or advancement.
 
 ### Step 9: If Engineer Says "Yes" - Create Snapshot
 
-Create `.xoch/[task-id]/milestone-[N].md`:
+Create `.xoch/context/[task-id]/milestone-[N].md`:
 
 ```markdown
 # Milestone [N] - [Title]
@@ -391,7 +391,7 @@ Create `.xoch/[task-id]/milestone-[N].md`:
 
 ### Step 10: Update Milestones Tracker
 
-Update `.xoch/[task-id]/milestones.md`:
+Update `.xoch/context/[task-id]/milestones.md`:
 
 1. Change milestone N status from "In Progress" to "Complete"
 2. Add completion checkmark: `**Status**: ✅ Complete`

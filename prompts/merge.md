@@ -17,7 +17,7 @@ Analyze both versions of the README, understand what each engineer was trying to
 
 ### Step 1: Identify Conflict Context
 
-Check if `.xoch/current.md` exists and contains merge conflict information.
+Check if `.xoch/context/current.md` exists and contains merge conflict information.
 
 If not related to current task, ask the engineer:
 

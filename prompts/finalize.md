@@ -20,12 +20,12 @@ Update the feature README (and potentially project README) to document the compl
 **Before analyzing changes**, check if glossaries exist:
 
 **Look for glossaries at project root:**
-- Check if `./glossaries/` directory exists
-- If exists, check for `./glossaries/README.md`
+- Check if `.xoch/glossaries/` directory exists
+- If exists, check for `.xoch/glossaries/README.md`
 
 **If glossaries found:**
-1. Read `glossaries/README.md` to understand terminology organization
-2. Read `glossaries/quick-reference.md` if it exists (core terminology)
+1. Read `.xoch/glossaries/README.md` to understand terminology organization
+2. Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology)
 3. Note domain-specific glossaries relevant to this feature
 
 **Use glossaries when updating READMEs:**
@@ -41,7 +41,7 @@ Update the feature README (and potentially project README) to document the compl
 
 ### Step 1: Identify Current Task
 
-First, try to read `.xoch/current.md` to get the current task:
+First, try to read `.xoch/context/current.md` to get the current task:
 
 If file exists and contains a Task ID:
 - Use that Task ID automatically
@@ -60,10 +60,10 @@ If file doesn't exist or is unclear:
 **Before loading all context files** to understand what was implemented:
 
 #### Files to read:
-- `.xoch/[task-id]/spec.md`
-- `.xoch/[task-id]/plan.md`
-- `.xoch/[task-id]/milestones.md`
-- `.xoch/[task-id]/milestone-N.md` (for each milestone)
+- `.xoch/context/[task-id]/spec.md`
+- `.xoch/context/[task-id]/plan.md`
+- `.xoch/context/[task-id]/milestones.md`
+- `.xoch/context/[task-id]/milestone-N.md` (for each milestone)
 - Feature README.md
 - Project README.md (if needed)
 - Glossary files (if they exist, from Step 0)
@@ -75,7 +75,7 @@ If file doesn't exist or is unclear:
 2. **Estimate token cost:**
    
    ```bash
-   bin/tokenEstimator.sh --batch .xoch/[task-id]/*.md [feature]/README.md ...
+   bin/tokenEstimator.sh --batch .xoch/context/[task-id]/*.md [feature]/README.md ...
    ```
 
 3. **Check against budget:**
@@ -105,12 +105,12 @@ If file doesn't exist or is unclear:
 
 Once Task ID is confirmed, read the complete implementation context:
 
-1. `.xoch/[task-id]/spec.md` - Original requirements
-2. `.xoch/[task-id]/plan.md` - Implementation approach
-3. `.xoch/[task-id]/milestones.md` - All milestones
-4. `.xoch/[task-id]/milestone-1.md` - Milestone details
-5. `.xoch/[task-id]/milestone-2.md` - Continue for all
-6. `.xoch/[task-id]/milestone-N.md`
+1. `.xoch/context/[task-id]/spec.md` - Original requirements
+2. `.xoch/context/[task-id]/plan.md` - Implementation approach
+3. `.xoch/context/[task-id]/milestones.md` - All milestones
+4. `.xoch/context/[task-id]/milestone-1.md` - Milestone details
+5. `.xoch/context/[task-id]/milestone-2.md` - Continue for all
+6. `.xoch/context/[task-id]/milestone-N.md`
 
 Also read:
 - **Feature README.md** - Current documentation to be updated
@@ -398,8 +398,8 @@ Now that READMEs are updated, ask about archiving:
 **"Ready to archive the context for this task?**
 
 **This will:**
-- Move `.xoch/[task-id]/` to `.xoch/archive/[task-id]-[YYYY-MM-DD]/`
-- Clear `.xoch/current.md` (marks task complete)
+- Move `.xoch/context/[task-id]/` to `.xoch/context/archive/[task-id]-[YYYY-MM-DD]/`
+- Clear `.xoch/context/current.md` (marks task complete)
 - Clear the active context directory
 - Preserve all files for historical reference
 - You can manually delete the archive later if desired
@@ -415,17 +415,17 @@ Wait for confirmation.
 If engineer confirms:
 
 1. Get current date in YYYY-MM-DD format
-2. Create `.xoch/archive/` directory if it doesn't exist
-3. Move `.xoch/[task-id]/` to `.xoch/archive/[task-id]-YYYY-MM-DD/`
-4. Clear `.xoch/current.md` (delete or empty the file)
+2. Create `.xoch/context/archive/` directory if it doesn't exist
+3. Move `.xoch/context/[task-id]/` to `.xoch/context/archive/[task-id]-YYYY-MM-DD/`
+4. Clear `.xoch/context/current.md` (delete or empty the file)
 
 Confirm:
 ```
 ✅ Context Archived
 
-Moved: .xoch/[task-id]/
-To: .xoch/archive/[task-id]-2026-05-26/
-Cleared: .xoch/current.md
+Moved: .xoch/context/[task-id]/
+To: .xoch/context/archive/[task-id]-2026-05-26/
+Cleared: .xoch/context/current.md
 
 Archive contents:
 - validate.md
@@ -461,7 +461,7 @@ Summary:
 - Feature: [feature name]
 - Implementation: [X] milestones completed
 - Documentation: READMEs updated
-- Archive: .xoch/archive/[task-id]-YYYY-MM-DD/
+- Archive: .xoch/context/archive/[task-id]-YYYY-MM-DD/
 
 Next Steps:
 1. Merge PR to master
@@ -677,13 +677,13 @@ Commit: a1b2c3d4
 
 **Engineer**: "Yes"
 
-**Agent**: [Moves .xoch/authentication/ to .xoch/archive/authentication-2026-05-26/]
+**Agent**: [Moves .xoch/context/authentication/ to .xoch/context/archive/authentication-2026-05-26/]
 
 ```
 ✅ Context Archived
 
-Moved: .xoch/authentication/
-To: .xoch/archive/authentication-2026-05-26/
+Moved: .xoch/context/authentication/
+To: .xoch/context/archive/authentication-2026-05-26/
 
 Archive contents:
 - validate.md
@@ -710,7 +710,7 @@ Summary:
 - Feature: user authentication
 - Implementation: 6 milestones completed
 - Documentation: READMEs updated
-- Archive: .xoch/archive/auth-oauth-2026-05-26/
+- Archive: .xoch/context/archive/auth-oauth-2026-05-26/
 
 Next Steps:
 1. Merge PR to master

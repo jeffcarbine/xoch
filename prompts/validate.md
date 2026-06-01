@@ -29,12 +29,12 @@ Verify that documentation matches reality, so the engineer starts from a clear u
 **If glossaries ARE needed (ask engineer if unclear):**
 
 1. **Look for glossaries at project root:**
-   - Check if `./glossaries/` directory exists
-   - Check for `./glossaries/README.md`
+   - Check if `.xoch/glossaries/` directory exists
+   - Check for `.xoch/glossaries/README.md`
 
 2. **If glossaries found:**
-   - Read `glossaries/README.md` to understand terminology
-   - Read `glossaries/quick-reference.md` if it exists
+   - Read `.xoch/glossaries/README.md` to understand terminology
+   - Read `.xoch/glossaries/quick-reference.md` if it exists
    - Use correct terminology when identifying discrepancies
 
 **If glossaries not found or not needed:**
@@ -142,7 +142,7 @@ The README accurately describes:
 
 No discrepancies found.
 
-✅ Context directory created: .xoch/authentication/
+✅ Context directory created: .xoch/context/authentication/
 
 Ready to proceed with #xoch-spec
 ```

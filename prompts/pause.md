@@ -17,7 +17,7 @@ Save the current task state and remove it from active context, allowing the engi
 
 ### Step 0: Check Current Task
 
-Read `.xoch/current.md` to see what task is currently active.
+Read `.xoch/context/current.md` to see what task is currently active.
 
 **If no current task found:**
 
@@ -38,15 +38,15 @@ Stop execution.
 **Before reading task context** to show status summary:
 
 #### Files to read:
-- `.xoch/[task-id]/spec.md` - What the task is about
-- `.xoch/[task-id]/milestones.md` - Progress (if exists)
+- `.xoch/context/[task-id]/spec.md` - What the task is about
+- `.xoch/context/[task-id]/milestones.md` - Progress (if exists)
 
 #### Process:
 
 1. **Estimate token cost:**
    
    ```bash
-   bin/tokenEstimator.sh --batch .xoch/[task-id]/spec.md .xoch/[task-id]/milestones.md
+   bin/tokenEstimator.sh --batch .xoch/context/[task-id]/spec.md .xoch/context/[task-id]/milestones.md
    ```
 
 2. **Check against budget:**
@@ -83,14 +83,14 @@ Task ID: [task-id]
 Feature: [feature-name]
 Status: [current phase - e.g., "In Progress - Milestone 2 of 4"]
 
-Task directory: .xoch/[task-id]/
+Task directory: .xoch/context/[task-id]/
 ```
 
 Then show the current state by reading key context files:
 
 **Read and summarize:**
-1. `.xoch/[task-id]/spec.md` - What this task is about
-2. `.xoch/[task-id]/milestones.md` - Progress through milestones (if exists)
+1. `.xoch/context/[task-id]/spec.md` - What this task is about
+2. `.xoch/context/[task-id]/milestones.md` - Progress through milestones (if exists)
    - Show which milestone is current
    - Show what's been completed
 
@@ -120,7 +120,7 @@ Ask the engineer:
 
 **What happens:**
 - Current task removed from active context
-- All task files preserved in `.xoch/[task-id]/`
+- All task files preserved in `.xoch/context/[task-id]/`
 - You can resume anytime with: `#xoch-resume [task-id]`
 - You can start/resume other tasks in parallel
 
@@ -138,7 +138,7 @@ If confirmed:
 
 1. **Remove current.md:**
    ```bash
-   rm .xoch/current.md
+   rm .xoch/context/current.md
    ```
 
 2. **Confirm completion:**
@@ -147,7 +147,7 @@ If confirmed:
 ⏸️  TASK PAUSED
 
 Task: [task-id] - [feature-name]
-Location: .xoch/[task-id]/
+Location: .xoch/context/[task-id]/
 
 All progress preserved. Resume anytime with:
 
@@ -167,10 +167,10 @@ Ready for your next task!
 ### What Gets Preserved
 
 **All task files remain intact:**
-- `.xoch/[task-id]/spec.md` - Requirements
-- `.xoch/[task-id]/plan.md` - Architecture
-- `.xoch/[task-id]/milestones.md` - Progress tracking
-- `.xoch/[task-id]/milestone-[N].md` - Snapshots
+- `.xoch/context/[task-id]/spec.md` - Requirements
+- `.xoch/context/[task-id]/plan.md` - Architecture
+- `.xoch/context/[task-id]/milestones.md` - Progress tracking
+- `.xoch/context/[task-id]/milestone-[N].md` - Snapshots
 - Any investigation or replan files
 
 **Nothing is deleted or archived** - just removed from active context.
@@ -180,10 +180,10 @@ Ready for your next task!
 ### Parallel Tasks
 
 You can have multiple tasks paused simultaneously:
-- `.xoch/task-1/` - Paused
-- `.xoch/task-2/` - Paused  
-- `.xoch/task-3/` - Paused
-- `.xoch/current.md` - Points to none (or one active task)
+- `.xoch/context/task-1/` - Paused
+- `.xoch/context/task-2/` - Paused  
+- `.xoch/context/task-3/` - Paused
+- `.xoch/context/current.md` - Points to none (or one active task)
 
 Use `#xoch-resume` to switch between them.
 
@@ -219,7 +219,7 @@ Want to try a different approach:
 
 **Engineer**: `#xoch-pause`
 
-**Agent**: [Reads .xoch/current.md]
+**Agent**: [Reads .xoch/context/current.md]
 
 **Agent**:
 ```
@@ -229,7 +229,7 @@ Task ID: auth-oauth
 Feature: User authentication
 Status: In Progress - Milestone 2 of 4
 
-Task directory: .xoch/auth-oauth/
+Task directory: .xoch/context/auth-oauth/
 
 ---
 
@@ -251,7 +251,7 @@ Ready to pause this task?
 
 What happens:
 - Current task removed from active context
-- All task files preserved in `.xoch/auth-oauth/`
+- All task files preserved in `.xoch/context/auth-oauth/`
 - You can resume anytime with: #xoch-resume auth-oauth
 - You can start/resume other tasks in parallel
 
@@ -265,7 +265,7 @@ Proceed with pause? (y/n)
 ⏸️  TASK PAUSED
 
 Task: auth-oauth - User authentication
-Location: .xoch/auth-oauth/
+Location: .xoch/context/auth-oauth/
 
 All progress preserved. Resume anytime with:
 
