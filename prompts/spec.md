@@ -1,399 +1,243 @@
 ---
 name: xoch-spec
-description: Capture task requirements and specification interactively
+description: Capture Xoch task requirements and acceptance criteria
 ---
 
-# Xoch - Spec Phase
+# Xoch - Spec
 
-You are helping an engineer define the specification for a new task. Your goal is to capture all requirements clearly and identify what will change in the system.
+Capture what should change before implementation planning begins.
 
-## Your Role
+## Purpose
 
-Gather the specification details, create a task identifier, and analyze what will change versus what stays the same.
+Turn a task idea, issue, bug, or copied requirements into a clear task specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
 
----
+`xoch-spec` normally runs after `xoch-open`.
+
+Target flow:
+
+```text
+open -> spec -> plan -> make -> next -> review -> close
+```
+
+## Work Model
+
+Target-model task files live under:
+
+```text
+.xoch/work/tasks/[task-id]/
+```
+
+Expected files after this command:
+
+```text
+.xoch/work/current.md
+.xoch/work/tasks/[task-id]/state.md
+.xoch/work/tasks/[task-id]/spec.md
+```
+
+Legacy migration tasks may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active task and no `.xoch/work/current.md` exists, continue that legacy task in place and do not move it automatically.
 
 ## Process
 
-### Step 0: Check for Project Glossaries
+### Step 0: Load Glossaries
 
-**Before gathering the specification**, check if the project has terminology glossaries:
+Check for project glossaries:
 
-**Look for glossaries at project root:**
-- Check if `.xoch/glossaries/` directory exists
-- If exists, check for `.xoch/glossaries/README.md`
-
-**If glossaries found:**
-1. Read `.xoch/glossaries/README.md` to understand what each glossary covers
-2. Read `.xoch/glossaries/quick-reference.md` if it exists (core terminology - always read)
-3. Note other available glossaries for potential reference during requirement gathering
-
-**Use glossaries when gathering/clarifying requirements:**
-- Use correct terminology from glossaries when asking clarifying questions
-- Reference entity mappings when discussing data models
-- Help engineer translate requirements into correct technical terms
-- Flag when requirements use ambiguous terms that glossary clarifies
-
-**If glossaries not found:**
-- Proceed normally without glossary reference
-- Note: Glossaries can be created later with `#xoch-glossary` or during `#xoch-init-app`
-
----
-1.5: Check for Investigation Findings
-
-Check if `.xoch/context/[task-id]/investigation.md` exists (from a previous `#xoch-investigate` run).
-
-**If investigation.md EXISTS:**
-- Read the investigation findings
-- Note the root cause, location, and key findings
-- You will reference these when gathering the specification
-
-**If investigation.md DOES NOT exist:**
-- Proceed normally - this task didn't require investigation
-
----
-
-### Step 
-### Step 1: Get Task Identifier
-
-Ask the engineer:
-
-**"What identifier would you like to use for this task? (Leave blank to auto-generate)"**
-
-Examples:
-- Feature name: `user-authentication`
-- Bug ID: `bug-404`
-- Issue tracker reference: `PROJ-123`
-- Descriptive name: `add-dark-mode`
-- **Leave blank**: Auto-generates unique ID like `myproject-20260601-1430-a8k2`
-
-Wait for their response.
-
-**If they provide an ID**, validate and clean it:
-```bash
-bin/generateTaskId.sh --id "[their-provided-id]"
+```text
+.xoch/glossaries/README.md
+.xoch/glossaries/quick-reference.md
 ```
 
-**If they don't provide an ID**, auto-generate one:
+If present, read the glossary index and quick reference before requirements clarification. Use glossary-approved terminology in questions, acceptance criteria, and final spec text.
+
+### Step 1: Identify Current Task
+
+Read active task pointers in this order:
+
+1. `.xoch/work/current.md`
+2. `.xoch/context/current.md` for legacy migration tasks
+
+If a current task exists, use its task ID and task folder.
+
+If no current task exists, ask the engineer for:
+
+- task ID or short name
+- task title
+- documentation target if known
+
+Generate or clean task IDs with:
+
 ```bash
+bin/generateTaskId.sh --id "[provided-id]"
 bin/generateTaskId.sh
 ```
 
-The tool will:
-- Clean user-provided IDs (lowercase, replace special chars with hyphens)
-- Auto-generate unique timestamp-based IDs (format: `projectname-YYYYMMDD-HHMM-xxxx`)
-- Ensure no collisions when sharing context folders across team
+### Step 2: Ensure Task State
 
-**If investigation.md exists,** say:
+For target-model tasks, ensure:
 
-**"I see you completed an investigation that identified: [one-line root cause from investigation].**
+```text
+.xoch/work/tasks/[task-id]/state.md
+.xoch/work/current.md
+```
 
-**Now let's define the specification for fixing this. You can:**
-- **Describe how you want to fix the root cause**
-- **Copy/paste from an issue tracker if it includes solution approach**
-- **Provide acceptance criteria for the fix"**
+If `state.md` does not exist, create it with:
 
-**If NO investigation.md,** a--
+```yaml
+task_id: [task-id]
+title: [task title]
+status: spec_in_progress
+arc: [arc-id or standalone]
+current_phase: null
+documentation_targets:
+  - [README path, docs packet, or project-wide]
+decisions: []
+risks: []
+review_status: null
+close_status: null
+next_command: xoch-spec
+started: [today]
+last_updated: [today]
+```
 
-### Step 2: Identify the Feature
+For legacy tasks, update the legacy context files in place.
 
-Ask the engineer:
+### Step 3: Gather Source Requirements
 
-**"Which feature does this work apply to? (Provide the path to the feature's README.md)"**
+Ask for or extract:
 
-Wait for their response. This is needed to understand the current state and to update the feature README later.
+- problem statement
+- desired outcome
+- in-scope work
+- out-of-scope work
+- acceptance criteria
+- constraints
+- documentation targets
+- risks or unknowns
 
----
-
-### Step 3: Gather Specification
-
-Ask the engineer:
-
-**"Please provide the specification for this task. You can:**
-- **Copy/paste from an issue tracker**
-- **Describe the requirements in your own words**
-- **Provide acceptance criteria or user stories"**
-
-Wait for their detailed specification.
-
----
-
-### Step 4.5: Token Budget Check (Before Reading Code)
-
-**Only applies if you need to read code files to clarify requirements**
-
-**Spec Phase Token Budget: 8,000 tokens**
-
-Most spec gathering is done through engineer interviews and doesn't require reading code.
-
-**If you need to read implementation files** to ask better clarifying questions:
-
-#### Process:
-
-1. **Explain why** you need to read code files:
-   - To understand current implementation patterns?
-   - To identify technical constraints?
-   - To understand integration points?
-
-2. **List files** you want to read with justification
-
-3. **Estimate token cost:**
-   
-   ```bash
-   bin/tokenEstimator.sh --batch file1.js file2.js ...
-   ```
-
-4. **Check against budget:**
-   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
-
-#### If at/over budget (≥ 90%), ask the engineer:
-
-**"To ask more targeted clarifying questions, I'd like to read these code files:**
-
-**[List with individual token estimates]**
-
-**Total: ~X tokens (Y% of 8,000 token budget)**
-
-**Options:**
-1. **Which files are most important for understanding requirements?**
-2. **Proceed anyway** (Read all files)
-3. **Skip code reading** (Continue with engineer-provided context only)
-
-**What's your preference?"**
-
-**Wait for response** and adjust accordingly.
-
-#### Update Token Tracking (After Reading Files)
-
-**Every time you read implementation files**, update the token section in `spec.md`:
-
-1. **After reading files**, calculate actual tokens from batch estimator
-2. **Update the Token Usage section** in spec.md (see Step 6 for template)
-3. **On subsequent reads** in the same conversation:
-   - Read the existing token section from spec.md
-   - Add new files to the list
-   - Update the total
-
-**Notes:**
-- Feature README.md doesn't count toward this budget (always read it)
-- This budget is for reading implementation code during spec gathering
-- Most specs should be gathered through engineer conversation, not code reading
-- Code reading during spec phase should be minimal and targeted
-- **Always update token tracking** when reading files, even if under budget
-
----
+If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
 
 ### Step 4: Clarify Requirements
 
-Review the specification and identify any ambiguities:
+Ask targeted questions until these are clear:
 
-- Unclear behaviors or edge cases
-- Missing acceptance criteria
-- Undefined interactions with other features
-- Unspecified error handling
-- Missing technical constraints
-Token Usage (Spec Phase)
-Budget: 8,000 tokens
-**Total: 0 / 8,000 (0%)**
+- measurable success outcome
+- scope boundaries
+- acceptance criteria
+- documentation targets
+- constraints and non-goals
+- important edge cases
 
----
+Prefer a few high-signal questions over a long questionnaire.
 
-## 
-Ask targeted clarifying questions:
+### Step 5: Current-State Analysis
 
-**"I have some questions to ensure the spec is clear:**
-1. **[Question about ambiguity 1]**
-2. **[Question about ambiguity 2]**
-...
+Read the target README or docs when available. Compare current documented behavior against the proposed change.
 
-**Please clarify these points."**
+Summarize:
 
-Continue asking until the specification is unambiguous.
+- current state
+- proposed changes
+- staying the same
+- potential impacts
 
----
+Ask the engineer whether the change analysis is correct.
 
-### Step 5: Analyze Changes vs. Current State
+### Step 6: Write Spec
 
-Read the feature's README.md (current state) and compare against the new specification:
+Write:
 
-Provide analysis:
-
-```
-📋 CHANGE ANALYSIS
-
-Current State (from README):
-- [What exists today]
-- [Current behaviors]
-- [Current limitations]
-
-Proposed Changes:
-- [What will be added]
-- [What will be modified]
-- [What will be removed]
-
-Staying the Same:
-- [What remains unchanged]
-- [Unaffected behaviors]
-
-Impact Assessment:
-- [Potential breaking changes]
-- [Features that might be affected]
-- [Integration points to consider]
+```text
+.xoch/work/tasks/[task-id]/spec.md
 ```
 
-Ask the engineer:
-
-**"Does this change analysis look correct? Anything I'm missing?"**
-
----
-
-### Step 6: Create Spec Document and Set Current Task
-
-Once the specification is complete and clear:
-
-1. Create `.xoch/context/[task-id]/` directory
-2. Create `.xoch/context/current.md` containing:
-
-```markdown
-# Current Task
-
-**Task ID**: [task-id]
-**Feature**: [Brief feature name/description]
-**Feature README**: [path/to/feature/README.md]
-**Started**: [Current Date]
-```
-
-3. Create `.xoch/context/[task-id]/spec.md` containing:
+Use this structure:
 
 ```markdown
 # Specification - [task-id]
 
-**Date**: [Current Date]
-**Feature README**: [path/to/feature/README.md]
+**Date**: [today]
+**Status**: Draft
+**Documentation Targets**: [paths or project-wide]
 
 ---
 
 ## Requirements
 
-[Full specification as provided by engineer]
+[Requirement source and clarified task scope]
 
 ---
 
 ## Acceptance Criteria
 
-[List of acceptance criteria - extracted or clarified]
+- AC-001: [Binary, testable criterion]
+- AC-002: [Binary, testable criterion]
 
 ---
 
-## Change Analysis
+## Current State
 
-### Current State
 [What exists today]
 
-### Proposed Changes
+---
+
+## Proposed Changes
+
 [What will change]
 
-### Staying the Same
-[What remains unchanged]
+---
+
+## Staying The Same
+
+[Unaffected behavior]
 
 ---
 
 ## Clarifications & Notes
 
-[Any important clarifications gathered during discussion]
+[Decisions and notes]
 
 ---
 
 ## Potential Impacts
 
-[Breaking changes, affected features, integration considerations]
-```
-
-Confirm to the engineer:
-
-```
-✅ Specification captured!
-
-Task ID: [task-id]
-Context: .xoch/context/[task-id]/
-Current task set: [task-id]
-
-Changes: [brief summary]
-
-Ready to proceed with #xoch-plan
-```
+[Breaking changes, risks, affected docs/features]
 
 ---
 
-## Important Notes
+## Token Usage (Spec Phase)
 
-- **Be thorough with questions** - Better to over-clarify than implement wrong
-- **Don't make assumptions** - If unclear, ask
-- **Focus on WHAT, not HOW** - Leave implementation details for plan phase
-- **Capture engineer's words** - Don't rewrite their spec, preserve their intent
-- **Keep task ID simple** - Short, descriptive, hyphenated
-
----
-
-## Example Interaction
-
-**Agent**: "Which feature are you working on?"
-
-**Engineer**: "user authentication"
-
-**Agent**: "What identifier would you like to use for this task?"
-
-**Engineer**: "auth-oauth"
-
-**Agent**: "Please provide the specification for this task..."
-
-**Engineer**: "Add support for OAuth2 login via Google and GitHub. Users should be able to link multiple OAuth providers to one account. Existing email/password login should remain unchanged."
-
-**Agent**: "I have some questions to ensure the spec is clear:
-1. If a user's OAuth email matches an existing email/password account, should they be automatically linked or require explicit confirmation?
-2. Can users unlink OAuth providers, and if so, must they have at least one auth method remaining?
-3. Should we store OAuth refresh tokens for future API access, or just use OAuth for authentication?"
-
-**Engineer**: [Provides clarifications]
-
-**Agent**: 
-```
-📋 CHANGE ANALYSIS
-
-Current State (from README):
-- Email/password authentication with bcrypt
-- JWT token-based sessions
-- Rate limiting on login endpoint
-
-Proposed Changes:
-- Add OAuth2 login (Google, GitHub)
-- Allow multiple OAuth providers per account
-- Link OAuth to existing accounts
-- Store OAuth provider metadata
-
-Staying the Same:
-- Email/password login flow
-- JWT session management
-- Rate limiting logic
-
-Impact Assessment:
-- Database schema change: need oauth_providers table
-- Login UI needs OAuth buttons
-- Account settings page needs provider management
-- No breaking changes to existing auth flow
+Budget: 8,000 tokens
+[Files read and estimates]
 ```
 
-**Agent**: "Does this change analysis look correct?"
+### Step 7: Update State
 
-**Engineer**: "Yes, looks good"
+Update `state.md`:
 
-**Agent**:
+```yaml
+status: spec_complete
+spec_status: draft
+next_command: xoch-plan
+last_updated: [today]
 ```
-✅ Specification captured: .xoch/context/auth-oauth/spec.md
 
-Task ID: auth-oauth
-Changes: Add OAuth2 (Google, GitHub), multi-provider support
+If writing a legacy migration task, update the existing `.xoch/context/[task-id]/spec.md` and current pointer instead.
 
-Ready to proceed with #xoch-plan
+## Output
+
+End with:
+
+```text
+Specification captured.
+Task: [task-id]
+Next: xoch-plan
 ```
+
+## Rules
+
+- Specs describe change, not implementation details.
+- Acceptance criteria must be binary and testable.
+- Use AC IDs for traceability.
+- Do not silently contradict a provided source requirement.
+- Do not move active legacy task folders during the migration.

@@ -1,493 +1,162 @@
 # Contributing to Xoch
 
-Thank you for your interest in improving Xoch! This guide will help you understand how to modify existing prompts or create new ones.
+Thank you for improving Xoch. Xoch is a prompt-first workflow package, so most contributions are prompt, documentation, or helper-script changes.
 
 ---
 
-## Quick Start
+## Workflow
 
-The easiest way to modify Xoch is using Xoch itself!
+Use Xoch to work on Xoch:
 
+```text
+xoch-open -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close
 ```
-#xoch-mod
-```
 
-This meta-prompt will guide you through:
-- Modifying existing prompts
-- Creating new prompts
-- Understanding the system architecture
-- Testing your changes
+For this repository, older migration tasks may still live under `.xoch/context/`. New task guidance should target `.xoch/work/`.
 
 ---
 
-## Manual Modification
+## Prompt Files
 
-If you prefer to work manually:
+Prompt source files live in:
 
-### Modifying Existing Prompts
+```text
+prompts/
+```
 
-1. **Find the prompt** in `/prompts/[name].md`
+Each installable top-level markdown file becomes an `xoch-*` command. `prompts/README.md` is documentation only.
 
-2. **Understand the structure**:
-   ```markdown
-   ---
-   name: xoch-[name]
-   description: Brief description
-   ---
-   
-   # Xoch - [Title]
-   
-   [Content...]
-   ```
+Prompt files use this shape:
 
-3. **Make your changes** while following the [Design Guidelines](#design-guidelines)
+```markdown
+---
+name: xoch-[name]
+description: One-line description
+---
 
-4. **Test your changes**:
-   ```bash
-   ./install.sh
-   # Then test with #xoch-[name]
-   ```
+# Xoch - [Title]
 
-5. **Update documentation** if adding new behavior:
-   - Update `SYSTEM_DESIGN.md` if changing workflow
-   - Update `README.md` if changing usage
+[Prompt body]
+```
 
-### Creating New Prompts
+When adding or changing prompts:
 
-1. **Plan the prompt**:
-   - What phase of the workflow does it support?
-   - When should engineers use it?
-   - What context does it need?
-   - What does it output?
-
-2. **Create the file** at `/prompts/[name].md`
-
-3. **Follow the template**:
-   ```markdown
-   ---
-   name: xoch-[name]
-   description: One-line description
-   ---
-   
-   # Xoch - [Title]
-   
-   You are helping an engineer [purpose].
-   
-   ## Your Role
-   
-   [Describe agent's responsibility]
-   
-   ---
-   
-   ## Process
-   
-   ### Step 1: [First Step]
-   [Instructions]
-   
-   ### Step 2: [Second Step]
-   [Instructions]
-   
-   [Continue...]
-   
-   ---
-   
-   ## Important Notes
-   
-   [Key considerations]
-   
-   ---
-   
-   ## Example Interaction
-   
-   [Show it in action]
-   ```
-
-4. **Install and test**:
-   ```bash
-   ./install.sh
-   # Verify prompt appears in installation output
-   # Test with #xoch-[name]
-   ```
-
-5. **Update documentation**:
-   - Add to workflow phases in `SYSTEM_DESIGN.md`
-   - Add to prompts list in `README.md`
-   - Document when to use it
+- keep the prompt readable as plain Markdown
+- use Xoch vocabulary: task, phase, arc, work, docs
+- route to current command names
+- preserve legacy `.xoch/context/` only as a migration fallback
+- avoid QA or PR handoff ceremony in the core workflow
+- update `prompts/README.md`, `README.md`, and `SYSTEM_DESIGN.md` when behavior changes
 
 ---
 
-## Design Guidelines
+## Work Files
 
-### Consistency Rules
+Target-model task files live under:
 
-All Xoch prompts should follow these patterns:
-
-#### 1. Auto-Detect Current Task
-```markdown
-### Step 1: Auto-Detect Current Task
-
-Read `.xoch/context/current.md` to identify:
-- task ID
-- Feature name
-- Feature README path
-
-If `current.md` doesn't exist or is empty:
-- Ask: "Which task...?"
-- Wait for response
+```text
+.xoch/work/tasks/[task-id]/
 ```
 
-#### 2. Read Before Asking
-Get information from context files when possible. Don't re-ask for things already captured:
+Common files:
 
-**✅ Good:**
-```markdown
-Read `.xoch/context/[task-id]/spec.md` to get the Task URL
+| File | Purpose | Created By |
+|---|---|---|
+| `.xoch/work/current.md` | Active task pointer | `open` |
+| `state.md` | Task status and routing | `open` |
+| `spec.md` | Requirements and ACs | `spec` |
+| `plan.md` | Implementation approach | `plan` |
+| `phases.md` | Phase tracker | `plan` |
+| `snapshots/phase-[N].md` | Phase completion snapshot | `next` |
+| `review.md` | Acceptance and quality review | `review` |
+| `close.md` | Closure notes | `close` |
+| `revisions/` | Spec/plan revision notes | `revise-*` |
+
+Arcs live under:
+
+```text
+.xoch/work/arcs/[arc-id]/
 ```
 
-**❌ Bad:**
-```markdown
-Ask: "What is the Task URL?"
-```
-
-#### 3. Provide Context
-Show engineers where they are in the workflow:
-
-```markdown
-📍 CURRENT CONTEXT
-
-Task: [task-id] - [Feature Name]
-
-Progress:
-✅ Milestone 1: Complete
-✅ Milestone 2: Complete
-🔵 Milestone 3: In Progress (Current)
-⬜ Milestone 4: Not Started
-```
-
-#### 4. Interactive Confirmation
-Engineer always has final say:
-
-```markdown
-**"Ready to proceed?**
-
-**Options:**
-1. Yes, continue
-2. No, not yet
-3. Adjust something first
-
-**Your choice:"**
-```
-
-#### 5. Save Artifacts
-Create `.md` files in the context directory:
-
-```markdown
-Create `.xoch/context/[task-id]/[artifact].md` containing:
-[Content structure]
-```
-
-#### 6. Use Status Indicators
-- ✅ Complete
-- ⚠️ Warning/Issue
-- 🔵 In Progress
-- ⬜ Not Started
-- 💡 Observation/Note
-- 🎯 Goal/Target
-- 📋 Summary
-- 🔍 Analysis
-
-#### 7. Format for Copy/Paste
-Use four dashes and indentation for copyable blocks:
-
-```markdown
-----
-## Pull Request Title
-\`\`\`bash
-[Content that can be copied]
-\`\`\`
-----
-```
+Arcs reference task IDs in `tasks.md`; they do not contain task folders.
 
 ---
 
-## File Structure Conventions
+## Documentation
 
-### Context Files
+Xoch docs should describe the current system, not a historical changelog.
 
-| File | Purpose | Created By | Modified By |
-|------|---------|-----------|-------------|
-| `.xoch/context/current.md` | Track active task | `spec` | `finalize` (clears) |
-| `.xoch/context/[task-id]/spec.md` | Requirements | `spec` | - |
-| `.xoch/context/[task-id]/plan.md` | Architecture | `plan` | - |
-| `.xoch/context/[task-id]/milestones.md` | Tracker | `plan` | `advance`, `replan` |
-| `.xoch/context/[task-id]/milestone-N.md` | Snapshot | `advance` | - |
-| `.xoch/context/[task-id]/replan-DATE.md` | Replan record | `replan` | - |
-| `.xoch/context/archive/[task-id]-DATE/` | Archived | `finalize` | - |
+Update docs when behavior changes:
 
-### Naming Conventions
+- `README.md` for user-facing workflow and installation guidance
+- `SYSTEM_DESIGN.md` for architecture and state model
+- `prompts/README.md` for command inventory and prompt behavior
+- `CONTRIBUTING.md` for contributor workflow
+- `.xoch/docs/` packet examples when relevant
 
-- **Prompt files**: `[name].md` → becomes `xoch-[name]`
-- **Context directory**: `.xoch/context/[task-id]/`
-- **Task ID**: Extracted from URL between `/browse/` and `?`
-- **Date format**: `YYYY-MM-DD` for archives and replan records
-- **Milestone files**: `milestone-[N].md` where N is 1-indexed
+Use `xoch-doc` when documentation freshness is the work.
 
 ---
 
-## Testing Your Changes
+## Helper Scripts
 
-### 1. Installation Test
+Helper scripts live under:
+
+```text
+bin/
+```
+
+Current helpers:
+
+- `generateTaskId.sh`
+- `tokenEstimator.sh`
+
+Helpers should be deterministic, explicit, shell-friendly, and easy to smoke test. Do not add network-dependent helper behavior to the installer.
+
+---
+
+## Installer
+
+`install.sh` installs top-level prompt files for supported AI tools.
+
+Installer expectations:
+
+- install top-level `prompts/*.md` command files
+- skip `prompts/README.md`
+- skip any future `prompts/shared/` fragments
+- remove stale installed `xoch-*` commands whose source prompt no longer exists
+- keep command inventory aligned with `prompts/README.md`
+
+Shared prompt include rendering is not part of the current installer model. Add it only when the maintenance benefit clearly outweighs installer complexity.
+
+---
+
+## Validation
+
+Run focused checks for your change:
+
 ```bash
-./install.sh
-```
-Should show your prompt in the installation list.
-
-### 2. Invocation Test
-```
-#xoch-[your-prompt]
-```
-Should load and respond.
-
-### 3. Functional Test
-
-Create a test scenario:
-- Set up test context files if needed
-- Run through the workflow
-- Verify behavior matches expectations
-- Check that files are created/updated correctly
-
-### 4. Integration Test
-
-Test how your prompt interacts with others:
-- Does it read the right context?
-- Does it create files that other prompts expect?
-- Does it fit naturally in the workflow?
-
----
-
-## Common Patterns
-
-### Running Commands
-
-```markdown
-Run the command:
-
-\`\`\`bash
-your-command-here
-\`\`\`
-
-Analyze the output:
-
-**If successful:**
-[Handle success]
-
-**If failed:**
-[Handle failure]
+bash -n install.sh
+bash -n bin/generateTaskId.sh
+bash -n bin/tokenEstimator.sh
+git diff --check
 ```
 
-### Reading Context Files
+When installer behavior changes, run a temporary-HOME install smoke test.
 
-```markdown
-Read `.xoch/context/[task-id]/milestones.md`
+Check command inventory:
 
-Identify:
-- Current milestone number
-- Which milestones are complete
-- Remaining milestones
-```
-
-### Creating Files
-
-```markdown
-Create `.xoch/context/[task-id]/[filename].md`:
-
-\`\`\`markdown
-# [Title]
-
-**Date**: [Current Date]
-
-[Content structure...]
-\`\`\`
-```
-
-### Handling Missing Context
-
-```markdown
-If `current.md` doesn't exist or is empty:
-- Ask: "Which task are you working on?"
-- Wait for response
-- Use provided information
-
-Otherwise, auto-detect from `current.md`
-```
-
----
-
-## Documentation Standards
-
-When modifying prompts, update these files:
-
-### SYSTEM_DESIGN.md
-Update if you:
-- Add a new workflow phase
-- Change the workflow sequence
-- Modify context file structure
-- Change core principles
-
-### README.md
-Update if you:
-- Add a new prompt (add to table)
-- Change when to use a prompt
-- Modify the workflow steps
-- Add new examples
-
-### Prompt File Itself
-Include in every prompt:
-- Purpose explanation
-- When to use it
-- Step-by-step process
-- Important notes
-- Example interaction
-
----
-
-## Code Review Checklist
-
-Before submitting changes:
-
-- [ ] Follows [Design Guidelines](#design-guidelines)
-- [ ] Includes YAML frontmatter with `name` and `description`
-- [ ] Auto-detects current task from `current.md` (if applicable)
-- [ ] Reads context files instead of re-asking for info
-- [ ] Provides clear status indicators (✅ ⚠️ 🔵 ⬜)
-- [ ] Engineer has final say on decisions
-- [ ] Includes example interaction
-- [ ] Tested with `./install.sh`
-- [ ] Documentation updated (`SYSTEM_DESIGN.md` and/or `README.md`)
-- [ ] Prompt appears in installation output
-- [ ] Invocation works (`#xoch-[name]`)
-- [ ] Creates expected context files (if applicable)
-- [ ] Integrates properly with other prompts
-
----
-
-## Advanced Topics
-
-### Installer Logic
-
-The `install.sh` script:
-1. Finds all `.md` files in `/prompts/`
-2. Extracts `name:` from YAML frontmatter
-3. For Copilot: Creates symlink at `~/Library/Application Support/Code/User/prompts/`
-4. For Codex: Copies file and generates `agents/openai.yaml` metadata
-
-**You don't need to modify the installer** unless changing installation logic.
-
-### Multi-Agent Support
-
-Xoch supports:
-- **GitHub Copilot**: Uses `.prompt.md` format via symlinks
-- **Codex**: Uses `SKILL.md` format via file copies + metadata
-- **Cursor**: Uses Copilot prompts (no separate installation)
-
-The installer handles all conversions automatically.
-
-### Context Lifecycle
-
-Understanding context file lifecycle:
-
-1. **Created by `spec`**: `current.md`, `spec.md`
-2. **Created by `plan`**: `plan.md`, `milestones.md`
-3. **Created by `advance`**: `milestone-N.md` (repeating)
-4. **Created by `replan`**: `replan-DATE.md` (optional, repeating)
-5. **Archived by `finalize`**: All files moved to `archive/`
-6. **Cleared by `finalize`**: `current.md`
-
----
-
-## Getting Help
-
-Need assistance?
-
-1. **Use the mod prompt**: `#xoch-mod` provides guided help
-2. **Read examples**: Look at existing prompts for patterns
-3. **Check SYSTEM_DESIGN.md**: Complete system specification
-4. **Open an issue**: File an issue on GitHub
-5. **Join discussions**: Share ideas in GitHub Discussions
-
----
-
-## Philosophy
-
-When contributing, remember Xoch's core values:
-
-1. **READMEs are source of truth** - Always current, never stale
-2. **Incremental progress** - Milestones track the journey
-3. **Context preservation** - Capture decisions and rationale
-4. **Engineer control** - Agents advise, engineers decide
-5. **Quality gates** - Enforce standards automatically
-
-Keep these in mind when designing new features!
-
----
-
-## Example: Adding a Test Runner
-
-Let's walk through adding a `test` prompt that runs tests before allowing advancement:
-
-**1. Plan the prompt:**
-- Runs after lint check in `advance`
-- Executes `npm test`
-- Blocks advancement if tests fail
-- Offers to fix or skip
-
-**2. Create `/prompts/test.md`:**
-```markdown
----
-name: xoch-test
-description: Run tests before milestone advancement
----
-
-# Xoch - Test Runner
-
-You are helping an engineer verify tests pass before advancing.
-
-## Your Role
-
-Run the test suite and ensure all tests pass before allowing milestone advancement.
-
-[Continue with process steps...]
-```
-
-**3. Modify `advance.md`:**
-Add test step after lint check:
-
-```markdown
-### Step 7: Run Lint Check
-[Existing lint logic]
-
----
-
-### Step 8: Run Tests
-
-Run the test command:
-
-\`\`\`bash
-npm test
-\`\`\`
-
-[Handle pass/fail]
-```
-
-**4. Test:**
 ```bash
-./install.sh
-#xoch-advance  # Verify test step runs
+find prompts -maxdepth 1 -type f -name '*.md' ! -name README.md -print | sort
 ```
 
-**5. Document:**
-- Add to `SYSTEM_DESIGN.md` workflow phases
-- Add to `README.md` prompts table
-- Note that `advance` now includes testing
+---
 
-Done! You've extended Xoch with a new quality gate.
+## Contribution Principles
+
+- Keep changes scoped to the task.
+- Prefer existing Xoch patterns.
+- Preserve user changes in the worktree.
+- Record why foundational task artifacts changed.
+- Keep Xoch lightweight and personal.
+- Do not add aliases for removed commands unless a future task explicitly decides to.

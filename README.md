@@ -1,260 +1,237 @@
-# 🐈‍⬛ Xoch - Spec-Driven Development
+# Xoch - Spec-Driven Development
 
-**Open-Source Development Workflow System**
+**Open-source, prompt-first development workflow**
 
-A lightweight, spec-driven development system where README files serve as both living specifications and documentation. Works with AI agents (GitHub Copilot, Codex, Cursor) to guide development workflows through incremental milestones.
+Xoch is a lightweight workflow system for AI-assisted software work. It keeps durable project knowledge in readable documentation, tracks focused task work in local Xoch state, and guides engineers through a clear lifecycle from opening a task to closing it.
 
 ---
 
-## What is Xoch?
+## Core Ideas
 
-Xoch (SOH-ch)[^1] eliminates massive changelogs by maintaining clarity through README files that serve as the source of truth. Instead of documenting changes after the fact, READMEs always reflect current reality, and incremental milestones track the journey.
-
-### Core Philosophy
-
-- **READMEs describe NOW** - How features work currently
-- **Specs describe CHANGE** - What will be modified
-- **Milestones track PROGRESS** - Incremental implementation steps
-- **Context is preserved** - All decisions and rationale captured
-- **Agents guide workflow** - AI assistants for each phase
+- **Docs describe now** - READMEs and Xoch docs explain the current system.
+- **Specs describe change** - Task specs capture what should change and why.
+- **Plans create phases** - Work is broken into reviewable implementation phases.
+- **Tasks stay focused** - Each task owns its spec, plan, phases, snapshots, review, and closure notes.
+- **Arcs group tasks** - Optional arcs reference related tasks without nesting task folders.
+- **Engineers stay in control** - Agents guide, implement, and review, but destructive actions and release choices remain engineer-owned.
 
 ---
 
 ## Quick Start
 
-### Installation
-
 ```bash
-# Clone the repository
 git clone https://github.com/jeffcarbine/xoch.git
 cd xoch
-
-# Run the installer
 ./install.sh
 ```
 
-The installer will:
-- ✅ Install prompts for **GitHub Copilot** (symlinks to VS Code prompts directory)
-- ✅ Install prompts for **Codex** (copies to `~/.codex/skills/`)
-- ✅ Work automatically with **Cursor** (uses Copilot prompts)
+Verify installation:
 
-### Verify Installation
-
-In VS Code or Cursor:
-```
+```text
 #xoch-meow
 ```
 
 In Codex:
-```
+
+```text
 $xoch-meow
 ```
 
-You should see a test greeting confirming the installation.
+---
+
+## Core Workflow
+
+```text
+open -> spec -> plan -> make -> next -> review -> close
+```
+
+| Step | Command | Purpose |
+|---|---|---|
+| 1 | `xoch-open` | Open or resume a task. |
+| 2 | `xoch-spec` | Capture requirements and acceptance criteria. |
+| 3 | `xoch-plan` | Create the implementation approach and phases. |
+| 4 | `xoch-make` | Implement or guide the current phase. |
+| 5 | `xoch-next` | Review the current phase and advance. |
+| 6 | `xoch-review` | Verify acceptance, quality, tests, and docs. |
+| 7 | `xoch-close` | Close the task and clear active work. |
+
+Use `xoch-make` and `xoch-next` repeatedly until all phases are complete.
+
+### Phase Rhythm
+
+`xoch-make` is where implementation happens. It loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
+
+`xoch-next` is the phase checkpoint. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation.
+
+After the final phase, `xoch-review` checks acceptance coverage, quality, risk, test evidence, and documentation freshness. `xoch-close` expects a passing review, but the engineer may explicitly waive review or documentation gaps for lightweight work; waivers are recorded in task state and closure notes.
 
 ---
 
-## Usage
+## Supporting Commands
 
-### First Time Setup
-
-For existing projects, initialize documentation:
-
-```bash
-#xoch-init-app        # Create application README
-#xoch-init-feature    # Create feature READMEs (run for each feature)
-```
-
-### Main Workflow
-
-**Flow**: `spec → plan → start → advance (repeat) → finalize`
-
-```bash
-#xoch-spec            # Capture requirements
-#xoch-plan            # Create milestones
-#xoch-start           # Begin milestone
-#xoch-advance         # Complete milestone, advance to next (repeat)
-#xoch-finalize        # Archive when all milestones done
-```
-
-**Optional prompts:**
-- `#xoch-validate` - Verify README accuracy
-- `#xoch-sidebar` - Explore tangential questions
-- `#xoch-replan` - Update milestones when requirements change
-- `#xoch-merge` - Resolve README conflicts
-
----
-
-## Token Management
-
-Xoch includes **token budget management** to keep AI agent context efficient and prevent overflow.
-
-### Token Budgets by Phase
-
-| Phase | Budget | What It Covers |
-|-------|--------|----------------|
-| **spec** | 8,000 tokens | Prompt (~3K) + reading implementation files to clarify requirements |
-| **plan** | 13,000 tokens | Prompt (~3K) + reading codebase to understand architecture |
-| **start** | 18,000 tokens | Prompt (~2.5K) + deep-dive into files for first milestone |
-| **advance** | 15,000 tokens | Prompt (~4.5K) + reading additional context beyond git diff |
-| **sidebar** | 8,000 tokens | Prompt (~2.2K) + reading files to answer tangential questions |
-| **replan** | 12,000 tokens | Prompt (~4K) + reading context to adjust milestones |
-| **pause** | 5,000 tokens | Prompt (~1.4K) + reading context for status summary |
-| **resume** | 8,000 tokens | Prompt (~2.5K) + loading archived task context |
-| **glossary** | 8,000 tokens | Prompt (~3.3K) + reading existing glossaries |
-| **finalize** | 12,000 tokens | Prompt (~4.5K) + reading milestones to update READMEs |
-
-**Budgets include prompt overhead** - Each budget accounts for the prompt itself plus files you read.
-
-**Unlimited phases**: init-app, init-feature, validate, merge
-
-### Token Estimator Tool
-
-Check token usage before reading files:
-
-```bash
-# Single file
-bin/tokenEstimator.sh README.md
-
-# Multiple files
-bin/tokenEstimator.sh --batch file1.js file2.js file3.js
-```
-
-**README Token Limit**: 3,000 tokens (~10,500 characters) for feature READMEs.
-
-### How Budget Enforcement Works
-
-In budget-limited phases:
-
-1. Agent identifies files to read
-2. Runs `tokenEstimator.sh --batch` to estimate total tokens
-3. **If under 90% of budget**: Proceeds with reading
-4. **If at/over 90%**: Asks you to prioritize which files matter most
-5. Tracks token usage in context files (spec.md, plan.md, milestones.md)
-
-This prevents context overflow while maintaining visibility into what's being read.
-
----
-
-### Parallel Tasks
-
-Switch between multiple tasks:
-
-```bash
-#xoch-pause           # Pause current task
-#xoch-resume [task]   # Resume paused/archived task
-```
-
----
-
-## Glossaries
-
-Maintain consistent terminology with project-specific glossaries:
-
-```bash
-#xoch-glossary        # Add/update project terms
-```
-
-Glossaries are stored in `.xoch/glossaries/` and committed to git for team-wide consistency.
-
-See [prompts/README.md](prompts/README.md) for detailed prompt documentation.
+| Command | Purpose |
+|---|---|
+| `xoch-open-arc` | Open an optional arc grouping related tasks. |
+| `xoch-revise-arc` | Revise arc purpose, notes, or task membership. |
+| `xoch-close-arc` | Close an arc when its related tasks are complete. |
+| `xoch-revise-spec` | Revise a task's foundational requirements. |
+| `xoch-revise-plan` | Revise a task's implementation plan or remaining phases. |
+| `xoch-doc` | Create, refresh, or repair project and feature documentation. |
+| `xoch-map` | Maintain lightweight local project/dependency map context. |
+| `xoch-trace` | Investigate root cause for bugs or unclear symptoms before changing code. |
+| `xoch-patch` | Use a focused path for small or urgent fixes. |
+| `xoch-pause` | Pause the active task. |
+| `xoch-resume` | Resume paused or archived work. |
+| `xoch-sidebar` | Explore a related question without advancing task state. |
+| `xoch-glossary` | Add or update project terminology. |
+| `xoch-meow` | Verify installation. |
 
 ---
 
 ## Project Structure
 
-Xoch uses `.xoch/` for all working files:
+Xoch uses `.xoch/` for workflow state and project knowledge:
 
-```
+```text
 your-project/
-├── README.md                    # Application spec
-├── .xoch/                       # Xoch workspace (flexible gitignore)
-│   ├── glossaries/              # Project terminology (shareable)
-│   │   ├── README.md
-│   │   └── quick-reference.md
-│   └── context/                 # Task context (flexible gitignore)
-│       ├── current.md           # Active task
-│       ├── [task-id]/           # Task context
-│       │   ├── spec.md
-│       │   ├── plan.md
-│       │   └── milestones.md
-│       └── archive/             # Completed tasks
-└── src/feature/
-    └── README.md                # Feature spec
+  README.md
+  .xoch/
+    work/
+      current.md
+      tasks/
+        task-id/
+          state.md
+          spec.md
+          plan.md
+          phases.md
+          review.md
+          close.md
+          phases/
+            phase-1.md
+            phase-2.md
+          snapshots/
+          notes/
+      arcs/
+        arc-id/
+          state.md
+          plan.md
+          tasks.md
+          notes.md
+    docs/
+      CODEBASE.md
+      PATTERNS.md
+      DEPENDENCIES.json
+      RISKS.md
+      TESTING.md
+      FEATURES.md
+    glossaries/
+      README.md
+      quick-reference.md
 ```
 
-Add to `.gitignore` (choose your sharing preference):
-```bash
-# Option 1: Ignore everything (default - solo development)
-echo ".xoch/" >> .gitignore
+### Tasks, Phases, And Arcs
 
-# Option 2: Share glossaries only (ignore context)
-echo ".xoch/context/" >> .gitignore
+- A **task** is the primary unit of work.
+- A **phase** is an implementation slice inside a task.
+- An **arc** is an optional grouping of related tasks.
 
-# Option 3: Share glossaries + context folders (ignore active task pointer)
-echo ".xoch/context/current.md" >> .gitignore
+Tasks live under `.xoch/work/tasks/`. Arcs live under `.xoch/work/arcs/` and reference task IDs; task folders are not nested inside arc folders.
+
+Arc files are intentionally small:
+
+```text
+.xoch/work/arcs/[arc-id]/
+  state.md
+  tasks.md
+  notes.md
+  close.md
+  revisions/
 ```
+
+`tasks.md` is the membership list. It can group task IDs as active, planned, complete, or parked. If a task belongs to an arc, its task `state.md` should use `arc: [arc-id]`, but the task folder still stays under `.xoch/work/tasks/`.
+
+### Task State
+
+Each task has a `state.md` file that records the active workflow state:
+
+```text
+.xoch/work/tasks/[task-id]/state.md
+```
+
+Typical state includes the task ID, title, optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
+
+New work should use `.xoch/work/`. Older migration-era tasks may still exist under `.xoch/context/`; Xoch prompts should not move those legacy tasks unless the engineer explicitly asks.
+
+### Revision Commands
+
+Use revision commands when foundational work changes:
+
+- `xoch-revise-spec` changes what success means: requirements, acceptance criteria, scope, constraints, or documentation targets.
+- `xoch-revise-plan` changes how the work will proceed: implementation approach, phase order, validation, or remaining phase scope.
+- `xoch-revise-arc` changes the larger grouping: purpose, task membership, arc status, or shared arc notes.
+
+Revision notes live under each task or arc `revisions/` folder and explain why the foundational artifact changed.
 
 ---
 
-## Example Workflow
+## Gitignore Choices
+
+Choose what your team wants to share:
+
+```gitignore
+# Local-only Xoch state
+/.xoch/work/
+
+# Share project docs and glossaries
+!.xoch/docs/
+!.xoch/glossaries/
+```
+
+For solo work, ignoring all of `.xoch/` is also valid.
+
+---
+
+## Token Management
+
+Xoch prompts estimate file reads with:
 
 ```bash
-# New feature
-#xoch-spec          # Requirements
-#xoch-plan          # Break into milestones
-#xoch-start         # Begin M1
-#xoch-advance       # Complete M1 → M2
-#xoch-advance       # Complete M2 → M3
-#xoch-advance       # Complete M3 (updates READMEs)
-#xoch-finalize      # Archive
-
-# Requirements change mid-feature
-#xoch-replan        # Update remaining milestones
-#xoch-advance       # Continue
-
-# Context switching
-#xoch-pause         # Pause feature-a
-#xoch-spec          # Start bug-fix
-# ... fix bug ...
-#xoch-finalize      # Complete bug
-#xoch-resume        # Back to feature-a
+bin/tokenEstimator.sh --batch file1 file2
 ```
+
+Prompts use token budgets to keep context intentional. Engineers may override budgets when doing so is worth the extra context.
+
+## Support Workflows
+
+`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before review/close, or maintain `.xoch/docs/` packets such as `CODEBASE.md`, `PATTERNS.md`, `DEPENDENCIES.json`, `RISKS.md`, `TESTING.md`, and `FEATURES.md`.
+
+`xoch-map` records local project and dependency relationships without creating synchronized multi-project task state. Use it for lightweight orientation: local paths, package names, service relationships, validation commands, and docs targets.
+
+`xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
+
+`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open` or revise the active task.
 
 ---
 
 ## Documentation
 
-- **[prompts/README.md](prompts/README.md)** - Detailed prompt documentation
-- **[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)** - Complete system specification
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-
----
-
-## Key Features
-
-- **Token budgets** per phase prevent context overflow
-- **Project glossaries** maintain terminology consistency
-- **Pause/resume** for parallel task management
-- **Milestone snapshots** preserve decision history
-- **Living READMEs** eliminate changelogs
+- [prompts/README.md](prompts/README.md) - Command inventory and prompt behavior.
+- [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) - System model and workflow design.
+- [docs/XOCH_REPFLOW_EVOLUTION_PLAN.md](docs/XOCH_REPFLOW_EVOLUTION_PLAN.md) - Reference plan for this workflow evolution.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidance.
 
 ---
 
 ## Troubleshooting
 
-**Prompt not found**: Run `./install.sh` and restart VS Code/Codex
+**Prompt not found:** Run `./install.sh` and restart the AI tool.
 
-**Context files not found**: Run `#xoch-spec` to create initial context
+**No current task:** Run `xoch-open`.
 
-**README conflicts**: Use `#xoch-merge` to resolve
+**Docs feel stale:** Run `xoch-doc`.
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
-
----
-
-[^1]: It is also the name of my black cat, short for Xochi, which is, in turn, short for Xochitl, which means "flower" in Nahuatl. She's very cute.
+MIT License - See [LICENSE](LICENSE).

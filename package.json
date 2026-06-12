@@ -1,0 +1,23 @@
+{
+  "name": "xoch-sdd",
+  "version": "1.0.0",
+  "description": "A spec-driven development tool that puts engineers first",
+  "keywords": [
+    "sdd"
+  ],
+  "homepage": "https://github.com/jeffcarbine/xoch#readme",
+  "bugs": {
+    "url": "https://github.com/jeffcarbine/xoch/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeffcarbine/xoch.git"
+  },
+  "license": "ISC",
+  "author": "Jeff Carbine",
+  "type": "commonjs",
+  "main": "install.sh",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

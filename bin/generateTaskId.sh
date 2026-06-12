@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Xoch Task ID Generator
-# Generates unique task IDs for context directories
+# Generates unique task IDs for Xoch work/task directories
 
 # Usage modes:
 # 1. With user-provided ID: generateTaskId.sh --id "my-task-id"

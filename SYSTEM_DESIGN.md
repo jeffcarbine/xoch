@@ -1,1039 +1,262 @@
 # Xoch System Design
 
-**Spec-Driven Development with Living Documentation**
+Xoch is a prompt-first workflow system for AI-assisted software development. It keeps durable project knowledge in documentation and local task execution state under `.xoch/`.
 
-A lightweight, spec-driven development system where README files serve as both living specifications and documentation, eliminating the need for massive change logs while maintaining clarity on how systems and features work.
+## Philosophy
 
-## Core Philosophy
+- **Documentation is living specification.** READMEs and Xoch docs describe the system as it exists now.
+- **Specs describe change.** Task specs capture what should change before implementation begins.
+- **Plans create phases.** Work is broken into small, reviewable phases.
+- **Agents assist, engineers decide.** Agents can plan, implement, review, and summarize, but the engineer owns direction and risky operations.
+- **State is explicit.** Task files record decisions, current phase, review status, and closure notes.
 
-- **Documentation IS the specification** - README files are the source of truth
-- **Context over history** - Focus on current state, not append-only logs
-- **Human-guided, AI-assisted** - Engineers architect, agents execute
-- **Feature-level granularity** - Each feature maintains its own specification
-- **Interactive by design** - Prompts ask questions and guide engineers through each phase
+## Vocabulary
 
----
+| Concept | Meaning |
+|---|---|
+| Task | The primary unit of work. |
+| Phase | A reviewable implementation slice inside a task. |
+| Arc | An optional grouping of related tasks that share a larger goal. |
+| Work | Local task and arc execution state under `.xoch/work/`. |
+| Docs | Project knowledge packets and README-aligned documentation under `.xoch/docs/`. |
+| Glossary | Project terminology under `.xoch/glossaries/`. |
 
-## Prompt Interaction Model
+## Lifecycle
 
-All Xoch prompts follow an **interactive question-driven approach**:
-
-1. Engineer invokes a prompt (e.g., `#xoch-spec`, `$xoch-plan`)
-2. Agent asks specific questions to gather needed information
-3. Engineer provides answers
-4. Agent analyzes, provides feedback, and may ask follow-ups
-5. Process continues until phase is complete
-
-**Example** - Spec Phase:
-```
-Engineer: #xoch-spec
-Agent: "What is the link to the task?"
-Engineer: [provides URL]
-Agent: "Please provide the spec for this task"
-Engineer: [provides description]
-Agent: [analyzes and asks clarifying questions]
+```text
+open -> spec -> plan -> make -> next -> review -> close
 ```
 
-This approach ensures consistency, gathers all necessary context, and guides engineers through the workflow systematically.
+### Open
 
----
+`xoch-open` creates or resumes task work. It records task metadata, optional arc association, and documentation targets when known.
 
-## File Structure & Conventions
+### Spec
 
-### README Hierarchy
+`xoch-spec` captures requirements, constraints, and acceptance criteria. New specs should use explicit AC IDs so plan, make, next, and review can preserve traceability.
 
-```
-application/
-├── README.md                              # Project-level specification
-├── .xoch/                                 # Xoch workspace
-│   ├── glossaries/                        # Project terminology (shareable)
-│   │   ├── README.md                      # Glossary documentation
-│   │   ├── quick-reference.md             # Core terms
-│   │   ├── entities.md                    # Data models (optional)
-│   │   └── integrations.md                # Third-party systems (optional)
-│   └── context/                           # Task context (flexible gitignore)
-│       ├── current.md                     # Current active task (Task ID)
-│       ├── user-auth/                     # Active task context (by Task ID)
-│       │   ├── spec.md                    # Task requirements
-│       │   ├── plan.md                    # Architecture + approach
-│       │   ├── milestones.md              # Milestone tracker (current status)
-│       │   ├── milestone-1.md             # Completed milestone snapshots
-│       │   ├── milestone-2.md
-│       │   └── milestone-N.md
-│       ├── bug-404/                       # Another task context
-│       │   └── ...
-│       └── archive/                       # Completed tasks (historical)
-│           ├── user-auth-2026-05-26/      # Archived context (Task ID + date)
-│           └── bug-404-2026-05-27/
-├── .xochconfig                            # Configuration file (optional)
-└── path/to/feature/
-    └── README.md                          # Feature-level specification
-```
+### Plan
 
-### README Content Guidelines
+`xoch-plan` turns the spec into an implementation approach and phases.
 
-**Project-level README.md** should contain:
-- High-level system overview
-- How end-users interact with the system
-- Technical architecture patterns
-- Coding conventions and organizational rules
-- Cross-cutting concerns
+### Make
 
-**Feature-level README.md** should contain:
-- What the feature does (user perspective)
-- How the feature works (technical perspective)
-- How it interacts with other features
-- Test scenarios and acceptance criteria
-- Known limitations (if any)
+`xoch-make` implements or guides the current phase. It confirms phase readiness, explains the work, records who owns implementation, keeps edits scoped to the phase, and captures validation evidence before routing to `xoch-next`.
 
-**Keep READMEs tight and streamlined** - Avoid bloat. Focus on clarity and essential information.
+### Next
 
----
+`xoch-next` reviews phase output, asks about manual or external changes, writes a phase snapshot, and advances to the next phase only after engineer confirmation. When no phases remain, it marks implementation complete and routes to `xoch-review`.
 
-## Context Tracking
+### Review
 
-### Task ID System
+`xoch-review` checks completed work against acceptance, correctness, quality, security basics, tests, and documentation freshness. Review status is one of `pass`, `pass_with_waivers`, `needs_work`, or `blocked`.
 
-Xoch uses task IDs as the primary identifier for tasks. Task IDs can be:
-1. **User-provided** - From issue trackers (e.g., `JIRA-1285`) or manual assignment (e.g., `oauth-integration`)
-2. **Auto-generated** - Unique timestamp-based IDs when no ID is provided
+### Close
 
-**Task ID Generation Tool**: `bin/generateTaskId.sh`
+`xoch-close` records final task history, handles review or documentation waivers if needed, and clears active work. Closing normally requires `pass` or `pass_with_waivers`; missing or failing review requires an explicit engineer waiver.
 
-```bash
-# User-provided ID (cleaned and validated)
-bin/generateTaskId.sh --id "User Auth Feature"
-# Output: user-auth-feature
+## Directory Model
 
-# Auto-generated ID (project-YYYYMMDD-HHMM-xxxx)
-bin/generateTaskId.sh
-# Output: myproject-20260601-1430-a8k2
-```
-
-**Auto-generated ID format:**
-- `projectname` - Current directory name (cleaned)
-- `YYYYMMDD-HHMM` - Timestamp for chronological sorting
-- `xxxx` - Random 4-character suffix for uniqueness
-
-**Benefits:**
-- **Unique identification** - Auto-generated IDs avoid collisions
-- **Shareable context** - Teams can share `.xoch/context/` directories without ID conflicts
-- **Traceability** - User-provided IDs link to issue trackers
-- **Flexibility** - Works for solo developers and teams
-
-### Current Task File
-
-`.xoch/context/current.md` tracks the active task:
-
-```markdown
-# Current Task
-
-**Task ID**: user-auth-20260601-1430-a8k2
-**Feature**: User Authentication OAuth
-**Feature README**: src/authentication/README.md
-**Started**: 2026-06-01
-```
-
-**Benefits:**
-- Prompts automatically detect current task (no need to specify each time)
-- Context preserved across prompt invocations
-- Clear indication of what's in progress
-- Supports switching between multiple tasks
-
-**Prompt Behavior:**
-1. Read `.xoch/context/current.md` to get Task ID
-2. If found and valid, use that task context automatically
-3. If not found, ask engineer for Task ID or generate one
-4. Continue with identified task
-
----
-
-## Token Tracking & Budget System
-
-To prevent context overflow and maintain efficient AI interactions, Xoch implements per-phase token budgets.
-
-### Token Budgets by Phase
-
-| Phase | Budget | What It Covers |
-|-------|--------|----------------|
-| **Spec** | 8,000 tokens | Reading implementation files during requirements gathering |
-| **Plan** | 13,000 tokens | Reading codebase to understand architecture |
-| **Start** | 18,000 tokens | Initial milestone implementation deep-dive |
-| **Advance** | 15,000 tokens | Reading additional context beyond git diff |
-| **Sidebar** | 8,000 tokens | Reading files to answer tangential questions |
-| **Replan** | 12,000 tokens | Reading context to adjust milestones when requirements change |
-| **Pause** | 5,000 tokens | Reading context files for status summary |
-| **Resume** | 8,000 tokens | Loading archived task context to resume work |
-| **Glossary** | 8,000 tokens | Reading existing glossaries for consistency |
-| **Finalize** | 12,000 tokens | Reading milestones to update READMEs |
-
-**Unlimited phases**: init-app, init-feature, validate, merge
-
-All budgets include prompt overhead (1.4K-4.5K tokens depending on the prompt).
-
-### Token Estimation
-
-**Token Estimator Script**: `bin/tokenEstimator.sh`
-- Estimates tokens before reading files (chars / 3.5)
-- Batch mode for multiple files: `tokenEstimator.sh --batch file1 file2 ...`
-- Single file mode: `tokenEstimator.sh file.js`
-
-### Budget Enforcement
-
-**Budgets include prompt overhead** - Each phase's budget accounts for both the prompt itself (~3K-5K tokens) and the files you read.
-
-**Before reading files**, prompts:
-1. Identify which files need to be read
-2. Estimate token cost using the estimator
-3. Check if total ≥ 90% of phase budget (prompt + files)
-4. If over budget, ask engineer to prioritize files
-5. After reading, update token tracking in context documents
-
-**Token breakdown example (Spec phase, 8,000 budget):**
-- Prompt overhead: ~3,000 tokens
-- Available for reading files: ~5,000 tokens
-- 90% threshold: 7,200 tokens total
-
-### Token Tracking in Context Files
-
-**In spec.md:**
-```markdown
-## Token Usage (Spec Phase)
-Budget: 8,000 tokens
-- src/middleware/auth.js - 1,200 tokens
-- src/utils/validator.js - 800 tokens
-**Total: 2,000 / 8,000 (25%)**
-```
-
-**In plan.md:**
-```markdown
-## Token Usage (Plan Phase)
-Budget: 13,000 tokens
-- src/feature/controller.js - 2,500 tokens
-- src/feature/service.js - 1,800 tokens
-**Total: 4,300 / 13,000 (33%)**
-```
-
-**In milestones.md (per milestone):**
-```markdown
-## Milestone 1: Database Schema
-
-### Token Usage (Start Phase)
-Budget: 18,000 tokens
-- database/schema.sql - 3,000 tokens
-**Total: 3,000 / 18,000 (17%)**
-
-### Token Usage (Advance Phase)
-Budget: 15,000 tokens
-- src/models/User.js - 1,500 tokens
-**Total: 1,500 / 15,000 (10%)**
-
-**Status**: ✅ Complete
-```
-
-### Benefits
-
-- **Prevents context overflow** - Stay within model limits
-- **Explicit cost awareness** - Engineers see token usage
-- **Prioritization** - Focus on most important files
-- **Historical tracking** - See token patterns over time
-
----
-
-## Project Glossaries
-
-Xoch supports **project-specific terminology glossaries** to ensure consistent understanding of domain concepts across all development work.
-
-### Purpose
-
-- **Terminology consistency** - All team members and AI use the same terms
-- **Domain clarity** - Document project-specific concepts and data structures
-- **Entity mappings** - Map identifiers and fields between systems
-- **Onboarding** - New engineers learn terminology quickly
-- **AI accuracy** - Agents understand project-specific concepts correctly
-
-### Location
-
-Glossaries are stored in the project repository at `.xoch/glossaries/`:
-
-```
-project-root/
-├── glossaries/
-│   ├── README.md                 # Glossary index
-│   ├── quick-reference.md        # Core terminology (always read)
-│   ├── entities.md               # Entity mappings and schemas
-│   ├── integrations.md           # Third-party integrations
-│   └── [domain].md               # Domain-specific glossaries
-└── ...
-```
-
-### Discovery
-
-Prompts automatically check for `.xoch/glossaries/` directory and load relevant glossaries based on phase:
-
-**Prompts that always load glossaries** (if they exist):
-- `init-app` - Documenting with proper terminology
-- `init-feature` - Documenting with proper terminology
-- `spec` - Capturing requirements with correct terms
-- `finalize` - Final README validation
-
-**Prompts that conditionally load glossaries:**
-- `validate` - Only if validating terminology
-- `advance` - Only when updating READMEs
-
-**Prompts that never load glossaries:**
-- `plan`, `start`, `investigate`, `replan`, `pause`, `resume`, `merge`
-
-### Glossary Structure
-
-**Index (README.md)**: Lists all available glossaries and when to read each one
-
-**Quick Reference**: Core terminology used across project (always read when glossaries exist)
-
-**Domain-Specific Glossaries**: Detailed terminology for specific areas:
-- Entity schemas and relationships
-- Integration/API mappings
-- Field-level conventions
-
-### Managing Glossaries
-
-**Location**: `.xoch/glossaries/` (inside `.xoch/` directory)
-
-**Create glossaries:**
-- During `init-app` (offers to create structure)
-- Use `#xoch-glossary` prompt to add/update terms
-- Manually edit `.md` files in `.xoch/glossaries/`
-
-**Sharing options:**
-- **Shareable by default** - Use `.xoch/context/` in `.gitignore` to share glossaries while keeping context private
-- **Team documentation** - Commit glossaries so everyone benefits from shared terminology
-- **Version controlled** - Track terminology evolution alongside code
-
-### Benefits
-
-| Benefit | Description |
-|---------|-------------|
-| **Token efficiency** | Document terms once, reference everywhere (~2-3K tokens per session) |
-| **Consistency** | Same terminology across all phases and team members |
-| **Less repetition** | Avoid explaining domain concepts in every conversation |
-| **Knowledge capture** | Preserve domain knowledge in version control |
-
----
-
-## Parallel Task Management
-
-Xoch supports working on multiple tasks simultaneously through pause/resume functionality.
-
-### Use Cases
-
-**Context switching:**
-- Working on feature A, urgent bug comes up
-- Pause feature A, fix bug, resume feature A
-
-**End of day:**
-- Pause current work
-- Resume next day exactly where you left off
-
-**Exploring alternatives:**
-- Pause current approach
-- Try alternative approach
-- Compare both, pick best
-
-### Pause Workflow
-
-**Command**: `#xoch-pause`
-
-**Process:**
-1. Shows current task status and progress
-2. Confirms with engineer
-3. Removes `.xoch/context/current.md` (clears active context)
-4. Preserves all task files in `.xoch/context/[task-id]/`
-
-**What's preserved:**
-- All specifications and requirements
-- Implementation plan and milestones
-- Completed milestone snapshots
-- Token usage tracking
-- All decisions and notes
-
-### Resume Workflow
-
-**Command**: `#xoch-resume` or `#xoch-resume [task-id]`
-
-**Process:**
-1. Checks for existing active task (must pause first if exists)
-2. Scans for paused tasks (`.xoch/*/`) and archived tasks (`.xoch/context/archive/*/`)
-3. Lists available tasks or uses provided task ID
-4. Restores archived task if needed (moves from archive)
-5. Recreates `.xoch/context/current.md` with selected task
-6. Shows task summary (spec, progress, next milestone)
-7. Guides engineer on next action
-
-**Task states:**
-- **Active**: Has entry in `.xoch/context/current.md`
-- **Paused**: Directory exists in `.xoch/context/[task-id]/`, no `current.md`
-- **Archived**: Directory in `.xoch/context/archive/[task-id]-[date]/`
-
-### Multiple Parallel Tasks
-
-You can have many tasks paused simultaneously:
-```
+```text
 .xoch/
-├── current.md                     # Points to feature-a (active)
-├── feature-a/                     # Active work
-├── feature-b/                     # Paused
-├── bug-fix-1/                     # Paused
-├── bug-fix-2/                     # Paused
-└── archive/
-    ├── feature-c-2026-05-20/     # Completed, archived
-    └── bug-fix-3-2026-05-22/     # Completed, archived
+  work/
+    current.md
+    tasks/
+      task-id/
+        state.md
+        spec.md
+        plan.md
+        phases.md
+        review.md
+        close.md
+        phases/
+          phase-1.md
+          phase-2.md
+        snapshots/
+        notes/
+        revisions/
+    arcs/
+      arc-id/
+        state.md
+        plan.md
+        tasks.md
+        notes.md
+  docs/
+    CODEBASE.md
+    PATTERNS.md
+    DEPENDENCIES.json
+    RISKS.md
+    TESTING.md
+    FEATURES.md
+  glossaries/
+    README.md
+    quick-reference.md
 ```
 
-Switch between them with `#xoch-pause` and `#xoch-resume`.
+## Task State
 
-### Restoring Archived Tasks
+Every target-model task should have:
 
-If additional work is needed on completed tasks:
-1. `#xoch-resume [archived-task-id]`
-2. Task moved from archive back to active context
-3. Add new milestones or adjust existing plan
-4. Continue with normal workflow
-
----
-
-## Development Workflow
-
-### Bootstrapping Phase (One-Time Setup)
-
-Before using the main Xoch workflow, you must establish README documentation for your application and features. These prompts help you document existing codebases.
-
-#### Initialize Application README
-
-**Trigger**: Need to document the application for the first time or major updates
-
-**Process**:
-1. Engineer invokes the `init-app` prompt
-2. Agent reads existing README.md (if any)
-3. Agent analyzes folder structure and codebase
-4. Agent identifies all features and architecture
-5. Agent presents analysis to engineer for confirmation
-6. Engineer provides corrections/feedback
-7. Agent generates/updates comprehensive application README
-
-**Outputs**:
-- Complete `README.md` at application root
-- Documentation of all features, architecture, conventions
-
-**Use Cases**:
-- First-time setup of Xoch in existing codebase
-- Major architectural changes requiring README overhaul
-- Onboarding new projects to Xoch
-
----
-
-#### Initialize Feature README
-
-**Trigger**: Need to document a specific feature for the first time
-
-**Process**:
-1. Engineer invokes the `init-feature` prompt with feature path
-2. Agent reads existing feature README (if any)
-3. Agent reads application README for context
-4. Agent analyzes feature code to understand functionality
-5. Agent identifies integration points with other features
-6. Agent presents analysis to engineer for confirmation
-7. Engineer provides corrections/feedback
-8. Agent generates/updates comprehensive feature README
-
-**Outputs**:
-- Complete `README.md` in feature directory
-- Documentation of functionality, API, integration points, testing
-
-**Use Cases**:
-- First-time setup of Xoch for existing features
-- Adding documentation to undocumented features
-- Major feature refactors requiring README updates
-
----
-
-### Main Workflow (Ongoing Development)
-
-Once READMEs are established, use the main workflow for all new development:
-
----
-
-### Phase 1: Validate & Start Development
-
-**Trigger**: Engineer is ready to begin work on a task
-
-**Process**:
-1. Engineer invokes the `validate` prompt
-2. Agent reads the relevant feature README.md to understand current state
-3. Agent verifies README is accurate against actual codebase
-4. Agent flags any discrepancies between spec and implementation
-5. Engineer either updates README or confirms it's accurate
-
-**Outputs**: 
-- Validated understanding of current state
-- Report of findings (displayed to engineer)
-
-**Note**: Validation happens before task context is created. This is a quick check phase.
-Context directory will be created in the spec phase once Task ID is known.
-
----
-
-### Phase 2: Provide Specification
-
-**Trigger**: Engineer has task and is ready to define the work
-
-**Process** (Interactive):
-1. Engineer invokes the `spec` prompt
-2. Agent asks: "What is the link to the task?"
-3. Engineer provides task URL
-4. Agent asks: "Please provide the spec for this task (copy/paste from issue tracker or describe)"
-5. Engineer provides detailed specification
-6. Agent analyzes spec against current README state
-7. Agent identifies what will change and what will remain the same
-8. Agent asks clarifying questions if spec is ambiguous
-9. Agent stores all information in context
-
-**Outputs**:
-- `.xoch/context/current.md` - Tracks current active task (Task ID + feature info)
-- `.xoch/context/[task-id]/spec.md` containing:
-  - task URL and ID
-  - Full specification
-  - Analysis of changes vs. current state
-  - Clarified requirements
-
-**Note**: The spec phase creates the context directory structure and sets the current task.
-All subsequent prompts will read `current.md` to identify the active task automatically.
-
-**Note**: The README describes how things work NOW. The spec describes what will CHANGE.
-
----
-
-### Phase 3: Plan Architecture & Milestones
-
-**Trigger**: Spec is clear and understood
-
-**Process** (Interactive):
-1. Engineer invokes the `plan` prompt
-2. Agent asks: "Please provide your architectural approach and guidance for implementing this task"
-3. Engineer provides implementation strategy
-4. Agent asks: "How would you like to break this work into milestones?"
-5. Engineer provides milestone breakdown
-6. Agent analyzes:
-   - Potential pitfalls or issues
-   - Breaking changes with other features
-   - Missing or unnecessary milestones
-   - Dependencies between milestones
-   - Suggested milestone refinements
-7. Engineer reviews and refines milestones
-8. Agent creates formal plan document with approved milestones
-
-**Outputs**:
-- `.xoch/context/[task-id]/plan.md` containing:
-  - Architectural approach
-  - Files to be modified/created
-  - Implementation strategy
-  - Potential risks identified
-  - Engineer's final approved approach
-- `.xoch/context/[task-id]/milestones.md` tracking file:
-  - List of all milestones
-  - Current milestone indicator
-  - Status for each (Not Started / In Progress / Complete)
-
-**Milestone Tracker Example**:
-```markdown
-# Milestones - User Authentication Feature
-
-## Current Milestone: 1
-
-## Milestone 1: Database Schema
-- Create users table with email, password_hash, created_at
-- Add unique index on email
-- Create migration scripts
-**Status**: In Progress
-
-## Milestone 2: API Endpoints
-- POST /auth/register - create new user
-- POST /auth/login - authenticate and return token
-- GET /auth/verify - validate token
-**Status**: Not Started
-
-## Milestone 3: Frontend Integration
-- Login form component
-- Registration flow
-- Token storage in localStorage
-**Status**: Not Started
+```text
+.xoch/work/tasks/[task-id]/state.md
 ```
 
----
+Recommended state fields:
 
-### Phase 4: Start Implementation
+- task ID
+- title
+- status
+- optional arc
+- current phase
+- documentation targets
+- key decisions
+- risks or open questions
+- next command
+- review status
+- close status
 
-**Trigger**: Plan and milestones are approved
+When a task belongs to an arc, the task state uses:
 
-**Process**:
-1. Engineer invokes the `start` prompt
-2. Agent reads `.xoch/context/current.md` to identify the task (Task ID)
-3. Agent reads `.xoch/context/[task-id]/milestones.md`
-4. Agent identifies current milestone (first "In Progress" or "Not Started")
-5. Agent provides detailed summary:
-   - What needs to be implemented
-   - Files that will be changed
-   - Testing requirements
-   - How this milestone fits into the larger plan
-5. Agent asks: "Would you like me to implement this, or will you handle it manually?"
-6. Engineer either:
-   - **Option A**: Instructs agent to implement
-   - **Option B**: Implements manually
-   - **Option C**: Mix of both (agent does part, engineer does part)
-
-**Outputs**:
-- Clear understanding of current milestone scope
-- Work begins on implementation
-
----
-
-### Phase 5: Advance to Next Milestone
-
-**Trigger**: Current milestone work is complete (or engineer believes it is)
-
-**Process**:
-1. Engineer invokes the `advance` prompt
-2. Agent performs review:
-   - Reads current milestone requirements from `milestones.md`
-   - Analyzes `git diff` to see what changed
-   - Compares changes against milestone requirements
-   - Checks if tests exist/pass
-3. Agent asks: "Did you make any additional changes not captured in git diff?"
-4. Engineer explains any additional context
-5. Agent provides assessment:
-   - ✅ All milestone requirements met
-   - ⚠️ Potential gaps: [lists missing items]
-   - 💡 Observations: [notes any concerns]
-6. Agent asks: **"Ready to mark this milestone complete and advance?"**
-7. Engineer confirms (yes/no):
-   - **If no**: Engineer can continue working, invoke `advance` again later
-   - **If yes**: Agent proceeds
-8. Agent creates milestone snapshot and advances:
-   - Creates `.xoch/[feature-name]/milestone-N.md` with:
-     - What was implemented
-     - Key decisions made
-     - Git commit references
-     - Any deviations from plan
-   - Updates `milestones.md`:
-     - Marks current milestone ✅ Complete
-     - Moves to next milestone (sets as "In Progress")
-9. Agent determines next action:
-   - **If more milestones**: Explains next milestone (like `start` did)
-   - **If all milestones complete**: Confirms all work done, ready for final review
-
-**Outputs**:
-- `.xoch/context/[task-id]/milestone-N.md` (snapshot of completed work)
-- Updated `milestones.md` with progress
-- Explanation of next milestone (if any)
-
-**Key Feature**: Engineer always has final say - agent assessment is advisory, not blocking.
-
----
-
-### Sidebar: Explore Related Questions (Available Anytime) - OPTIONAL
-
-**Trigger**: Need to step away from milestone work to explore a related question or tangent
-
-**When to Use**:
-- Investigate a technical question before implementing
-- Explore alternative approaches
-- Research a dependency or integration
-- Debug an unexpected issue
-- Understand existing code better
-- Ask "what if" questions
-- Get help with a decision
-
-**Process**:
-1. Engineer invokes the `sidebar` prompt (can be used anytime during development)
-2. Agent reads `.xoch/context/current.md` and milestone context
-3. Agent provides summary of current work state:
-   - What task you're on
-   - Current milestone and progress
-   - What you're implementing
-4. Agent asks: **"What would you like to explore or discuss?"**
-5. Engineer asks their question or describes the tangent
-6. Agent provides thorough assistance:
-   - Answers technical questions
-   - Investigates code
-   - Discusses trade-offs
-   - Helps with debugging
-   - Explains architecture
-   - Researches topics
-7. Discussion continues as long as needed (back-and-forth is fine)
-8. When complete, agent reminds engineer to use `advance` to return to milestone work
-
-**Outputs**:
-- None - sidebar doesn't modify context files
-- Just provides helpful assistance
-
-**Returning to Work**: Use `#xoch-advance` to check milestone status and resume
-
-**Example Scenarios**:
-- "How does the notification service work?" → Read code, explain flow
-- "Should I use approach A or B?" → Discuss trade-offs, recommend
-- "Why is this test failing?" → Help debug, suggest fixes
-- "Can you explain how this legacy feature works?" → Analyze old code
-
----
-
-### Phase 5.5: Replan (Update Milestones for New Requirements) - OPTIONAL
-
-**Trigger**: During implementation, new requirements emerge that require adjusting the milestone plan
-
-**When to Use**:
-- Discover additional work while implementing
-- Requirements evolve based on learnings
-- Review uncovers edge cases needing separate milestones
-- Technical constraints require additional milestones
-- Performance/security needs emerge during development
-
-**Process** (Interactive):
-1. Engineer invokes the `replan` prompt
-2. Agent reads `.xoch/context/current.md` to identify task
-3. Agent reads `milestones.md` to understand current progress:
-   - Which milestones are complete
-   - Current milestone position
-   - Remaining milestones
-4. Agent reads existing context (spec, plan, milestone snapshots)
-5. Agent asks: **"What new requirements or changes have emerged?"**
-6. Engineer explains what was discovered and why plan needs adjustment
-7. Agent asks clarifying questions:
-   - Does this affect completed work?
-   - Addition to current milestone or new milestones?
-   - Architecture changes needed?
-   - Dependencies with other work?
-   - Priority level?
-8. Agent proposes updated milestone structure:
-   - ✅ **Completed milestones preserved** (never modified)
-   - 🔵 **Current milestone can be adjusted** if needed
-   - ➕ **New milestones added** after current position
-   - 🔄 **Remaining milestones renumbered** if structure changes
-9. Agent explains rationale and impact assessment
-10. Engineer reviews and either approves or requests modifications
-11. Agent iterates until engineer approves
-12. Agent updates `milestones.md` with new structure
-13. Agent creates `.xoch/context/[task-id]/replan-[date].md` documenting:
-    - Why replan occurred
-    - What changed
-    - Before/after milestone structures
-    - Impact assessment
-
-**Outputs**:
-- Updated `.xoch/context/[task-id]/milestones.md` with new milestone structure
-- `.xoch/context/[task-id]/replan-[date].md` documenting the changes
-- Clear path forward with adjusted plan
-
-**Post-Replan**: Continue using `advance` normally with the updated milestone structure. Can replan again if more requirements emerge.
-
-**Example Scenario**:
-- On milestone 4 of 4, discover users need visibility into whether fix worked
-- Need to add response messaging and UI updates
-- Replan adds 2-3 new milestones for this work
-- Continue advancing through new milestones to completion
-
----
-
-### Phase 6: Finalize (Update Documentation & Archive)
-
-**Trigger**: All milestones complete and work is ready to merge
-
-**Process** (Interactive):
-1. Engineer invokes the `finalize` prompt
-2. Agent reads all milestone snapshots and completed work
-3. Agent updates **feature README.md** to reflect:
-   - How the feature now works
-   - Any new interactions or behaviors
-   - Updated test scenarios
-4. Agent reviews **project README.md** and determines if updates needed:
-   - New patterns introduced?
-   - New architectural considerations?
-   - Changes to conventions?
-5. Agent asks: "Review the proposed README updates. Approve or request changes?"
-6. Engineer reviews and either approves or provides feedback
-7. Agent revises if needed, then commits README updates to branch
-8. **Archive context**: Agent asks: "Ready to archive this context? (You can delete it later if desired)"
-9. If yes, agent moves `.xoch/[feature-name]/` to `.xoch/context/archive/[feature-name]-YYYY-MM-DD/`
-
-**Outputs**:
-- Updated feature README.md
-- Updated project README.md (if necessary)
-- `.xoch/context/archive/[task-id]-YYYY-MM-DD/` (archived for reference)
-- `.xoch/context/current.md` cleared (task complete)
-- Clean `.xoch/` directory ready for next task
-
-**Timing**: README updates and context archiving happen AFTER all milestones complete, BEFORE merge to master.
-
-**Archive Notes**:
-- Archived contexts are preserved for historical reference
-- Engineer can manually delete archives anytime
-- Archive naming includes date to prevent conflicts with future features of same name
-
----
-
-## Edge Cases & Special Scenarios
-
-### Conflicting README Updates (Multiple Engineers)
-
-**Trigger**: Two engineers updated the same README independently
-
-**Process**:
-1. Engineer invokes the `merge` prompt when conflict detected
-2. Agent reads both versions of the README
-3. Agent analyzes:
-   - What each version describes
-   - Conflicts vs. complementary changes
-   - Technical accuracy of both
-4. Agent proposes harmonized version that incorporates both changes
-5. Engineer reviews and approves merged version
-
-**Outputs**: Harmonized README.md that reflects both sets of changes
-
----
-
-### Context Handoff Between Engineers
-
-**Process**:
-1. New engineer reads `.xoch/context/current.md` to identify the active task
-2. New engineer reads feature README.md (current state)
-3. New engineer reads `.xoch/context/[task-id]/milestones.md` (current progress)
-4. New engineer reads latest completed milestone snapshot (e.g., `milestone-2.md`)
-5. New engineer understands:
-   - What the feature currently does
-   - What's being changed (from spec + plan)
-   - What's been completed (from milestone snapshots)
-   - What remains to be done (from milestones.md)
-5. New engineer invokes `#xoch-start` to continue from current milestone
-
----
-
-### Abandoned Work / Reverted Changes
-
-**Process**:
-- If work is abandoned before merge: Delete `.xoch/context/[task-id]/` directory and clear `current.md`
-- README never updated, so no cleanup needed
-- If work is merged then reverted: Create new ticket to update feature to new state
-- No special rollback mechanism - Git handles code, new work handles README updates
-
----
-
-## Technical Implementation
-
-### Configuration File (`.xoch`)
-
-Optional configuration file to define project-specific conventions:
-
-```json
-{
-  "projectReadme": "README.md",
-  "featureReadmePattern": "**/README.md",
-  "contextDirectory": ".xoch",
-  "taskBaseUrl": "https://your-issue-tracker.com/tasks/",
-  "prompts": {
-    "validate": ".xoch/context/prompts/validate.md",
-    "spec": ".xoch/context/prompts/spec.md",
-    "plan": ".xoch/context/prompts/plan.md",
-    "start": ".xoch/context/prompts/start.md",
-    "advance": ".xoch/context/prompts/advance.md",
-    "finalize": ".xoch/context/prompts/finalize.md",
-    "finalize": ".xoch/context/prompts/finalize.md",
-    "merge": ".xoch/context/prompts/merge.md"
-  }
-}
+```yaml
+arc: [arc-id]
 ```
 
----
+Standalone tasks should use:
 
-### Agent-Agnostic Implementation
-
-To ensure this system works with any AI agent (GitHub Copilot, Cursor, Aider, etc.), prompts should:
-
-1. **Be self-contained** - Each prompt explains its own context and purpose
-2. **Use standard markdown** - No proprietary formats
-3. **Reference file paths explicitly** - Don't rely on agent memory
-4. **Provide clear instructions** - Step-by-step guidance
-5. **Define expected outputs** - Agent knows what to produce
-
-**Prompt Format**:
-```markdown
-# [Phase Name] Prompt
-
-## Purpose
-[What this phase accomplishes]
-
-## Context Required
-- Read: [list of files agent must read]
-- Previous work: [reference to snapshots if applicable]
-
-## Instructions
-[Step-by-step process]
-
-## Output Format
-[Expected structure of output]
-
-## Validation
-[How to verify success]
+```yaml
+arc: standalone
 ```
 
----
+## Phases
 
-### Git Integration
+`phases.md` tracks the phase list and the current phase. Individual phase files live under:
 
-**Flexible `.gitignore` patterns** for different team workflows:
-
-```bash
-# Option 1: Solo development (default)
-# Ignore everything in .xoch/ - no sharing
-.xoch/
-
-# Option 2: Share glossaries only
-# Team benefits from shared terminology, context stays local
-.xoch/context/
-
-# Option 3: Share glossaries + context folders  
-# Enable task handoffs, but each engineer has their own active task
-.xoch/context/current.md
+```text
+.xoch/work/tasks/[task-id]/phases/
 ```
 
-**Benefits of sharing context folders**:
-- **Task handoff** - Engineers can pick up where others left off
-- **Collaborative debugging** - Multiple people can work on same task context
-- **Team learning** - See how others break down and approach problems
-- **Unique IDs prevent conflicts** - Auto-generated IDs ensure no collisions
+Each phase should include:
 
-**Workflow**:
-- Glossaries in `.xoch/glossaries/` are shareable team documentation
-- Context in `.xoch/context/` can be shared or kept private
-- README updates are committed to feature branch
-- README updates merge with code changes
-- Conflicts handled via standard git merge + `merge` prompt
+- goal
+- tasks
+- files likely touched
+- acceptance criteria covered
+- test/check expectations
+- completion snapshot
 
----
+Phase snapshots are written under:
 
-## Context Window Management
-
-### If READMEs Grow Too Large
-
-**Strategies**:
-1. **Enforce README discipline** - Keep them tight during finalize phase
-2. **Split large features** - Break into sub-features with own READMEs
-3. **Summarization prompt** - Agent summarizes large README into key points
-4. **Link to external docs** - README references deeper docs for complex topics
-
-**Monitor and adjust** - Start with discipline, add summarization if needed
-
----
-
-## Summary of Workflow Phases
-
-### Bootstrapping (One-Time)
-0. **init-app** - Initialize/update application README by analyzing codebase
-0. **init-feature** - Initialize/update feature README by analyzing feature code
-
-### Main Workflow (Ongoing)
-1. **validate** - Ensure README matches current codebase state
-2. **spec** - Capture task and specification interactively
-3. **plan** - Architect solution and break into milestones
-4. **start** - Begin implementation (explains current milestone)
-5. **advance** - Review milestone, complete it, move to next (repeat until done)
-6. **sidebar** - (Anytime) Pause milestone work to explore related questions or tangents
-7. **replan** - (Optional) Update milestones when new requirements emerge during development
-7. **finalize** - Update READMEs and archive context after all milestones complete
-10. **merge** - (Optional) Harmonize conflicting README updates
-
----
-
-## Development Flow Summary
-
-**Dev Phase** (Planning & Implementation):
-1. validate → 2. spec → 3. plan → 4. start → 5. advance (loop)
-
-**Completion Phase**:
-6. finalize (update READMEs + archive) → Merge to master
-
-**Production Phase** (Document & Deploy):
-7. finalize (sync READMEs + archive context) → Merge to Master
-
-**Edge Case**:
-8. merge (resolve README conflicts if needed)
-
-**Context Lifecycle**:
-- `.xoch/context/current.md` - Identifies active task by Task ID
-- `.xoch/context/[task-id]/` - Active work directory (named by Task ID)
-- `.xoch/context/archive/[task-id]-YYYY-MM-DD/` - Historical reference after merge
-- Archives can be manually deleted anytime by engineer
-
----
-
-## Milestone-Based Development
-
-**Key Advantages**:
-- ✅ **Structured progress** - Clear milestones instead of ad-hoc snapshots
-- ✅ **Flexible implementation** - AI-assisted, manual, or hybrid
-- ✅ **Engineer control** - Agent reviews but doesn't block advancement
-- ✅ **Git diff awareness** - Agent understands manual changes
-- ✅ **Context preservation** - Each milestone snapshot enables handoffs
-- ✅ **Progress visibility** - `milestones.md` shows status at a glance
-
-**The advance loop**:
-```
-#xoch-start        → Read milestone 1, explain what to do
-[implement code]
-#xoch-advance      → Review work, complete milestone 1, explain milestone 2
-[implement code]
-#xoch-advance      → Review work, complete milestone 2, explain milestone 3
-[implement code]
-#xoch-advance      → Review work, complete milestone 3, detect all done
-#xoch-finalize     → Update READMEs, archive context
+```text
+.xoch/work/tasks/[task-id]/snapshots/
 ```
 
----
+Snapshots capture files changed, acceptance evidence, validation, manual testing, skipped checks, and the next route.
 
-## Next Steps
+## Review And Close
 
-1. Create prompt templates for each phase (validate, spec, plan, start, advance, finalize, merge)
-2. Define milestone document schemas and formats
-3. Build example `.xoch` configuration
-4. Test on a pilot feature
-5. Iterate based on real-world usage
+`review.md` is the task-level quality record. It should include acceptance coverage, validation evidence, documentation freshness, waivers, and the recommended next command.
 
-**Prompts to create**:
+`close.md` is the final task history. It should summarize what shipped, review status, documentation status, waivers, files changed, and follow-up work.
 
-*Bootstrapping (one-time):*
-- `init-app.md` - Initialize/update application README ✅
-- `init-feature.md` - Initialize/update feature README ✅
+Xoch does not add QA or PR handoff commands. Review is intentionally local and lightweight; company-specific release or handoff processes belong outside the core command set.
 
-*Main workflow (ongoing):*
-- `validate.md` - Check README accuracy ✅
-- `spec.md` - Capture task requirements (interactive) ✅
-- `plan.md` - Architect + create milestones (interactive) ✅
-- `start.md` - Begin work on current milestone ✅
-- `advance.md` - Review, complete milestone, advance to next ✅
-- `sidebar.md` - Explore related questions anytime ✅
-- `replan.md` - Update milestones when requirements evolve ✅
-- `finalize.md` - Update READMEs + archive context ✅
-- `merge.md` - Resolve README conflicts ✅
+## Arcs
 
-*Maintenance:*
-- `mod.md` - Modify Xoch itself (create/update prompts) ✅
+Arcs are optional task groupings:
 
----
+```text
+.xoch/work/arcs/[arc-id]/
+```
 
-## Benefits Over Traditional Approaches
+Arc folders use this shape:
 
-✅ **No massive change logs** - Documentation stays current, not historical  
-✅ **Self-documenting codebase** - READMEs explain both user and technical perspectives  
-✅ **Context preservation** - Snapshots enable seamless handoffs  
-✅ **Human-in-the-loop** - Engineers maintain control of architecture  
-✅ **Agent-agnostic** - Works with any AI coding assistant  
-✅ **Git-friendly** - Leverages existing version control workflows  
-✅ **Scalable** - Doesn't grow unbounded over time  
+```text
+.xoch/work/arcs/[arc-id]/
+  state.md
+  tasks.md
+  notes.md
+  close.md
+  revisions/
+```
 
+Arcs reference task IDs in `tasks.md`. Task folders remain under `.xoch/work/tasks/` and are not nested inside arcs.
+
+`state.md` records the arc title, purpose, status, success outcome, documentation targets, risks, dates, and recommended next command. `tasks.md` groups references as active, planned, complete, or parked. `notes.md` captures arc-level rationale that does not belong to one task.
+
+Arc commands must not close, archive, delete, or move task folders. They may update a task's `arc` field only when the engineer confirms that back-reference change.
+
+## Revisions
+
+Revision commands preserve history when foundational task or arc files change:
+
+- `xoch-revise-spec` updates requirements, acceptance criteria, constraints, scope, or documentation targets.
+- `xoch-revise-plan` updates implementation approach, phase order, validation strategy, or remaining phase shape.
+- `xoch-revise-arc` updates arc purpose, status, task membership references, risks, or shared notes.
+
+Revision notes live under:
+
+```text
+.xoch/work/tasks/[task-id]/revisions/
+.xoch/work/arcs/[arc-id]/revisions/
+```
+
+Completed phase snapshots should not be rewritten during plan revisions. If a later revision supersedes completed work, record the supersession in a revision note and create follow-up phases.
+
+## Docs
+
+`.xoch/docs/` stores project knowledge packets that can support README refresh, documentation validation, and agent orientation:
+
+- `CODEBASE.md` - layout, entry points, major modules
+- `PATTERNS.md` - coding and architectural patterns
+- `DEPENDENCIES.json` - project and service dependencies
+- `RISKS.md` - known fragile areas and debt
+- `TESTING.md` - test frameworks and validation expectations
+- `FEATURES.md` - feature inventory and README targets
+
+`xoch-doc` is responsible for creating, refreshing, repairing, or validating documentation.
+
+`xoch-map` may update `DEPENDENCIES.json`, `CODEBASE.md`, or `FEATURES.md` when local project/dependency relationships need to be captured. First-pass map support is intentionally local and does not create synchronized multi-project task state.
+
+`xoch-trace` may write investigation notes under task `notes/` when root cause is unclear. Trace notes should separate evidence, hypotheses, confidence, and recommended next steps.
+
+`xoch-patch` may write patch notes under task `notes/` or `.xoch/work/patches/` for small, bounded fixes. Patch work should switch back to the normal lifecycle when scope grows.
+
+## Shared Includes And Helpers
+
+Xoch prompt source files are currently installed directly. Shared prompt include rendering is deferred until duplication creates a clear maintenance problem.
+
+The current helper scripts are:
+
+- `bin/generateTaskId.sh`
+- `bin/tokenEstimator.sh`
+
+Additional helpers such as README generation, documentation drift checks, project dependency resolution, or task archive/unarchive should be added only when they can stay deterministic, shell-friendly, and easy to smoke test.
+
+## Glossaries
+
+`.xoch/glossaries/` stores project terminology. Glossaries are shared team knowledge and should use concise definitions.
+
+Glossaries are especially relevant for specs, docs, review notes, and user-facing terminology.
+
+## Installer Model
+
+Prompt source files live under `prompts/`. Each installable top-level prompt markdown file becomes an `xoch-*` command for supported AI tools.
+
+The installer must not install:
+
+- `prompts/README.md`
+- future `prompts/shared/` fragments
+- removed/stale command files
+
+Supported install targets:
+
+- GitHub Copilot / Cursor prompt files
+- Codex skills
+
+## Helper Scripts
+
+Helper scripts live under `bin/`. They should be deterministic, explicit, and shell-friendly.
+
+## Migration Note
+
+Older Xoch tasks may exist under `.xoch/context/` and use milestone language. New work should use `.xoch/work/` and phase language. Active legacy tasks should not be moved automatically unless the engineer explicitly asks.

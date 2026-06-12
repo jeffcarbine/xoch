@@ -57,34 +57,26 @@ Create additional glossaries for specific areas of your project:
 
 ## When Glossaries Are Used
 
-Xoch prompts automatically check for and load glossaries when appropriate:
+Xoch prompts check for and load glossaries when terminology accuracy matters:
 
-| Phase | Load Glossaries? | Why |
-|-------|------------------|-----|
-| **init-app** | ✅ **Always** | Documenting with proper terminology |
-| **init-feature** | ✅ **Always** | Documenting with proper terminology |
-| **spec** | ✅ **Always** | Capturing requirements with correct terms |
-| **finalize** | ✅ **Always** | Final README validation |
-| **glossary** | ✅ **Always** | Managing glossary files themselves |
-| **validate** | 🔀 **Conditional** | Only if validating glossary or terminology |
-| **advance** | 🔀 **Conditional** | Only if updating README (not just code review) |
-| **plan** | ❌ **Never** | Architecture planning doesn't need glossaries |
-| **start** | ❌ **Never** | Implementation doesn't need glossaries |
-| **investigate** | ❌ **Never** | Exploring code, not documenting |
-| **replan** | ❌ **Never** | Updating milestones doesn't need glossaries |
-| **pause** | ❌ **Never** | Context management, not documenting |
-| **resume** | ❌ **Never** | Context management, not documenting |
-| **merge** | ❌ **Never** | Comparing READMEs, not documenting |
+| Command | Load Glossaries? | Why |
+|---|---|---|
+| **spec** | Yes | Capturing requirements with correct terms |
+| **doc** | Yes | Creating, refreshing, or validating documentation |
+| **review** | Conditional | Reviewing terminology-sensitive changes |
+| **close** | Conditional | Checking final documentation freshness |
+| **glossary** | Yes | Managing glossary files themselves |
+| **trace** | Conditional | Investigating terminology-heavy domains |
+| **make** | Usually no | Implementation usually uses already-loaded task context |
+| **plan** | Usually no | Planning should reference spec terms unless terminology is unclear |
+| **next** | Usually no | Phase review usually does not need glossary reads |
+| **pause/resume/sidebar** | Usually no | Task-state management or tangents rarely need glossary reads |
 
 ---
 
 ## Creating Your First Glossaries
 
-### Option 1: During init-app
-
-When you run `#xoch-init-app`, the agent will offer to create glossaries for your project.
-
-### Option 2: Using the glossary prompt
+### Option 1: Using the glossary prompt
 
 ```
 #xoch-glossary
@@ -95,6 +87,10 @@ This prompt helps you:
 - Add terms to existing glossaries
 - Update definitions
 - Organize terminology
+
+### Option 2: Using the doc prompt
+
+Use `#xoch-doc` when glossary work is part of a broader documentation refresh.
 
 ### Option 3: Manual creation
 

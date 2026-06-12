@@ -1,440 +1,260 @@
 ---
 name: xoch-plan
-description: Architect solution and break work into milestones with engineer guidance
+description: Create an implementation approach and phases for a Xoch task
 ---
 
-# Xoch - Plan Phase
+# Xoch - Plan
 
-You are helping an engineer plan the implementation approach for a task. Your goal is to capture their architectural strategy and break the work into clear, manageable milestones.
+Create the implementation approach and phase breakdown for the open task.
 
-## Your Role
+## Purpose
 
-Guide the engineer through planning HOW to implement the spec, then analyze their approach and help them define concrete milestones.
+Turn an accepted task spec into a practical plan with clear phases, file ownership notes, validation expectations, risks, and acceptance-criteria traceability.
 
----
+Target flow:
+
+```text
+open -> spec -> plan -> make -> next -> review -> close
+```
+
+## Work Model
+
+Target-model task files live under:
+
+```text
+.xoch/work/tasks/[task-id]/
+```
+
+Expected files after this command:
+
+```text
+.xoch/work/tasks/[task-id]/plan.md
+.xoch/work/tasks/[task-id]/phases.md
+.xoch/work/tasks/[task-id]/state.md
+```
+
+Legacy migration tasks may still live under `.xoch/context/`. If `.xoch/context/current.md` is active and no target-model task exists, continue that legacy task in place.
 
 ## Process
 
 ### Step 1: Identify Current Task
 
-First, try to read `.xoch/context/current.md` to get the current task:
+Read active pointers in this order:
 
-If file exists and contains a Task ID:
-- Use that Task ID automatically
-- Confirm with engineer: **"Planning for [task-id] - [Feature name]. Correct?"**
+1. `.xoch/work/current.md`
+2. `.xoch/context/current.md` for legacy migration tasks
 
-If file doesn't exist or is unclear:
-- Ask: **"Which task are you planning? (Provide the Task ID, e.g., IE-1285)"**
-- Wait for response
+Then read:
 
-Once Task ID is confirmed, read:
-1. `.xoch/context/[task-id]/spec.md` to understand WHAT needs to be built
-2. The feature's README.md (path from spec.md) to understand the current state
-3. Summarize the task briefly to confirm understanding
+- `state.md` when present
+- `spec.md`
+- relevant documentation target README/docs
 
----
+Confirm the task before planning.
 
-### Step 2: Gather Architectural Approach
+### Step 2: Validate Spec Readiness
 
-Ask the engineer:
+Check that `spec.md` contains:
 
-**"Please provide your architectural approach and guidance for implementing this task:**
-- **Which files will need to be created or modified?**
-- **What's your overall implementation strategy?**
-- **Any technical constraints or patterns to follow?**
-- **Any dependencies on other systems/features?"**
+- task requirements
+- acceptance criteria with AC IDs
+- current-state/proposed-change analysis
+- constraints or explicit "none"
 
-Wait for their detailed architectural input.
+If AC IDs are missing, add them during planning only after confirming they preserve the spec meaning.
 
----
+### Step 3: Gather Architectural Approach
 
-### Step 3: Analyze the Approach
+Ask the engineer for:
 
-**Plan Phase Token Budget: 13,000 tokens**
+- implementation strategy
+- likely files to create or modify
+- patterns to follow
+- constraints
+- testing expectations
+- dependency concerns
 
-You need to read the codebase to understand architecture and provide meaningful analysis.
+If the engineer asks the agent to decide, infer a conservative approach from the spec and existing docs.
 
-#### Token Budget Process:
+### Step 4: Focused Architecture Read
 
-1. **Identify files needed** for architectural analysis:
-   - Related feature implementations
-   - Similar patterns in the codebase
-   - Integration points
-   - Configuration files
+Identify files needed to understand the implementation approach:
 
-2. **Estimate token cost:**
-   
-   ```bash
-   bin/tokenEstimator.sh --batch file1.js file2.js ...
-   ```
+- related prompt files or source files
+- docs describing patterns
+- helper scripts
+- installer/configuration files
+- test or validation examples
 
-3. **Check against budget:**
-   - If estimated tokens < 11,700 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 11,700 (≥ 90% of budget): **Ask for guidance**
+Use:
 
-#### If at/over budget (≥ 90%), ask the engineer:
-
-**"To provide thorough architectural analysis, I'd like to read these files:**
-
-**[List with individual token estimates]**
-
-**Total: ~X tokens (Y% of 13,000 token budget)**
-
-**Options:**
-1. **Which files are most important for architecture understanding?**
-2. **Proceed anyway** (Read all files)
-3. **Limited analysis** (Read only spec.md and feature README)
-
-**What's your preference?"**
-
-**Wait for response** and adjust accordingly.
-
-#### After Reading Files:
-
-Update the token tracking in `plan.md` (see Step 6 for template).
-
----
-
-Once files are read, review the engineer's plan against:
-- The specification requirements
-- The existing codebase structure
-- Potential integration issues
-- Breaking changes
-
-Provide analysis:
-
-```
-🔍 ARCHITECTURAL ANALYSIS
-
-Proposed Approach:
-[Summarize engineer's approach]
-
-✅ Strengths:
-- [Positive aspects]
-- [Good decisions]
-
-⚠️ Considerations:
-- [Potential pitfalls]
-- [Edge cases to handle]
-- [Breaking change risks]
-
-💡 Suggestions:
-- [Alternative approaches if applicable]
-- [Additional considerations]
-
-🔗 Integration Points:
-- [Other features that might be affected]
-- [Dependencies to be aware of]
+```bash
+bin/tokenEstimator.sh --batch [files...]
 ```
 
-Ask the engineer:
+If the read is large, summarize why it is worth the context and ask the engineer before proceeding unless they have already approved exceeding budget.
 
-**"Does this analysis align with your thinking? Any adjustments to the approach?"**
+### Step 5: Analyze Approach
 
-Refine based on their feedback until the approach is solid.
+Provide a concise architecture analysis:
 
----
+- proposed approach
+- strengths
+- concerns
+- suggestions
+- integration points
 
-### Step 4: Define Milestones
+Revise until the approach is clear enough to plan.
 
-Ask the engineer:
+### Step 6: Derive Phases
 
-**"How would you like to break this work into milestones? Think about logical checkpoints where progress can be reviewed.**
+Break the work into phases. Each phase should have:
 
-**Each milestone should be:**
-- **Independently testable**
-- **Incrementally valuable**
-- **Clear completion criteria**
+- a clear goal
+- files likely touched
+- acceptance criteria covered
+- test/check expectations
+- dependencies on earlier phases
+- completion criteria
+- evidence that `xoch-next` should capture before advancing
 
-**What milestones do you envision?"**
+Prefer phases that can be reviewed independently.
 
-Wait for their milestone breakdown.
+### Step 7: Write Plan
 
----
+Write:
 
-### Step 5: Analyze Milestones
-
-Review the proposed milestones for:
-- **Dependencies**: Does milestone 2 require milestone 1 completion?
-- **Scope**: Are any milestones too large or too small?
-- **Testing**: Can each be tested independently?
-- **Value**: Does each milestone deliver something meaningful?
-- **Completeness**: Are any steps missing?
-
-Provide milestone analysis:
-
-```
-📊 MILESTONE ANALYSIS
-
-Proposed Milestones:
-1. [Milestone 1 description]
-2. [Milestone 2 description]
-3. [Milestone 3 description]
-...
-
-✅ Looks Good:
-- [Well-scoped milestones]
-- [Good logical flow]
-
-⚠️ Concerns:
-- [Milestone X might be too large - consider splitting]
-- [Missing: Y should be a milestone]
-- [Milestone A depends on B - ordering is correct/incorrect]
-
-💡 Suggestions:
-- [Consider adding: ...]
-- [Could combine milestones X and Y]
-- [Recommend splitting milestone Z into ...]
+```text
+.xoch/work/tasks/[task-id]/plan.md
 ```
 
-Ask the engineer:
-
-**"Review this milestone analysis. Would you like to adjust the milestone breakdown?"**
-
-Iterate until milestones are finalized.
-
----
-
-### Step 6: Create Plan Documents
-
-Create two files:
-
-#### File 1: `.xoch/context/[task-id]/plan.md`
+Use this structure:
 
 ```markdown
 # Implementation Plan - [task-id]
 
-**Date**: [Current Date]
-**Spec**: See spec.md
-**Task**: [Link from spec if available]
+**Date**: [today]
+**Spec**: spec.md
 
 ---
 
 ## Token Usage (Plan Phase)
+
 Budget: 13,000 tokens
-- [file1.js] - [X] tokens
-- [file2.js] - [Y] tokens
-**Total: [sum] / 13,000 ([percentage]%)**
+[Files read and estimates]
 
 ---
 
 ## Architectural Approach
 
-[Engineer's architectural strategy]
+[Approved approach]
 
 ---
 
 ## Files to Modify/Create
 
-[List of files that will be changed]
+[List]
 
 ---
 
 ## Implementation Strategy
 
-[Detailed implementation approach]
+[Strategy]
 
 ---
 
 ## Technical Constraints
 
-[Any constraints, patterns, or conventions to follow]
+[Constraints]
 
 ---
 
 ## Risks & Considerations
 
-### Potential Pitfalls
-[Issues identified during analysis]
-
-### Breaking Changes
-[Any breaking changes to be aware of]
-
-### Integration Points
-[Features or systems that might be affected]
+[Risks, breaking changes, integration points]
 
 ---
 
-## Final Approved Approach
+## Acceptance Coverage
 
-[Engineer's final approved architectural approach after discussion]
+| AC | Covered By Phase(s) |
+|---|---|
+| AC-001 | Phase 1 |
 ```
 
-#### File 2: `.xoch/context/[task-id]/milestones.md`
+### Step 8: Write Phases
+
+Write:
+
+```text
+.xoch/work/tasks/[task-id]/phases.md
+```
+
+Use this structure:
 
 ```markdown
-# Milestones - [Feature Name]
+# Phases - [Task Title]
 
-## Current Milestone: 1
-
----
-
-## Milestone 1: [Title]
-[Description of what needs to be implemented]
-
-**Files to modify/create:**
-- [file1.js]
-- [file2.js]
-
-**Testing requirements:**
-- [test requirement 1]
-- [test requirement 2]
-
-**Status**: Not Started
+## Current Phase: 1
 
 ---
 
-## Milestone 2: [Title]
-[Description of what needs to be implemented]
+## Phase 1: [Title]
 
-**Files to modify/create:**
-- [file3.js]
-
-**Testing requirements:**
-- [test requirement 1]
-
-**Status**: Not Started
-
----
-
-## Milestone 3: [Title]
 [Description]
 
+**Files to modify/create:**
+- [file] - [why]
+
+**Acceptance criteria covered:**
+- AC-001
+
+**Testing requirements:**
+- [check]
+
+**Completion evidence:**
+- [diff, validation, manual test, doc update, or other evidence]
+
 **Status**: Not Started
-
----
-
-[Continue for all milestones...]
 ```
 
-Confirm to the engineer:
+Optionally create individual phase files under:
 
-```
-✅ Implementation plan created:
-   .xoch/context/[task-id]/plan.md
-   .xoch/context/[task-id]/milestones.md
-
-Milestones:
-1. [Milestone 1 title]
-2. [Milestone 2 title]
-3. [Milestone 3 title]
-...
-
-Ready to proceed with #xoch-start
+```text
+.xoch/work/tasks/[task-id]/phases/phase-[N].md
 ```
 
----
+when a phase needs more detail than belongs in `phases.md`.
 
-## Important Notes
+### Step 9: Update State
 
-- **Engineer drives architecture** - You analyze and advise, they decide
-- **Be thorough in analysis** - Surface issues now, not during implementation
-- **Milestones should be clear** - Anyone should be able to pick up and understand
-- **Keep scope manageable** - Better to have 5 clear milestones than 2 huge ones
-- **Consider testing** - Each milestone should be testable
-- **Think about handoffs** - Milestones enable context switching
+Update `state.md`:
 
----
-
-## Example Interaction
-
-**Agent**: "Which feature are you planning?"
-
-**Engineer**: "user authentication"
-
-**Agent**: [Reads spec.md and README.md]
-"Planning OAuth2 integration for authentication feature.
-Please provide your architectural approach..."
-
-**Engineer**: "We'll add a new oauth_providers table to store provider credentials. Create a new OAuthService class to handle Google/GitHub flows. Extend the existing AuthController with new /auth/oauth/google and /auth/oauth/github endpoints. Use passport.js for OAuth handling. Modify the User model to support multiple auth methods."
-
-**Agent**:
-```
-🔍 ARCHITECTURAL ANALYSIS
-
-Proposed Approach:
-- New database table: oauth_providers
-- New OAuthService class for provider logic
-- Extend AuthController with OAuth endpoints
-- Use passport.js library
-- Modify User model for multi-auth support
-
-✅ Strengths:
-- Separates OAuth logic into dedicated service
-- Leverages established passport.js library
-- Extends existing patterns (AuthController)
-
-⚠️ Considerations:
-- Passport.js requires specific middleware setup in app.js
-- oauth_providers table needs foreign key to users table
-- Consider migration rollback strategy
-- Error handling for OAuth failures (network, denied access)
-- Session handling during OAuth redirect flow
-
-💡 Suggestions:
-- Add OAuthMiddleware for token refresh logic
-- Consider storing OAuth scopes for future API access
-- Unit test OAuthService separately from controller
-
-🔗 Integration Points:
-- User registration flow (link vs. create account)
-- Account settings page (manage providers)
-- Password reset flow (OAuth-only users)
+```yaml
+status: plan_complete
+current_phase: 1
+review_status: null
+close_status: null
+next_command: xoch-make
+last_updated: [today]
 ```
 
-**Agent**: "Does this analysis align with your thinking?"
+For legacy migration tasks, write `plan.md` and `milestones.md` in the existing legacy folder until the migration task is closed.
 
-**Engineer**: "Good points. Yes, add the middleware. We'll handle OAuth-only users by making email/password optional."
+## Output
 
-**Agent**: "How would you like to break this work into milestones?"
+End with:
 
-**Engineer**: "1. Database schema and migrations. 2. OAuthService and passport setup. 3. Controller endpoints. 4. Frontend integration."
-
-**Agent**:
-```
-📊 MILESTONE ANALYSIS
-
-Proposed Milestones:
-1. Database schema and migrations
-2. OAuthService and passport setup
-3. Controller endpoints
-4. Frontend integration
-
-✅ Looks Good:
-- Clear progression from data layer to UI
-- Each milestone is independently testable
-- Logical dependencies (1 before 2, 2 before 3)
-
-⚠️ Concerns:
-- Milestone 2 might be large - consider splitting OAuthService from passport config
-- Milestone 3 could include middleware (mentioned in analysis)
-- Milestone 4 is vague - might want to split into "OAuth buttons" and "Provider management UI"
-
-💡 Suggestions:
-- Milestone 2a: Passport.js setup and middleware
-- Milestone 2b: OAuthService implementation
-- Milestone 3: API endpoints + middleware
-- Milestone 4a: Login page OAuth buttons
-- Milestone 4b: Account settings provider management
+```text
+Implementation plan created.
+Current phase: Phase 1 - [title]
+Next: xoch-make
 ```
 
-**Agent**: "Review this milestone analysis. Adjust the breakdown?"
+## Rules
 
-**Engineer**: "Good call. Let's split milestone 2 and 4 as you suggested. Keep milestone 3 as-is."
-
-**Agent**:
-```
-✅ Implementation plan created:
-   .xoch/context/authentication/plan.md
-   .xoch/context/authentication/milestones.md
-
-Milestones:
-1. Database schema and migrations
-2. Passport.js setup and middleware
-3. OAuthService implementation
-4. API endpoints and OAuth middleware
-5. Login page OAuth buttons
-6. Account settings provider management
-
-Ready to proceed with #xoch-start
-```
+- Engineer direction wins when explicit.
+- Plans describe how; specs describe what.
+- Phases replace milestones for new work.
+- Preserve AC traceability.
+- Do not move active legacy task folders during the migration.

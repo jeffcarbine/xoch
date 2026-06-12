@@ -24,8 +24,8 @@ if [ ! -d "$PROMPTS_DIR" ]; then
     exit 1
 fi
 
-# Count prompts
-PROMPT_COUNT=$(find "$PROMPTS_DIR" -name "*.md" -type f | wc -l | tr -d ' ')
+# Count installable prompts. Documentation files and future shared fragments are not commands.
+PROMPT_COUNT=$(find "$PROMPTS_DIR" -maxdepth 1 -name "*.md" ! -name "README.md" -type f | wc -l | tr -d ' ')
 echo "Found $PROMPT_COUNT prompt(s) to install"
 echo ""
 
@@ -45,7 +45,7 @@ cleanup_copilot() {
             installed_name=$(basename "$installed" .prompt.md | sed 's/^xoch-//')
             
             # Check if source file exists
-            if [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+            if [ "$installed_name" = "README" ] || [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
                 rm "$installed"
                 echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
                 removed=$((removed + 1))
@@ -74,7 +74,7 @@ cleanup_codex() {
             installed_name=$(basename "$installed" | sed 's/^xoch-//')
             
             # Check if source file exists
-            if [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+            if [ "$installed_name" = "README" ] || [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
                 rm -rf "$installed"
                 echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
                 removed=$((removed + 1))
@@ -101,6 +101,7 @@ install_copilot() {
     for prompt_file in "$PROMPTS_DIR"/*.md; do
         if [ -f "$prompt_file" ]; then
             filename=$(basename "$prompt_file" .md)
+            [ "$filename" = "README" ] && continue
             target="$COPILOT_DIR/xoch-$filename.prompt.md"
             
             # Remove existing symlink or file
@@ -129,6 +130,7 @@ install_codex() {
     for prompt_file in "$PROMPTS_DIR"/*.md; do
         if [ -f "$prompt_file" ]; then
             filename=$(basename "$prompt_file" .md)
+            [ "$filename" = "README" ] && continue
             skill_dir="$CODEX_DIR/xoch-$filename"
             
             # Create skill directory and agents subdirectory

@@ -373,11 +373,11 @@ After completing the glossary update:
 
 ### This is a Sidebar Operation
 
-- Does **NOT** affect `.xoch/context/current.md`
+- Does **NOT** affect `.xoch/work/current.md`
 - Does **NOT** create task context files
 - Does **NOT** require Task ID
 - Can be used anytime during development
-- Return to milestone work with `#xoch-advance` or continue with other prompts
+- Return to phase work with `#xoch-next` or continue with other prompts
 
 ### Glossary Update Guidelines
 
