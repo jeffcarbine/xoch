@@ -1,19 +1,19 @@
 ---
 name: xoch-sidebar
-description: Explore a related question without advancing Xoch task state
+description: Explore a related question without advancing Xoch job state
 ---
 
 # Xoch - Sidebar
 
-Explore a related question or tangent while preserving the current task state.
+Explore a related question or tangent while preserving the current job state.
 
 ## Purpose
 
-Load enough task context to orient the discussion, answer the engineer's question, and leave phase/task progress unchanged.
+Load enough job context to orient the discussion, answer the engineer's question, and leave phase/job progress unchanged.
 
 ## Process
 
-### Step 1: Detect Current Task
+### Step 1: Detect Current Job
 
 Read:
 
@@ -21,26 +21,26 @@ Read:
 .xoch/work/current.md
 ```
 
-If absent, check `.xoch/context/current.md` for a legacy migration task.
+If absent, check `.xoch/context/current.md` for a legacy migration job.
 
-If no active task exists, continue without Xoch task context.
+If no active job exists, continue without Xoch job context.
 
 ### Step 2: Load Context
 
-For target-model tasks, read:
+For target-model jobs, read:
 
 - `state.md`
 - `spec.md`
 - `plan.md`
 - `phases.md`
 
-For legacy tasks, read the matching legacy files.
+For legacy jobs, read the matching legacy files.
 
 ### Step 3: Summarize Current Work
 
 Summarize:
 
-- task ID and title
+- job ID and title
 - optional arc
 - current phase
 - goal
@@ -67,9 +67,16 @@ When the sidebar appears complete, remind the engineer of the likely return comm
 - `xoch-next` to review/advance the current phase
 - `xoch-revise-plan` if the sidebar changed the plan
 
+End with:
+
+```text
+Sidebar complete.
+{{xoch-partial:next-step.md command="[recommended command]"}}
+```
+
 ## Rules
 
-- Do not change task progress.
+- Do not change job progress.
 - Do not mark phases complete.
 - If the sidebar changes requirements, route to `xoch-revise-spec`.
 - If the sidebar changes implementation structure, route to `xoch-revise-plan`.

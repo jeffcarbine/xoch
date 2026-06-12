@@ -1,19 +1,19 @@
 ---
 name: xoch-pause
-description: Pause the active Xoch task
+description: Pause the active Xoch job
 ---
 
 # Xoch - Pause
 
-Pause the active task so another task can become current without losing progress.
+Pause the active job so another job can become current without losing progress.
 
 ## Purpose
 
-Summarize the active task, preserve its task folder, update task state, and clear `.xoch/work/current.md`.
+Summarize the active job, preserve its job folder, update job state, and clear `.xoch/work/current.md`.
 
 ## Process
 
-### Step 1: Find Active Task
+### Step 1: Find Active Job
 
 Read:
 
@@ -21,30 +21,30 @@ Read:
 .xoch/work/current.md
 ```
 
-If absent, check `.xoch/context/current.md` for a legacy migration task.
+If absent, check `.xoch/context/current.md` for a legacy migration job.
 
-If no active task exists, say there is nothing to pause and stop.
+If no active job exists, say there is nothing to pause and stop.
 
-### Step 2: Load Task State
+### Step 2: Load Job State
 
-For target-model tasks, read:
+For target-model jobs, read:
 
-- `.xoch/work/tasks/[task-id]/state.md`
-- `.xoch/work/tasks/[task-id]/spec.md` when present
-- `.xoch/work/tasks/[task-id]/phases.md` when present
+- `.xoch/work/jobs/[job-id]/state.md`
+- `.xoch/work/jobs/[job-id]/spec.md` when present
+- `.xoch/work/jobs/[job-id]/phases.md` when present
 
-For legacy tasks, read the corresponding `.xoch/context/[task-id]/` files without moving them.
+For legacy jobs, read the corresponding `.xoch/context/[job-id]/` files without moving them.
 
 ### Step 3: Summarize
 
 Show:
 
-- task ID and title
+- job ID and title
 - optional arc
 - status
 - current phase
 - next command
-- task directory
+- job directory
 - brief goal
 - phase progress
 
@@ -62,22 +62,22 @@ If confirmed:
    last_updated: [today]
    ```
 
-2. Remove `.xoch/work/current.md` only if it points to this task.
+2. Remove `.xoch/work/current.md` only if it points to this job.
 
-3. For legacy tasks, remove `.xoch/context/current.md` only if it points to this task.
+3. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 ### Step 5: Output
 
 End with:
 
 ```text
-Task paused.
-Resume with: xoch-resume [task-id]
+Job paused.
+{{xoch-partial:next-step.md command="xoch-resume [job-id]"}}
 ```
 
 ## Rules
 
-- Do not delete task files.
-- Do not archive the task.
+- Do not delete job files.
+- Do not archive the job.
 - Do not modify phase completion status.
-- Preserve legacy task location when pausing a migration-era task.
+- Preserve legacy job location when pausing a migration-era job.

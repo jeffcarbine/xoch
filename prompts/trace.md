@@ -15,18 +15,18 @@ Use `xoch-trace` when the problem is not yet clear enough for `xoch-make` or whe
 
 ## Work Model
 
-When a task is active, read task pointers in this order:
+When a job is active, read job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
 Target-model trace notes live under:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/trace-[date].md
+.xoch/work/jobs/[job-id]/notes/trace-[date].md
 ```
 
-If no task exists, write findings only after asking whether to open a task with `xoch-open` or keep the trace as an ad hoc note.
+If no job exists, write findings only after asking whether to start a job with `xoch-start-job` or keep the trace as an ad hoc note.
 
 ## Process
 
@@ -67,7 +67,7 @@ Read only relevant:
 - logs
 - configuration
 - docs
-- task or arc notes
+- job or arc notes
 
 Run focused commands when useful. If a command may mutate state, require engineer confirmation first.
 
@@ -97,16 +97,16 @@ Do not overstate certainty.
 
 ### Step 6: Write Trace Note
 
-When a task exists, write:
+When a job exists, write:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/trace-[date].md
+.xoch/work/jobs/[job-id]/notes/trace-[date].md
 ```
 
 Use this structure:
 
 ```markdown
-# Trace - [task-id or symptom]
+# Trace - [job-id or symptom]
 
 **Date**: [today]
 **Status**: [identified | likely | narrowed | blocked | not reproducible]
@@ -123,7 +123,7 @@ Use this structure:
 
 | Hypothesis | Status | Evidence |
 |---|---|---|
-| [hypothesis] | [supported/refuted/open] | [evidence] |
+| [hypothesis] | [supported/refuted/unknown] | [evidence] |
 
 ## Root Cause
 
@@ -131,18 +131,18 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-open | xoch-revise-plan | xoch-make | more trace]
+[xoch-patch | xoch-start-job | xoch-revise-plan | xoch-make | more trace]
 ```
 
-For legacy migration tasks, write the note in the legacy task folder.
+For legacy migration jobs, write the note in the legacy job folder.
 
 ### Step 7: Route
 
 Recommend:
 
 - `xoch-patch` for a focused urgent fix
-- `xoch-open` for a new normal task
-- `xoch-revise-plan` if the active task plan needs adjustment
+- `xoch-start-job` for a new normal job
+- `xoch-revise-plan` if the active job plan needs adjustment
 - `xoch-make` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
 
@@ -153,13 +153,15 @@ End with:
 ```text
 Trace status: [status]
 Root cause: [summary]
-Next: [recommended command]
+{{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
 ## Rules
+
+{{xoch-partial:engineer-git-rule.md}}
 
 - Investigation comes before implementation.
 - Do not change code unless the engineer explicitly turns the trace into patch or make work.
 - Do not invent logs, test output, or reproduction results.
 - Record uncertainty honestly.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

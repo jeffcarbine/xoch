@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # XochDev Installer
-# Installs Xoch prompts for Copilot and Codex via symlinks
+# Installs rendered Xoch prompts for Copilot and Codex.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROMPTS_DIR="$SCRIPT_DIR/prompts"
+PROMPTS_SOURCE_DIR="$SCRIPT_DIR/prompts"
+XOCH_RUNTIME_DIR="$HOME/.xoch"
+PROMPTS_DIR="$XOCH_RUNTIME_DIR/prompts"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -19,15 +21,119 @@ echo "===================="
 echo ""
 
 # Check if prompts directory exists
-if [ ! -d "$PROMPTS_DIR" ]; then
+if [ ! -d "$PROMPTS_SOURCE_DIR" ]; then
     echo -e "${RED}Error: prompts/ directory not found${NC}"
     exit 1
 fi
 
-# Count installable prompts. Documentation files and future shared fragments are not commands.
-PROMPT_COUNT=$(find "$PROMPTS_DIR" -maxdepth 1 -name "*.md" ! -name "README.md" -type f | wc -l | tr -d ' ')
+# Count installable prompts. Documentation files and partials are not commands.
+PROMPT_COUNT=$(find "$PROMPTS_SOURCE_DIR" -maxdepth 1 -name "*.md" ! -name "README.md" -type f | wc -l | tr -d ' ')
 echo "Found $PROMPT_COUNT prompt(s) to install"
 echo ""
+
+render_prompt_file() {
+    local source_file="$1"
+    local output_file="$2"
+
+    ruby - "$PROMPTS_SOURCE_DIR" "$source_file" "$output_file" <<'RUBY'
+prompts_dir, source_file, output_file = ARGV
+partials_dir = File.join(prompts_dir, "partials")
+source = File.read(source_file)
+
+def fail_render(message)
+  warn message
+  exit 1
+end
+
+def parse_partial(body, source_file)
+  body = body.strip
+  fail_render("Error: malformed prompt partial in #{source_file}") if body.empty?
+
+  if body.include?("\n")
+    first_line, *rest = body.lines.map(&:chomp)
+    path = first_line.strip
+    assignments = rest.join("\n")
+  else
+    path, assignments = body.split(/\s+/, 2)
+    assignments ||= ""
+  end
+
+  path = path.to_s.strip.sub(%r{\A\./}, "")
+  fail_render("Error: missing prompt partial path in #{source_file}") if path.empty?
+  fail_render("Error: invalid prompt partial path '#{path}' in #{source_file}") if path.start_with?("/") || path.split("/").include?("..")
+
+  vars = {}
+  scanner = StringScanner.new(assignments)
+  until scanner.eos?
+    scanner.skip(/\s+/)
+    break if scanner.eos?
+    key = scanner.scan(/[A-Za-z_][A-Za-z0-9_]*/)
+    fail_render("Error: malformed variable assignment near '#{scanner.rest}' in #{source_file}") unless key
+    scanner.skip(/\s*/)
+    fail_render("Error: expected '=' after variable '#{key}' in #{source_file}") unless scanner.scan(/=/)
+    scanner.skip(/\s*/)
+    value = scanner.scan(/"([^"\\]|\\.)*"/)
+    fail_render("Error: expected quoted value for variable '#{key}' in #{source_file}") unless value
+    vars[key] = value[1...-1].gsub(/\\"/, '"').gsub(/\\\\/, "\\")
+  end
+
+  [path, vars]
+end
+
+begin
+  require "strscan"
+
+  rendered = source.gsub(/\{\{xoch-partial:(.*?)\}\}/m) do
+    path, vars = parse_partial(Regexp.last_match(1), source_file)
+    partial_file = File.join(partials_dir, path)
+    fail_render("Error: prompt partial not found: #{partial_file}") unless File.file?(partial_file)
+
+    partial_text = File.read(partial_file)
+    used = []
+
+    partial_text = partial_text.gsub(/\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}/) do
+      key = Regexp.last_match(1)
+      fail_render("Error: missing variable '#{key}' for partial '#{path}' in #{source_file}") unless vars.key?(key)
+      used << key
+      vars[key]
+    end
+
+    unused = vars.keys - used
+    warn "Warning: unused variable(s) for partial '#{path}' in #{source_file}: #{unused.join(', ')}" unless unused.empty?
+
+    partial_text
+  end
+
+  File.write(output_file, rendered)
+rescue StandardError => e
+  fail_render("Error rendering #{source_file}: #{e.message}")
+end
+RUBY
+}
+
+render_prompts() {
+    echo "Rendering prompts..."
+
+    rm -rf "$PROMPTS_DIR"
+    mkdir -p "$PROMPTS_DIR"
+
+    for prompt_file in "$PROMPTS_SOURCE_DIR"/*.md; do
+        if [ -f "$prompt_file" ]; then
+            filename=$(basename "$prompt_file" .md)
+            [ "$filename" = "README" ] && continue
+            render_prompt_file "$prompt_file" "$PROMPTS_DIR/$filename.md"
+        fi
+    done
+
+    if grep -R "{{xoch-partial:" "$PROMPTS_DIR" >/dev/null 2>&1; then
+        echo -e "${RED}Error: unresolved prompt partial found in rendered prompts${NC}" >&2
+        exit 1
+    fi
+
+    RENDERED_COUNT=$(find "$PROMPTS_DIR" -maxdepth 1 -name "*.md" -type f | wc -l | tr -d ' ')
+    echo -e "  ${GREEN}✓${NC} Rendered prompts -> $PROMPTS_DIR ($RENDERED_COUNT files)"
+    echo ""
+}
 
 # Clean up orphaned Copilot prompts
 cleanup_copilot() {
@@ -159,6 +265,7 @@ EOF
 
 # Main installation
 echo ""
+render_prompts
 cleanup_copilot
 cleanup_codex
 install_copilot

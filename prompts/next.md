@@ -11,34 +11,34 @@ Review the current phase, capture a snapshot, and advance when the engineer conf
 
 ## Purpose
 
-Compare the current phase plan against the working tree, gather implementation and validation evidence, identify gaps, and either keep the phase open or advance task state to the next phase.
+Compare the current phase plan against the working tree, gather implementation and validation evidence, identify gaps, and either keep the phase open or advance job state to the next phase.
 
 Target flow:
 
 ```text
-open -> spec -> plan -> make -> next -> review -> close
+start-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
 
-Target-model task files live under:
+Target-model job files live under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
-Read active task pointers in this order:
+Read active job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
-Legacy migration tasks may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
+Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
 ## Process
 
 ### Step 1: Identify Current Phase
 
-Load the active task and read:
+Load the active job and read:
 
 - `state.md`
 - `spec.md`
@@ -47,7 +47,7 @@ Load the active task and read:
 - current `phases/phase-[N].md` when present
 - notes or evidence from recent `xoch-make` work
 
-For legacy migration tasks, read the equivalent legacy files.
+For legacy migration jobs, read the equivalent legacy files.
 
 If the current phase is unclear, ask the engineer which phase should be reviewed.
 
@@ -70,7 +70,7 @@ For the current phase, assess:
 
 - planned files touched
 - acceptance criteria covered
-- implementation tasks completed
+- implementation jobs completed
 - tests/checks run
 - documentation targets updated or deferred
 - risks, regressions, or missing evidence
@@ -117,10 +117,10 @@ Do not update phase state until the engineer confirms.
 
 When confirmed, write a phase snapshot.
 
-For target-model tasks, create or update:
+For target-model jobs, create or update:
 
 ```text
-.xoch/work/tasks/[task-id]/snapshots/phase-[N].md
+.xoch/work/jobs/[job-id]/snapshots/phase-[N].md
 ```
 
 Use this structure:
@@ -186,7 +186,7 @@ next_command: xoch-review
 last_updated: [today]
 ```
 
-For legacy migration tasks, write a comparable `milestone-[N].md` or phase snapshot in the legacy task folder and update the legacy tracker in place.
+For legacy migration jobs, write a comparable `milestone-[N].md` or phase snapshot in the legacy job folder and update the legacy tracker in place.
 
 ## Output
 
@@ -195,14 +195,14 @@ If more phases remain:
 ```text
 Phase [N] complete.
 Next phase: [N+1] - [title]
-Next: xoch-make
+{{xoch-partial:next-step.md command="xoch-make"}}
 ```
 
 If implementation is complete:
 
 ```text
 All phases complete.
-Next: xoch-review
+{{xoch-partial:next-step.md command="xoch-review"}}
 ```
 
 ## Rules
@@ -211,4 +211,4 @@ Next: xoch-review
 - Review only the current phase unless the engineer asks for broader review.
 - Preserve unrelated worktree changes.
 - Record skipped checks as skipped, not passed.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

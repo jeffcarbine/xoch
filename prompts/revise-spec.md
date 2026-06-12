@@ -1,44 +1,44 @@
 ---
 name: xoch-revise-spec
-description: Revise the foundational specification for an open Xoch task
+description: Revise the foundational specification for an active Xoch job
 ---
 
 # Xoch - Revise Spec
 
-Revise a task's foundational requirements after the original spec needs to change.
+Revise a job's foundational requirements after the original spec needs to change.
 
 ## Purpose
 
-Capture what changed, preserve the previous requirement history, update the task specification, and mark downstream plans/phases as needing review when necessary.
+Capture what changed, preserve the previous requirement history, update the job specification, and mark downstream plans/phases as needing review when necessary.
 
-Use `revise-spec` when the definition of done changes: scope, acceptance criteria, constraints, non-goals, documentation targets, or task purpose.
+Use `revise-spec` when the definition of done changes: scope, acceptance criteria, constraints, non-goals, documentation targets, or job purpose.
 
 Use `xoch-revise-plan` instead when the requirement is still correct but the implementation path needs to change.
 
 ## Work Model
 
-Target-model task files live under:
+Target-model job files live under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
 Revision notes live under:
 
 ```text
-.xoch/work/tasks/[task-id]/revisions/
+.xoch/work/jobs/[job-id]/revisions/
 ```
 
-Legacy migration tasks may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
+Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
 
 ## Process
 
-### Step 1: Identify Current Task
+### Step 1: Identify Current Job
 
-Read active task pointers in this order:
+Read active job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
 Then load:
 
@@ -49,7 +49,7 @@ Then load:
 - recent revision notes
 - relevant documentation target files when the spec change affects docs
 
-If no active task exists, ask for the task ID.
+If no active job exists, ask for the job ID.
 
 ### Step 2: Identify The Spec Change
 
@@ -62,7 +62,7 @@ Ask what changed:
 - constraint
 - documentation target
 - risk or assumption
-- task purpose
+- job purpose
 
 Clarify whether the change supersedes, adds to, or removes existing spec content.
 
@@ -75,7 +75,7 @@ Identify:
 - phases that need plan updates
 - tests/checks that need to change
 - documentation targets that need update
-- whether task status should move back from implementation/review/close toward planning
+- whether job status should move back from implementation/review/closure toward planning
 
 If the arc association changes, recommend `xoch-revise-arc` as well.
 
@@ -84,13 +84,13 @@ If the arc association changes, recommend `xoch-revise-arc` as well.
 Create:
 
 ```text
-.xoch/work/tasks/[task-id]/revisions/spec-[date].md
+.xoch/work/jobs/[job-id]/revisions/spec-[date].md
 ```
 
 Use this structure:
 
 ```markdown
-# Spec Revision - [task-id]
+# Spec Revision - [job-id]
 
 **Date**: [today]
 
@@ -119,13 +119,13 @@ Use this structure:
 - Documentation impact: [summary]
 ```
 
-For legacy migration tasks, write the revision note in the legacy task folder.
+For legacy migration jobs, write the revision note in the legacy job folder.
 
 ### Step 5: Update Spec
 
 Update `spec.md` carefully:
 
-- preserve the original task intent when still valid
+- preserve the original job intent when still valid
 - use explicit AC IDs
 - do not renumber existing AC IDs unless the engineer explicitly asks
 - mark removed criteria as removed or superseded when history matters
@@ -133,13 +133,13 @@ Update `spec.md` carefully:
 
 ### Step 6: Update State
 
-For target-model tasks, update `state.md`:
+For target-model jobs, update `state.md`:
 
 ```yaml
 status: spec_revised
 spec_status: revised
 review_status: null
-close_status: null
+closure_status: null
 last_spec_revision: revisions/spec-[date].md
 last_updated: [today]
 next_command: xoch-revise-plan
@@ -153,7 +153,7 @@ next_command: xoch-make
 
 and record why no plan revision is needed.
 
-For legacy migration tasks, update the legacy tracker or notes in place.
+For legacy migration jobs, update the legacy tracker or notes in place.
 
 ### Step 7: Route
 
@@ -170,9 +170,9 @@ End with:
 
 ```text
 Spec revised.
-Task: [task-id]
+Job: [job-id]
 Revision: [revision path]
-Next: [recommended command]
+{{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
 ## Rules
@@ -181,4 +181,4 @@ Next: [recommended command]
 - Do not silently change acceptance criteria.
 - Preserve old AC IDs when practical.
 - Record why the spec changed before editing the spec.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

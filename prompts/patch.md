@@ -11,7 +11,7 @@ Use a focused path for small or urgent fixes.
 
 Keep urgent work scoped without skipping necessary notes, validation, or documentation decisions.
 
-Patch is not a shortcut for broad feature work. If scope grows, route to `xoch-open`.
+Patch is not a shortcut for broad feature work. If scope grows, route to `xoch-start-job`.
 
 ## When To Use Patch
 
@@ -33,20 +33,20 @@ Use the normal lifecycle when:
 
 ## Work Model
 
-If a task is active, read task pointers in this order:
+If a job is active, read job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
-Patch notes for target-model tasks may live under:
+Patch notes for target-model jobs may live under:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/patch-[date].md
+.xoch/work/jobs/[job-id]/notes/patch-[date].md
 ```
 
-If no task exists, ask whether to:
+If no job exists, ask whether to:
 
-1. open a normal task with `xoch-open`
+1. start a normal job with `xoch-start-job`
 2. create a small patch note under `.xoch/work/patches/`
 3. proceed without Xoch state and summarize in chat only
 
@@ -66,17 +66,17 @@ Ask or infer:
 
 If scope is unclear, route to `xoch-trace` before editing.
 
-### Step 2: Decide Patch Or Normal Task
+### Step 2: Decide Patch Or Normal Job
 
 Use patch flow only when the boundary is small and stable.
 
 If scope grows, stop and recommend:
 
 ```text
-xoch-open
+xoch-start-job
 ```
 
-or, for an active task:
+or, for an active job:
 
 ```text
 xoch-revise-spec
@@ -114,7 +114,7 @@ If validation cannot run, record why.
 When useful, write:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/patch-[date].md
+.xoch/work/jobs/[job-id]/notes/patch-[date].md
 ```
 
 or:
@@ -148,16 +148,16 @@ Use this structure:
 
 ## Follow-Up
 
-[none or recommended task]
+[none or recommended job]
 ```
 
 ### Step 7: Route
 
 Recommend:
 
-- `xoch-review` when patch is part of an active task and ready for review
-- `xoch-close` when patch task is complete and reviewed/waived
-- `xoch-open` when follow-up work belongs in a normal task
+- `xoch-review` when patch is part of an active job and ready for review
+- `xoch-close-job` when patch job is complete and reviewed/waived
+- `xoch-start-job` when follow-up work belongs in a normal job
 - `xoch-doc` when docs need refresh
 - no further Xoch command when the patch is self-contained
 
@@ -174,8 +174,10 @@ Follow-up: [summary]
 
 ## Rules
 
+{{xoch-partial:engineer-git-rule.md}}
+
 - Keep patches small.
-- If scope grows, switch to normal task flow.
+- If scope grows, switch to normal job flow.
 - Do not hide skipped validation.
 - Do not use patch as a substitute for unclear requirements.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

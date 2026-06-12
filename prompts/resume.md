@@ -5,15 +5,15 @@ description: Resume paused or archived Xoch work
 
 # Xoch - Resume
 
-Resume paused or archived task work.
+Resume paused or archived job work.
 
 ## Purpose
 
-Find a task, restore it as current, summarize where work left off, and route to the next useful command.
+Find a job, restore it as current, summarize where work left off, and route to the next useful command.
 
 ## Process
 
-### Step 1: Check Active Task
+### Step 1: Check Active Job
 
 Read:
 
@@ -21,28 +21,28 @@ Read:
 .xoch/work/current.md
 ```
 
-If another task is active, ask the engineer to pause it first or cancel resume.
+If another job is active, ask the engineer to pause it first or cancel resume.
 
-If no target-model current pointer exists, check `.xoch/context/current.md` for a legacy migration task.
+If no target-model current pointer exists, check `.xoch/context/current.md` for a legacy migration job.
 
-### Step 2: Find Task
+### Step 2: Find Job
 
-If a task ID was supplied, use it.
+If a job ID was supplied, use it.
 
 Otherwise list candidates from:
 
 ```text
-.xoch/work/tasks/
-.xoch/work/tasks/archive/
+.xoch/work/jobs/
+.xoch/work/jobs/archive/
 .xoch/context/
 .xoch/context/archive/
 ```
 
-Label legacy tasks clearly as legacy.
+Label legacy jobs clearly as legacy.
 
-### Step 3: Load Task Files
+### Step 3: Load Job Files
 
-For target-model tasks, read:
+For target-model jobs, read:
 
 - `state.md`
 - `spec.md`
@@ -50,40 +50,40 @@ For target-model tasks, read:
 - `phases.md`
 - recent phase snapshots when needed
 
-For legacy tasks, read the equivalent legacy context files.
+For legacy jobs, read the equivalent legacy context files.
 
-### Step 4: Restore Archived Task If Needed
+### Step 4: Restore Archived Job If Needed
 
-If the task is archived, ask before moving or restoring it.
+If the job is archived, ask before moving or restoring it.
 
-For target-model tasks, restore to:
+For target-model jobs, restore to:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
-For legacy tasks, preserve the legacy context model unless the engineer explicitly asks to migrate it.
+For legacy jobs, preserve the legacy context model unless the engineer explicitly asks to migrate it.
 
 ### Step 5: Write Current Pointer
 
 Create `.xoch/work/current.md`:
 
 ```markdown
-# Current Task
+# Current Job
 
-**Task ID**: [task-id]
-**Title**: [task title]
+**Job ID**: [job-id]
+**Title**: [job title]
 **Arc**: [arc-id or standalone]
 **Status**: resumed
 **Current Phase**: [phase number or none]
 **Next Command**: [next command]
-**Task Directory**: .xoch/work/tasks/[task-id]/
+**Job Directory**: .xoch/work/jobs/[job-id]/
 **Resumed**: [today]
 ```
 
-For legacy tasks, update `.xoch/context/current.md` instead.
+For legacy jobs, update `.xoch/context/current.md` instead.
 
-Update target task `state.md`:
+Update target job `state.md`:
 
 ```yaml
 status: resumed
@@ -94,11 +94,11 @@ last_updated: [today]
 
 Show:
 
-- task goal
+- job goal
 - current phase
 - completed phases
 - remaining phases
-- risks/open questions from state
+- risks/unresolved questions from state
 - recommended next command
 
 Common routes:
@@ -108,8 +108,16 @@ Common routes:
 - `xoch-revise-plan` if the phase plan is stale
 - `xoch-review` if implementation is complete
 
+End with:
+
+```text
+Job resumed.
+Job: [job-id]
+{{xoch-partial:next-step.md command="[recommended command]"}}
+```
+
 ## Rules
 
-- Do not migrate legacy task folders automatically.
+- Do not migrate legacy job folders automatically.
 - Do not mark phases complete while resuming.
-- Preserve all task history.
+- Preserve all job history.

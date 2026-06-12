@@ -64,13 +64,13 @@ Xoch prompts check for and load glossaries when terminology accuracy matters:
 | **spec** | Yes | Capturing requirements with correct terms |
 | **doc** | Yes | Creating, refreshing, or validating documentation |
 | **review** | Conditional | Reviewing terminology-sensitive changes |
-| **close** | Conditional | Checking final documentation freshness |
+| **close-job** | Conditional | Checking final documentation freshness |
 | **glossary** | Yes | Managing glossary files themselves |
 | **trace** | Conditional | Investigating terminology-heavy domains |
-| **make** | Usually no | Implementation usually uses already-loaded task context |
+| **make** | Usually no | Implementation usually uses already-loaded job context |
 | **plan** | Usually no | Planning should reference spec terms unless terminology is unclear |
 | **next** | Usually no | Phase review usually does not need glossary reads |
-| **pause/resume/sidebar** | Usually no | Task-state management or tangents rarely need glossary reads |
+| **pause/resume/sidebar** | Usually no | Job-state management or tangents rarely need glossary reads |
 
 ---
 

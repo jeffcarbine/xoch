@@ -9,7 +9,7 @@ You are helping an engineer add or update project-specific glossary terms. Your 
 
 ## Your Role
 
-Work with the engineer to define new terminology, understand its context, and integrate it into the project's glossary system. This is a **sidebar operation** - it doesn't affect current task context.
+Work with the engineer to define new terminology, understand its context, and integrate it into the project's glossary system. This is a **sidebar operation** - it doesn't affect current job context.
 
 ---
 
@@ -365,7 +365,7 @@ After completing the glossary update:
 - Glossaries will be automatically loaded by xoch prompts when appropriate
 - Share with your team so everyone benefits from this documentation
 
-**Return to your current task whenever ready."**
+**Return to your current job whenever ready."**
 
 ---
 
@@ -374,8 +374,8 @@ After completing the glossary update:
 ### This is a Sidebar Operation
 
 - Does **NOT** affect `.xoch/work/current.md`
-- Does **NOT** create task context files
-- Does **NOT** require Task ID
+- Does **NOT** create job context files
+- Does **NOT** require Job ID
 - Can be used anytime during development
 - Return to phase work with `#xoch-next` or continue with other prompts
 

@@ -1,17 +1,17 @@
 ---
 name: xoch-revise-plan
-description: Revise the implementation plan or remaining phases for an open Xoch task
+description: Revise the implementation plan or remaining phases for an active Xoch job
 ---
 
 # Xoch - Revise Plan
 
-Revise the task plan after requirements, discoveries, risks, or implementation reality change.
+Revise the job plan after requirements, discoveries, risks, or implementation reality change.
 
 `revise-plan` replaces the old `replan` command and uses phase language instead of milestone language.
 
 ## Purpose
 
-Preserve completed phase history, update remaining phases, record why the plan changed, and keep the task moving without losing acceptance-criteria traceability.
+Preserve completed phase history, update remaining phases, record why the plan changed, and keep the job moving without losing acceptance-criteria traceability.
 
 Use `revise-plan` when the implementation path changes but the spec remains valid.
 
@@ -19,28 +19,28 @@ Use `xoch-revise-spec` first when the definition of done changes.
 
 ## Work Model
 
-Target-model task files live under:
+Target-model job files live under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
 Revision notes live under:
 
 ```text
-.xoch/work/tasks/[task-id]/revisions/
+.xoch/work/jobs/[job-id]/revisions/
 ```
 
-Legacy migration tasks may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
+Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
 
 ## Process
 
-### Step 1: Identify Current Task
+### Step 1: Identify Current Job
 
-Read active task pointers in this order:
+Read active job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
 Then load:
 
@@ -51,7 +51,7 @@ Then load:
 - completed phase snapshots
 - recent revision notes
 
-If no active task exists, ask for the task ID.
+If no active job exists, ask for the job ID.
 
 ### Step 2: Confirm Spec Stability
 
@@ -63,7 +63,7 @@ Route to `xoch-revise-spec` first if the change modifies:
 - scope
 - constraints
 - documentation targets
-- task purpose
+- job purpose
 
 Continue with `revise-plan` if the spec remains valid.
 
@@ -78,7 +78,7 @@ Ask what changed:
 - validation strategy
 - dependency or risk
 - discovered complexity
-- arc/task sequencing
+- arc/job sequencing
 
 Clarify whether completed phases remain valid.
 
@@ -100,13 +100,13 @@ Classify phases as:
 Create:
 
 ```text
-.xoch/work/tasks/[task-id]/revisions/plan-[date].md
+.xoch/work/jobs/[job-id]/revisions/plan-[date].md
 ```
 
 Use this structure:
 
 ```markdown
-# Plan Revision - [task-id]
+# Plan Revision - [job-id]
 
 **Date**: [today]
 
@@ -140,7 +140,7 @@ Use this structure:
 - [next command or decision]
 ```
 
-For legacy migration tasks, write the revision note in the legacy task folder.
+For legacy migration jobs, write the revision note in the legacy job folder.
 
 ### Step 6: Update Plan And Phases
 
@@ -167,19 +167,19 @@ If the current phase changes, update `phases.md`:
 
 ### Step 7: Update State
 
-For target-model tasks, update `state.md`:
+For target-model jobs, update `state.md`:
 
 ```yaml
 status: plan_revised
 current_phase: [N]
 review_status: null
-close_status: null
+closure_status: null
 last_plan_revision: revisions/plan-[date].md
 last_updated: [today]
 next_command: xoch-make
 ```
 
-If the task should go straight to review, set:
+If the job should go straight to review, set:
 
 ```yaml
 next_command: xoch-review
@@ -187,7 +187,7 @@ next_command: xoch-review
 
 and record why implementation is already complete.
 
-For legacy migration tasks, update the legacy tracker or notes in place.
+For legacy migration jobs, update the legacy tracker or notes in place.
 
 ### Step 8: Route
 
@@ -204,10 +204,10 @@ End with:
 
 ```text
 Plan revised.
-Task: [task-id]
+Job: [job-id]
 Revision: [revision path]
 Current phase: [N] - [title]
-Next: [recommended command]
+{{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
 ## Rules
@@ -216,4 +216,4 @@ Next: [recommended command]
 - Do not change acceptance criteria in `revise-plan`.
 - Preserve completed phase history and snapshots.
 - Keep AC traceability after changing phases.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

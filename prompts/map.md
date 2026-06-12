@@ -9,9 +9,9 @@ Maintain lightweight local project and dependency map context.
 
 ## Purpose
 
-Help Xoch understand related local projects, repository paths, package names, services, and dependency relationships without requiring synchronized multi-project task context.
+Help Xoch understand related local projects, repository paths, package names, services, and dependency relationships without requiring synchronized multi-project job context.
 
-First-pass `xoch-map` is intentionally local and lightweight. Full synchronized multi-project tasks are deferred.
+First-pass `xoch-map` is intentionally local and lightweight. Full synchronized multi-project jobs are deferred.
 
 ## Scope
 
@@ -50,7 +50,7 @@ Ask whether the map should cover:
 - feature dependencies
 - service/process dependencies
 - documentation targets
-- a task or arc dependency view
+- a job or arc dependency view
 
 ### Step 2: Identify Roots
 
@@ -71,7 +71,7 @@ Read only useful orientation files:
 - package/build files
 - config manifests
 - `.xoch/docs/` packets
-- task or arc state when active
+- job or arc state when active
 
 Use focused shell commands such as:
 
@@ -121,14 +121,14 @@ Write only the selected map target:
 - `.xoch/docs/DEPENDENCIES.json` for structured dependency data
 - `.xoch/docs/CODEBASE.md` for codebase orientation
 - `.xoch/docs/FEATURES.md` for feature/docs inventory
-- task/arc notes when the map is temporary to a task
+- job/arc notes when the map is temporary to a job
 
 ### Step 6: Route
 
 Recommend:
 
 - `xoch-doc` when docs need updates from the map
-- `xoch-open` when the map reveals a task
+- `xoch-start-job` when the map reveals a job
 - `xoch-revise-plan` when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
 
@@ -139,13 +139,13 @@ End with:
 ```text
 Map updated.
 Targets: [paths]
-Next: [recommended command]
+{{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
 ## Rules
 
 - Keep map data local and minimal.
-- Do not create synchronized multi-project task state in this first-pass workflow.
+- Do not create synchronized multi-project job state in this first-pass workflow.
 - Do not scan unrelated directories.
 - Do not record secrets.
 - Prefer structured data for dependencies when practical.

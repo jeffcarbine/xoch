@@ -11,7 +11,7 @@ Create, refresh, repair, or validate documentation.
 
 ## Purpose
 
-Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before review/close, or maintain lightweight `.xoch/docs/` packets.
+Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before `xoch-review` or `xoch-close-job`, or maintain lightweight `.xoch/docs/` packets.
 
 ## Scope
 
@@ -21,26 +21,26 @@ Keep README and Xoch documentation current-state oriented. `xoch-doc` may create
 - feature READMEs
 - `.xoch/docs/` packets
 - `.xoch/glossaries/`
-- task documentation targets from `.xoch/work/tasks/[task-id]/state.md`
+- job documentation targets from `.xoch/work/jobs/[job-id]/state.md`
 
 It should not turn documentation into an append-only changelog.
 
 ## Work Model
 
-When a task is active, read task pointers in this order:
+When a job is active, read job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
-For target-model tasks, documentation targets may appear in:
+For target-model jobs, documentation targets may appear in:
 
 ```text
-.xoch/work/tasks/[task-id]/state.md
-.xoch/work/tasks/[task-id]/spec.md
-.xoch/work/tasks/[task-id]/review.md
+.xoch/work/jobs/[job-id]/state.md
+.xoch/work/jobs/[job-id]/spec.md
+.xoch/work/jobs/[job-id]/review.md
 ```
 
-Legacy migration tasks may still use `.xoch/context/`. Continue them in place and do not move them automatically.
+Legacy migration jobs may still use `.xoch/context/`. Continue them in place and do not move them automatically.
 
 ## Documentation Packets
 
@@ -65,7 +65,7 @@ Ask or infer whether the engineer wants to:
 
 - create missing project or feature docs
 - refresh docs after implementation
-- validate docs before `xoch-review` or `xoch-close`
+- validate docs before `xoch-review` or `xoch-close-job`
 - repair stale or inaccurate docs
 - create or refresh `.xoch/docs/` packets
 - update glossary terminology
@@ -77,7 +77,7 @@ If the goal is unclear, ask for the documentation target.
 Read only what is needed:
 
 - relevant README files
-- task state/spec/plan/review when active
+- job state/spec/plan/review when active
 - docs packets related to the target
 - glossary index and quick reference when present
 - source files needed to verify current behavior
@@ -90,7 +90,7 @@ bin/tokenEstimator.sh --batch [files...]
 
 ### Step 3: Validate Current State
 
-Compare documentation against source and task evidence:
+Compare documentation against source and job evidence:
 
 - what exists now
 - what changed
@@ -134,7 +134,7 @@ For `.xoch/docs/` packets, use these roles:
 
 ### Step 6: Record Documentation Status
 
-When a task is active, record one of:
+When a job is active, record one of:
 
 - current
 - updated
@@ -143,22 +143,22 @@ When a task is active, record one of:
 - waived
 - unknown
 
-For target-model tasks, update or append to the relevant task file:
+For target-model jobs, update or append to the relevant job file:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/
-.xoch/work/tasks/[task-id]/review.md
-.xoch/work/tasks/[task-id]/close.md
+.xoch/work/jobs/[job-id]/notes/
+.xoch/work/jobs/[job-id]/review.md
+.xoch/work/jobs/[job-id]/closure.md
 ```
 
-For legacy migration tasks, record equivalent notes in the legacy task folder when useful.
+For legacy migration jobs, record equivalent notes in the legacy job folder when useful.
 
 ### Step 7: Route
 
 Recommend:
 
 - `xoch-review` when docs are ready for review
-- `xoch-close` when docs are ready for closure
+- `xoch-close-job` when docs are ready for closure
 - `xoch-make` when stale docs reveal implementation gaps
 - `xoch-glossary` when terminology needs formal definition
 - `xoch-map` when docs need local dependency/project mapping
@@ -170,7 +170,7 @@ End with:
 ```text
 Documentation status: [current | updated | not impacted | stale | waived | unknown]
 Targets: [paths]
-Next: [recommended command]
+{{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
 ## Rules
@@ -179,4 +179,4 @@ Next: [recommended command]
 - Prefer updating the narrowest useful documentation target.
 - Use glossary terminology when available.
 - Do not invent source behavior that was not verified.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

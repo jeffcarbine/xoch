@@ -1,6 +1,6 @@
 ---
 name: xoch-spec
-description: Capture Xoch task requirements and acceptance criteria
+description: Capture Xoch job requirements and acceptance criteria
 ---
 
 # Xoch - Spec
@@ -9,33 +9,33 @@ Capture what should change before implementation planning begins.
 
 ## Purpose
 
-Turn a task idea, issue, bug, or copied requirements into a clear task specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
+Turn a job idea, issue, bug, or copied requirements into a clear job specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
 
-`xoch-spec` normally runs after `xoch-open`.
+`xoch-spec` normally runs after `xoch-start-job`.
 
 Target flow:
 
 ```text
-open -> spec -> plan -> make -> next -> review -> close
+start-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
 
-Target-model task files live under:
+Target-model job files live under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
 Expected files after this command:
 
 ```text
 .xoch/work/current.md
-.xoch/work/tasks/[task-id]/state.md
-.xoch/work/tasks/[task-id]/spec.md
+.xoch/work/jobs/[job-id]/state.md
+.xoch/work/jobs/[job-id]/spec.md
 ```
 
-Legacy migration tasks may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active task and no `.xoch/work/current.md` exists, continue that legacy task in place and do not move it automatically.
+Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.md` exists, continue that legacy job in place and do not move it automatically.
 
 ## Process
 
@@ -50,42 +50,42 @@ Check for project glossaries:
 
 If present, read the glossary index and quick reference before requirements clarification. Use glossary-approved terminology in questions, acceptance criteria, and final spec text.
 
-### Step 1: Identify Current Task
+### Step 1: Identify Current Job
 
-Read active task pointers in this order:
+Read active job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
-If a current task exists, use its task ID and task folder.
+If a current job exists, use its job ID and job folder.
 
-If no current task exists, ask the engineer for:
+If no current job exists, ask the engineer for:
 
-- task ID or short name
-- task title
+- job ID or short name
+- job title
 - documentation target if known
 
-Generate or clean task IDs with:
+Generate or clean job IDs with:
 
 ```bash
-bin/generateTaskId.sh --id "[provided-id]"
-bin/generateTaskId.sh
+bin/generateJobId.sh --id "[provided-id]"
+bin/generateJobId.sh
 ```
 
-### Step 2: Ensure Task State
+### Step 2: Ensure Job State
 
-For target-model tasks, ensure:
+For target-model jobs, ensure:
 
 ```text
-.xoch/work/tasks/[task-id]/state.md
+.xoch/work/jobs/[job-id]/state.md
 .xoch/work/current.md
 ```
 
 If `state.md` does not exist, create it with:
 
 ```yaml
-task_id: [task-id]
-title: [task title]
+job_id: [job-id]
+title: [job title]
 status: spec_in_progress
 arc: [arc-id or standalone]
 current_phase: null
@@ -94,13 +94,13 @@ documentation_targets:
 decisions: []
 risks: []
 review_status: null
-close_status: null
+closure_status: null
 next_command: xoch-spec
 started: [today]
 last_updated: [today]
 ```
 
-For legacy tasks, update the legacy context files in place.
+For legacy jobs, update the legacy context files in place.
 
 ### Step 3: Gather Source Requirements
 
@@ -143,18 +143,62 @@ Summarize:
 
 Ask the engineer whether the change analysis is correct.
 
-### Step 6: Write Spec
+### Step 6: Assess Job Versus Arc Fit
+
+Before writing the final job spec, decide whether the requested work still looks like one focused job or whether it would be healthier as an arc with multiple jobs.
+
+Use these signals for arc-sized work:
+
+- multiple independent outcomes or workstreams
+- several features, packages, services, or repositories with different validation paths
+- substantial sequencing where one piece should be planned or reviewed separately from another
+- several documentation targets with different owners or audiences
+- acceptance criteria that naturally cluster into multiple jobs
+- uncertainty high enough that a shared arc spec would help before job-level specs continue
+
+If the work appears to fit one focused job, continue normally and optionally note:
+
+```markdown
+## Arc Fit
+
+This work appears suitable for a single job because [reason].
+```
+
+If the work appears arc-sized:
+
+1. Explain the signals that make it larger than one job.
+2. Recommend `xoch-start-arc` before continuing job-level planning.
+3. Ask the engineer whether to:
+   - run `xoch-start-arc` now
+   - continue this job spec anyway
+   - narrow this job spec to the first job in the arc
+4. If the engineer chooses `xoch-start-arc`, stop after summarizing the recommended arc purpose and candidate jobs.
+
+When continuing a job spec that belongs to or may belong to an arc, include:
+
+```markdown
+## Arc Fit
+
+- Recommended shape: [single job | arc candidate | job inside existing arc]
+- Rationale: [short reason]
+- Suggested arc: [arc-id or none]
+- Candidate related jobs: [list or none]
+```
+
+This check is advisory. Do not block a deliberately single-job spec if the engineer chooses to continue.
+
+### Step 7: Write Spec
 
 Write:
 
 ```text
-.xoch/work/tasks/[task-id]/spec.md
+.xoch/work/jobs/[job-id]/spec.md
 ```
 
 Use this structure:
 
 ```markdown
-# Specification - [task-id]
+# Specification - [job-id]
 
 **Date**: [today]
 **Status**: Draft
@@ -164,7 +208,7 @@ Use this structure:
 
 ## Requirements
 
-[Requirement source and clarified task scope]
+[Requirement source and clarified job scope]
 
 ---
 
@@ -205,13 +249,19 @@ Use this structure:
 
 ---
 
+## Arc Fit
+
+[Single-job or arc recommendation, rationale, suggested arc, and candidate related jobs]
+
+---
+
 ## Token Usage (Spec Phase)
 
 Budget: 8,000 tokens
 [Files read and estimates]
 ```
 
-### Step 7: Update State
+### Step 8: Update State
 
 Update `state.md`:
 
@@ -222,7 +272,7 @@ next_command: xoch-plan
 last_updated: [today]
 ```
 
-If writing a legacy migration task, update the existing `.xoch/context/[task-id]/spec.md` and current pointer instead.
+If writing a legacy migration job, update the existing `.xoch/context/[job-id]/spec.md` and current pointer instead.
 
 ## Output
 
@@ -230,8 +280,8 @@ End with:
 
 ```text
 Specification captured.
-Task: [task-id]
-Next: xoch-plan
+Job: [job-id]
+{{xoch-partial:next-step.md command="xoch-plan"}}
 ```
 
 ## Rules
@@ -239,5 +289,6 @@ Next: xoch-plan
 - Specs describe change, not implementation details.
 - Acceptance criteria must be binary and testable.
 - Use AC IDs for traceability.
+- Always make an explicit job-versus-arc recommendation before routing to `xoch-plan`.
 - Do not silently contradict a provided source requirement.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.

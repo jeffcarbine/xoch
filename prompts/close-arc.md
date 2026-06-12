@@ -1,15 +1,15 @@
 ---
 name: xoch-close-arc
-description: Close an Xoch arc after its related tasks are complete or intentionally parked
+description: Close an Xoch arc after its related jobs are complete or intentionally parked
 ---
 
 # Xoch - Close Arc
 
-Close an optional arc when its related tasks are complete, intentionally parked, or moved out of the arc.
+Close an optional arc when its related jobs are complete, intentionally parked, or moved out of the arc.
 
 ## Purpose
 
-Summarize the larger goal, record final task membership state, capture unfinished work decisions, and mark the arc closed without changing or deleting task folders.
+Summarize the larger goal, record final job membership state, capture unfinished work decisions, and mark the arc closed without changing or deleting job folders.
 
 ## Work Model
 
@@ -19,13 +19,13 @@ Arc files live under:
 .xoch/work/arcs/[arc-id]/
 ```
 
-Task folders stay under:
+Job folders stay under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
-Closing an arc does not close, archive, delete, or move any task.
+Closing an arc does not close, archive, delete, or move any job.
 
 ## Process
 
@@ -40,14 +40,14 @@ If the engineer provides an arc ID, use it. Otherwise list arcs under:
 Load:
 
 - `state.md`
-- `tasks.md`
+- `jobs.md`
 - `notes.md`
 - recent revision notes
-- task `state.md` files for referenced task IDs when available
+- job `state.md` files for referenced job IDs when available
 
-### Step 2: Summarize Task Membership
+### Step 2: Summarize Job Membership
 
-Group referenced tasks as:
+Group referenced jobs as:
 
 - complete
 - active
@@ -55,18 +55,18 @@ Group referenced tasks as:
 - parked
 - missing or unknown
 
-Do not assume unknown task status is complete.
+Do not assume unknown job status is complete.
 
-### Step 3: Resolve Unfinished Tasks
+### Step 3: Resolve Unfinished Jobs
 
-If active, planned, parked, missing, or unknown tasks remain, ask whether to:
+If active, planned, parked, missing, or unknown jobs remain, ask whether to:
 
 1. Leave them referenced as parked follow-up
-2. Move the task references to another arc
+2. Move the job references to another arc
 3. Remove them from the arc reference list
-4. Keep the arc open
+4. Keep the arc active
 
-If moving references to another arc, use or recommend `xoch-revise-arc` for both arcs. Do not move task folders.
+If moving references to another arc, use or recommend `xoch-revise-arc` for both arcs. Do not move job folders.
 
 ### Step 4: Check Documentation
 
@@ -77,13 +77,13 @@ If the arc affected shared docs, feature READMEs, or `.xoch/docs/`, ask whether 
 Create:
 
 ```text
-.xoch/work/arcs/[arc-id]/close.md
+.xoch/work/arcs/[arc-id]/closure.md
 ```
 
 Use this structure:
 
 ```markdown
-# Close Arc - [arc-id]
+# Arc Closure - [arc-id]
 
 **Date**: [today]
 **Status**: Closed
@@ -92,15 +92,15 @@ Use this structure:
 
 [What the arc accomplished]
 
-## Task Membership At Close
+## Job Membership At Close
 
 ### Complete
 
-- `[task-id]` - [summary]
+- `[job-id]` - [summary]
 
 ### Parked Or Follow-Up
 
-- `[task-id]` - [decision]
+- `[job-id]` - [decision]
 
 ## Documentation
 
@@ -112,7 +112,7 @@ Use this structure:
 
 ## Follow-Up
 
-- [remaining task or "None"]
+- [remaining job or "None"]
 ```
 
 ### Step 6: Mark Arc Closed
@@ -132,7 +132,7 @@ last_updated: [today]
 next_command: null
 ```
 
-Keep `tasks.md` as a final reference record unless the engineer asked to revise it before closing.
+Keep `jobs.md` as a final reference record unless the engineer asked to revise it before closing.
 
 ## Output
 
@@ -141,13 +141,13 @@ End with:
 ```text
 Arc closed.
 Arc: [arc-id]
-Tasks changed: none moved or deleted
+Jobs changed: none moved or deleted
 Follow-up: [summary]
 ```
 
 ## Rules
 
-- Closing an arc does not close tasks.
-- Closing an arc does not archive, delete, or move task folders.
-- Unfinished task references require an explicit keep, move-reference, remove-reference, or keep-open decision.
+- Closing an arc does not close jobs.
+- Closing an arc does not archive, delete, or move job folders.
+- Unfinished job references require an explicit keep, move-reference, remove-reference, or keep-active decision.
 - Documentation gaps require refresh, waiver, or explicit "not impacted".

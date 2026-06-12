@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Xoch Task ID Generator
-# Generates unique task IDs for Xoch work/task directories
+# Xoch Job ID Generator
+# Generates unique job IDs for Xoch work/job directories
 
 # Usage modes:
-# 1. With user-provided ID: generateTaskId.sh --id "my-task-id"
-# 2. Auto-generate: generateTaskId.sh
+# 1. With user-provided ID: generateJobId.sh --id "my-job-id"
+# 2. Auto-generate: generateJobId.sh
 
 # Check for user-provided ID
 if [ "$1" == "--id" ] && [ -n "$2" ]; then
@@ -30,6 +30,6 @@ TIMESTAMP=$(date +%Y%m%d-%H%M)
 RANDOM_SUFFIX=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
 
 # Combine: projectname-YYYYMMDD-HHMM-xxxx
-TASK_ID="${PROJECT_NAME}-${TIMESTAMP}-${RANDOM_SUFFIX}"
+JOB_ID="${PROJECT_NAME}-${TIMESTAMP}-${RANDOM_SUFFIX}"
 
-echo "$TASK_ID"
+echo "$JOB_ID"

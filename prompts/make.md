@@ -5,40 +5,40 @@ description: Implement or guide implementation for the current Xoch phase
 
 # Xoch - Make
 
-Implement, guide, or collaborate on the current phase of the open task.
+Implement, guide, or collaborate on the current phase of the active job.
 
 `make` is Xoch's implementation command. It replaces the old `start` command and uses phase language instead of milestone language.
 
 ## Purpose
 
-Load the active task, understand the current phase, choose an ownership mode with the engineer, perform the work when appropriate, record useful evidence, and route to `xoch-next`.
+Load the active job, understand the current phase, choose an ownership mode with the engineer, perform the work when appropriate, record useful evidence, and route to `xoch-next`.
 
 Target flow:
 
 ```text
-open -> spec -> plan -> make -> next -> review -> close
+start-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
 
-Target-model task files live under:
+Target-model job files live under:
 
 ```text
-.xoch/work/tasks/[task-id]/
+.xoch/work/jobs/[job-id]/
 ```
 
-Read active task pointers in this order:
+Read active job pointers in this order:
 
 1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration tasks
+2. `.xoch/context/current.md` for legacy migration jobs
 
-Legacy migration tasks may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
+Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
 ## Process
 
-### Step 1: Identify Current Task
+### Step 1: Identify Current Job
 
-Read the active task pointer. For target-model tasks, load:
+Read the active job pointer. For target-model jobs, load:
 
 - `state.md`
 - `spec.md`
@@ -46,16 +46,16 @@ Read the active task pointer. For target-model tasks, load:
 - `phases.md`
 - `phases/phase-[N].md` when present
 
-For legacy migration tasks, load the equivalent legacy files such as `spec.md`, `plan.md`, and `milestones.md`.
+For legacy migration jobs, load the equivalent legacy files such as `spec.md`, `plan.md`, and `milestones.md`.
 
-If there is no active task, ask the engineer to run `xoch-open` or provide the task ID.
+If there is no active job, ask the engineer to run `xoch-start-job` or provide the job ID.
 
 ### Step 2: Validate Readiness
 
 Before implementation, confirm:
 
-- the task has a spec
-- the task has a plan
+- the job has a spec
+- the job has a plan
 - a current phase is identifiable
 - the current phase is not already complete
 - acceptance criteria for the phase are listed or can be inferred
@@ -86,13 +86,11 @@ Keep this practical. The engineer should know what will happen before edits begi
 
 ### Step 4: Choose Ownership
 
-Ask how to proceed:
+Ask:
 
-1. Agent implements this phase
-2. Engineer implements this phase
-3. Agent and engineer collaborate
+{{xoch-partial:action-choice.md agent_action="builds" engineer_action="builds"}}
 
-If the engineer has already made the choice, proceed with that choice and record it in task state or phase notes.
+If the engineer has already made the choice, proceed with that choice and record it in job state or phase notes.
 
 ### Step 5: Prepare Implementation
 
@@ -120,15 +118,15 @@ When editing:
 - update docs only when this phase's work changes documented behavior
 - avoid adding QA or PR process ceremony
 
-If the task is target-model, append useful implementation notes to:
+If the job is target-model, append useful implementation notes to:
 
 ```text
-.xoch/work/tasks/[task-id]/notes/
+.xoch/work/jobs/[job-id]/notes/
 ```
 
 or the current phase file when it exists.
 
-For legacy migration tasks, add notes to the existing legacy task folder when useful.
+For legacy migration jobs, add notes to the existing legacy job folder when useful.
 
 ### Step 7: Validate
 
@@ -153,7 +151,7 @@ Before ending, summarize:
 - risks or follow-up notes
 - whether docs were updated or intentionally deferred
 
-For target-model tasks, update `state.md`:
+For target-model jobs, update `state.md`:
 
 ```yaml
 status: phase_in_progress
@@ -165,7 +163,7 @@ next_command: xoch-next
 last_updated: [today]
 ```
 
-For legacy migration tasks, record the same information in the legacy task notes or tracker when appropriate.
+For legacy migration jobs, record the same information in the legacy job notes or tracker when appropriate.
 
 ## Output
 
@@ -173,16 +171,18 @@ End with:
 
 ```text
 Phase work complete or ready for review.
-Task: [task-id]
+Job: [job-id]
 Current phase: [N] - [title]
-Next: xoch-next
+{{xoch-partial:next-step.md command="xoch-next"}}
 ```
 
 ## Rules
+
+{{xoch-partial:engineer-git-rule.md}}
 
 - Do not start implementation without enough phase context.
 - Do not silently change spec scope; use `xoch-revise-spec`.
 - Do not silently reshape remaining phases; use `xoch-revise-plan`.
 - Keep phase work focused.
 - Record validation evidence, including skipped checks.
-- Do not move active legacy task folders during the migration.
+- Do not move active legacy job folders during the migration.
