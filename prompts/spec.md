@@ -11,12 +11,12 @@ Capture what should change before implementation planning begins.
 
 Turn a job idea, issue, bug, or copied requirements into a clear job specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
 
-`xoch-spec` normally runs after `xoch-start-job`.
+`xoch-spec` normally runs after `xoch-open-job`.
 
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
@@ -167,12 +167,12 @@ This work appears suitable for a single job because [reason].
 If the work appears arc-sized:
 
 1. Explain the signals that make it larger than one job.
-2. Recommend `xoch-start-arc` before continuing job-level planning.
+2. Recommend `xoch-open-arc` before continuing job-level planning.
 3. Ask the engineer whether to:
-   - run `xoch-start-arc` now
+   - run `xoch-open-arc` now
    - continue this job spec anyway
    - narrow this job spec to the first job in the arc
-4. If the engineer chooses `xoch-start-arc`, stop after summarizing the recommended arc purpose and candidate jobs.
+4. If the engineer chooses `xoch-open-arc`, stop after summarizing the recommended arc purpose and candidate jobs.
 
 When continuing a job spec that belongs to or may belong to an arc, include:
 

@@ -16,7 +16,7 @@ Load the active job, understand the current phase, choose an ownership mode with
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
@@ -48,7 +48,7 @@ Read the active job pointer. For target-model jobs, load:
 
 For legacy migration jobs, load the equivalent legacy files such as `spec.md`, `plan.md`, and `milestones.md`.
 
-If there is no active job, ask the engineer to run `xoch-start-job` or provide the job ID.
+If there is no active job, ask the engineer to run `xoch-open-job` or provide the job ID.
 
 ### Step 2: Validate Readiness
 

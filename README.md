@@ -2,7 +2,7 @@
 
 **Open-source, prompt-first development workflow**
 
-Xoch is a lightweight workflow system for AI-assisted software work. It keeps durable project knowledge in readable documentation, tracks focused job work in local Xoch state, and guides engineers through a clear lifecycle from starting a job to closing it.
+Xoch is a lightweight workflow system for AI-assisted software work. It keeps durable project knowledge in readable documentation, tracks focused job work in local Xoch state, and guides engineers through a clear lifecycle from opening a job to closing it.
 
 ---
 
@@ -42,12 +42,12 @@ $xoch-meow
 ## Core Workflow
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 | Step | Command | Purpose |
 |---|---|---|
-| 1 | `xoch-start-job` | Start or resume a job. |
+| 1 | `xoch-open-job` | Open or resume a job. |
 | 2 | `xoch-spec` | Capture requirements, acceptance criteria, and job-versus-arc fit. |
 | 3 | `xoch-plan` | Create the implementation approach and phases after confirming the spec shape. |
 | 4 | `xoch-make` | Implement or guide the current phase. |
@@ -71,7 +71,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 
 | Command | Purpose |
 |---|---|
-| `xoch-start-arc` | Start an optional arc grouping related jobs, optionally adopting the active standalone job. |
+| `xoch-open-arc` | Open an optional arc grouping related jobs, optionally adopting the active standalone job. |
 | `xoch-revise-arc` | Revise arc purpose, notes, or job membership. |
 | `xoch-close-arc` | Close an arc when its related jobs are complete. |
 | `xoch-revise-spec` | Revise a job's foundational requirements. |
@@ -163,7 +163,7 @@ Arc files are intentionally small:
 
 `jobs.md` is the membership list. It can group job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job `state.md` should use `arc: [arc-id]`, but the job folder still stays under `.xoch/work/jobs/`.
 
-`xoch-spec` should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, the agent should recommend `xoch-start-arc` before job planning. `xoch-start-arc` checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, the agent asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
+`xoch-spec` should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, the agent should recommend `xoch-open-arc` before job planning. `xoch-open-arc` checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, the agent asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
 
 ### Job State
 
@@ -241,7 +241,7 @@ Ready for next step: `xoch-next`
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 
-`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-start-job` or revise the active job.
+`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open-job` or revise the active job.
 
 ---
 
@@ -258,7 +258,7 @@ Ready for next step: `xoch-next`
 
 **Prompt not found:** Run `./install.sh` and restart the AI tool.
 
-**No current job:** Run `xoch-start-job`.
+**No current job:** Run `xoch-open-job`.
 
 **Docs feel stale:** Run `xoch-doc`.
 

@@ -9,7 +9,7 @@ Thank you for improving Xoch. Xoch is a prompt-first workflow package, so most c
 Use Xoch to work on Xoch:
 
 ```text
-xoch-start-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
+xoch-open-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
 ```
 
 For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target `.xoch/work/`.
@@ -62,8 +62,8 @@ Common files:
 
 | File | Purpose | Created By |
 |---|---|---|
-| `.xoch/work/current.md` | Active job pointer | `start-job` |
-| `state.md` | Job status and routing | `start-job` |
+| `.xoch/work/current.md` | Active job pointer | `open-job` |
+| `state.md` | Job status and routing | `open-job` |
 | `spec.md` | Requirements and ACs | `spec` |
 | `plan.md` | Implementation approach | `plan` |
 | `phases.md` | Phase tracker | `plan` |

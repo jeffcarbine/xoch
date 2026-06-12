@@ -24,16 +24,16 @@ Xoch is a prompt-first workflow system for AI-assisted software development. It 
 ## Lifecycle
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
-### Start
+### Open
 
-`xoch-start-job` creates or resumes job work. It records job metadata, optional arc association, and documentation targets when known.
+`xoch-open-job` creates or resumes job work. It records job metadata, optional arc association, and documentation targets when known.
 
 ### Spec
 
-`xoch-spec` captures requirements, constraints, acceptance criteria, and job-versus-arc fit. New specs should use explicit AC IDs so plan, make, next, and review can preserve traceability. When the requested work appears too broad for one focused job, `xoch-spec` should recommend `xoch-start-arc` before job planning.
+`xoch-spec` captures requirements, constraints, acceptance criteria, and job-versus-arc fit. New specs should use explicit AC IDs so plan, make, next, and review can preserve traceability. When the requested work appears too broad for one focused job, `xoch-spec` should recommend `xoch-open-arc` before job planning.
 
 ### Plan
 
@@ -185,7 +185,7 @@ Arcs reference job IDs in `jobs.md`. Job folders remain under `.xoch/work/jobs/`
 
 Arc commands must not close, archive, delete, or move job folders. They may update a job's `arc` field only when the engineer confirms that back-reference change.
 
-`xoch-start-arc` checks for an active standalone job before creating a new arc. If one exists, the command can add that job to the new arc's `jobs.md` under `Active` and, with engineer approval, update the job `state.md` with `arc: [arc-id]`. When the active job already has a spec, the command asks whether to infer the arc purpose, success outcome, and candidate job list from that spec or use engineer-provided arc metadata.
+`xoch-open-arc` checks for an active standalone job before creating a new arc. If one exists, the command can add that job to the new arc's `jobs.md` under `Active` and, with engineer approval, update the job `state.md` with `arc: [arc-id]`. When the active job already has a spec, the command asks whether to infer the arc purpose, success outcome, and candidate job list from that spec or use engineer-provided arc metadata.
 
 ## Revisions
 

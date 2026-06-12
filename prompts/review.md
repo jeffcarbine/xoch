@@ -16,7 +16,7 @@ Verify that completed work satisfies the spec, matches the plan, has adequate va
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model

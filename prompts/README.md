@@ -20,12 +20,12 @@ Codex:                  $xoch-[name]
 ## Core Workflow
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 | Command | Purpose | Primary Output |
 |---|---|---|
-| `start-job` | Start or resume job work. | `.xoch/work/current.md`, job `state.md` |
+| `open-job` | Open or resume job work. | `.xoch/work/current.md`, job `state.md` |
 | `spec` | Capture requirements, acceptance criteria, and job-versus-arc fit. | job `spec.md` |
 | `plan` | Create implementation approach and phases after confirming spec shape. | job `plan.md`, `phases.md` |
 | `make` | Implement or guide current phase work. | source changes, test evidence |
@@ -43,13 +43,13 @@ Use `make` and `next` repeatedly until all phases are complete.
 
 | Command | Purpose |
 |---|---|
-| `start-arc` | Start an optional grouping for related jobs, optionally adopting the active standalone job. |
+| `open-arc` | Open an optional grouping for related jobs, optionally adopting the active standalone job. |
 | `revise-arc` | Update arc purpose, status, notes, risks, or job membership references. |
 | `close-arc` | Close an arc after its jobs are complete, moved by reference, or intentionally parked. |
 
 Arcs reference job IDs. They do not contain nested job folders.
 
-`spec` should recommend `start-arc` when work appears too broad for one focused job. `start-arc` checks for an active standalone job, can add it to the new arc's `jobs.md`, and asks whether to infer arc metadata from the active job spec when one exists.
+`spec` should recommend `open-arc` when work appears too broad for one focused job. `open-arc` checks for an active standalone job, can add it to the new arc's `jobs.md`, and asks whether to infer arc metadata from the active job spec when one exists.
 
 ---
 
@@ -105,8 +105,8 @@ revise-plan.md
 revise-spec.md
 sidebar.md
 spec.md
-start-arc.md
-start-job.md
+open-arc.md
+open-job.md
 trace.md
 ```
 
@@ -152,7 +152,7 @@ Ready for next step: `xoch-next`
 | Old / Borrowed Term | Xoch Term |
 |---|---|
 | milestone / wave | phase |
-| start | start-job |
+| start | open-job |
 | build | make |
 | advance | next |
 | audit | review |

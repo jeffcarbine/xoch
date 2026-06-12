@@ -14,7 +14,7 @@ Turn an accepted job spec into a practical plan with clear phases, file ownershi
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
@@ -64,7 +64,7 @@ Check that `spec.md` contains:
 
 If AC IDs are missing, add them during planning only after confirming they preserve the spec meaning.
 
-If the spec recommends an arc and the job is still standalone, ask whether the engineer wants to run `xoch-start-arc` before creating the job plan. Continue planning only when the engineer confirms this job should proceed independently or as the first job inside an arc.
+If the spec recommends an arc and the job is still standalone, ask whether the engineer wants to run `xoch-open-arc` before creating the job plan. Continue planning only when the engineer confirms this job should proceed independently or as the first job inside an arc.
 
 ### Step 3: Gather Architectural Approach
 

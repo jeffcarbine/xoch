@@ -128,7 +128,7 @@ Write only the selected map target:
 Recommend:
 
 - `xoch-doc` when docs need updates from the map
-- `xoch-start-job` when the map reveals a job
+- `xoch-open-job` when the map reveals a job
 - `xoch-revise-plan` when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
 

@@ -11,7 +11,7 @@ Use a focused path for small or urgent fixes.
 
 Keep urgent work scoped without skipping necessary notes, validation, or documentation decisions.
 
-Patch is not a shortcut for broad feature work. If scope grows, route to `xoch-start-job`.
+Patch is not a shortcut for broad feature work. If scope grows, route to `xoch-open-job`.
 
 ## When To Use Patch
 
@@ -46,7 +46,7 @@ Patch notes for target-model jobs may live under:
 
 If no job exists, ask whether to:
 
-1. start a normal job with `xoch-start-job`
+1. open a normal job with `xoch-open-job`
 2. create a small patch note under `.xoch/work/patches/`
 3. proceed without Xoch state and summarize in chat only
 
@@ -73,7 +73,7 @@ Use patch flow only when the boundary is small and stable.
 If scope grows, stop and recommend:
 
 ```text
-xoch-start-job
+xoch-open-job
 ```
 
 or, for an active job:
@@ -157,7 +157,7 @@ Recommend:
 
 - `xoch-review` when patch is part of an active job and ready for review
 - `xoch-close-job` when patch job is complete and reviewed/waived
-- `xoch-start-job` when follow-up work belongs in a normal job
+- `xoch-open-job` when follow-up work belongs in a normal job
 - `xoch-doc` when docs need refresh
 - no further Xoch command when the patch is self-contained
 

@@ -16,7 +16,7 @@ Compare the current phase plan against the working tree, gather implementation a
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model

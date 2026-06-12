@@ -26,7 +26,7 @@ Target-model trace notes live under:
 .xoch/work/jobs/[job-id]/notes/trace-[date].md
 ```
 
-If no job exists, write findings only after asking whether to start a job with `xoch-start-job` or keep the trace as an ad hoc note.
+If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
 
 ## Process
 
@@ -131,7 +131,7 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-start-job | xoch-revise-plan | xoch-make | more trace]
+[xoch-patch | xoch-open-job | xoch-revise-plan | xoch-make | more trace]
 ```
 
 For legacy migration jobs, write the note in the legacy job folder.
@@ -141,7 +141,7 @@ For legacy migration jobs, write the note in the legacy job folder.
 Recommend:
 
 - `xoch-patch` for a focused urgent fix
-- `xoch-start-job` for a new normal job
+- `xoch-open-job` for a new normal job
 - `xoch-revise-plan` if the active job plan needs adjustment
 - `xoch-make` if the current phase can implement the fix
 - continue tracing if evidence is insufficient

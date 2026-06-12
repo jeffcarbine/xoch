@@ -1,11 +1,11 @@
 ---
-name: xoch-start-job
-description: Start or resume a Xoch job
+name: xoch-open-job
+description: Open or resume a Xoch job
 ---
 
-# Xoch - Start Job
+# Xoch - Open Job
 
-Start or resume a focused unit of work.
+Open or resume a focused unit of work.
 
 This is the normal entry point for Xoch job work.
 
@@ -16,7 +16,7 @@ Create or resume job state, capture basic metadata, record optional arc associat
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
@@ -55,9 +55,9 @@ Read active pointers in this order:
 If active work exists:
 
 - summarize job ID, title, status, current phase, and next command when available
-- ask whether to resume it or start a different job
+- ask whether to resume it or open a different job
 
-If the engineer starts a different job while one is active, recommend `xoch-pause` first.
+If the engineer opens a different job while one is active, recommend `xoch-pause` first.
 
 ### Step 2: Gather Metadata
 
@@ -70,10 +70,10 @@ Ask only for missing values:
 - documentation target, if known
 - whether strict documentation target enforcement is required
 
-If the engineer describes work that sounds like several related jobs, suggest starting an arc first:
+If the engineer describes work that sounds like several related jobs, suggest opening an arc first:
 
 ```text
-This may be arc-sized. Consider `xoch-start-arc` if you want shared tracking before job-level specs.
+This may be arc-sized. Consider `xoch-open-arc` if you want shared tracking before job-level specs.
 ```
 
 Continue creating the job if the engineer confirms this should remain one focused job.
@@ -111,7 +111,7 @@ Create:
 .xoch/work/jobs/[job-id]/revisions/
 ```
 
-Do not create arc folders unless the job belongs to an arc or the engineer asks to start an arc.
+Do not create arc folders unless the job belongs to an arc or the engineer asks to open an arc.
 
 ### Step 5: Write State
 
@@ -165,7 +165,7 @@ Create `.xoch/work/current.md`:
 End with:
 
 ```text
-Job started.
+Job opened.
 {{xoch-partial:next-step.md command="xoch-spec"}}
 ```
 

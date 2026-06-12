@@ -1,11 +1,11 @@
 ---
-name: xoch-start-arc
-description: Start an optional Xoch arc for grouping related jobs
+name: xoch-open-arc
+description: Open an optional Xoch arc for grouping related jobs
 ---
 
-# Xoch - Start Arc
+# Xoch - Open Arc
 
-Start an optional arc: a larger goal that groups related jobs by reference.
+Open an optional arc: a larger goal that groups related jobs by reference.
 
 ## Purpose
 
@@ -40,7 +40,7 @@ Before gathering arc metadata, inspect active job pointers in this order:
 
 If an active target-model job exists, read its `state.md` and determine whether it is already part of an arc:
 
-- If `arc` is an arc ID, summarize that existing arc relationship and ask whether the engineer wants to revise that arc instead of starting a new one.
+- If `arc` is an arc ID, summarize that existing arc relationship and ask whether the engineer wants to revise that arc instead of opening a new one.
 - If `arc` is `standalone`, `null`, empty, or missing, treat it as an active standalone job candidate for the new arc.
 
 For an active standalone job:
@@ -51,7 +51,7 @@ For an active standalone job:
 4. Ask whether to:
    - infer the arc purpose and initial job list from the active job spec
    - use engineer-provided arc spec/metadata instead
-   - start the arc without adopting the active job
+   - open the arc without adopting the active job
 5. Unless the engineer declines adoption, add the active standalone job to the new arc's `jobs.md` under `Active`.
 6. If the engineer approves, update that job's `state.md` with `arc: [arc-id]`.
 
@@ -124,7 +124,7 @@ risks: []
 unresolved_questions: []
 started: [today]
 last_updated: [today]
-next_command: xoch-start-job
+next_command: xoch-open-job
 ```
 
 ### Step 6: Write Job References
@@ -197,29 +197,29 @@ Do not change current phase, review status, or next command unless the engineer 
 
 ### Step 9: Route
 
-If the engineer wants to start a job in the arc:
+If the engineer wants to open a job in the arc:
 
 ```text
-{{xoch-partial:next-step.md command="xoch-start-job"}}
+{{xoch-partial:next-step.md command="xoch-open-job"}}
 ```
 
-Tell `xoch-start-job` to set:
+Tell `xoch-open-job` to set:
 
 ```yaml
 arc: [arc-id]
 ```
 
-If the arc was started only for planning, stop after summarizing the created arc files.
+If the arc was opened only for planning, stop after summarizing the created arc files.
 
 ## Output
 
 End with:
 
 ```text
-Arc started.
+Arc opened.
 Arc: [arc-id]
 Job references: .xoch/work/arcs/[arc-id]/jobs.md
-{{xoch-partial:next-step.md command="xoch-start-job"}}
+{{xoch-partial:next-step.md command="xoch-open-job"}}
 ```
 
 ## Rules

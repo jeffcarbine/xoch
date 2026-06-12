@@ -30,7 +30,7 @@ Xoch imports selected workflow strengths from RepFlow while keeping Xoch's own i
 ## Core Flow
 
 ```text
-xoch-start-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
+xoch-open-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
 ```
 
 Use `xoch-make` and `xoch-next` repeatedly until all phases are complete.
@@ -40,7 +40,7 @@ Use `xoch-make` and `xoch-next` repeatedly until all phases are complete.
 Core:
 
 ```text
-xoch-start-job
+xoch-open-job
 xoch-spec
 xoch-plan
 xoch-make
@@ -52,7 +52,7 @@ xoch-close-job
 Arcs:
 
 ```text
-xoch-start-arc
+xoch-open-arc
 xoch-revise-arc
 xoch-close-arc
 ```
@@ -83,7 +83,7 @@ xoch-meow
 | RepFlow / Old Term | Xoch Term | Notes |
 |---|---|---|
 | `wave` / `milestone` | `phase` | Implementation slice inside a job. |
-| `start` | `start-job` | Opens or resumes job work. |
+| `start` | `open-job` | Opens or resumes job work. |
 | `build` | `make` | Implements or guides the current phase. |
 | `next` | `next` | Reviews the current phase and advances. |
 | `audit` | `review` | Verifies acceptance, quality, tests, risk, and docs. |
@@ -220,7 +220,7 @@ current_phase: 2
 
 ## Lifecycle Decisions
 
-- `xoch-start-job` is the normal entry point for creating or resuming job work.
+- `xoch-open-job` is the normal entry point for creating or resuming job work.
 - `xoch-spec` records requirements with explicit acceptance criteria IDs.
 - `xoch-plan` creates implementation phases and acceptance coverage.
 - `xoch-make` implements or guides the current phase.

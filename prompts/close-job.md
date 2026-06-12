@@ -7,7 +7,7 @@ description: Close completed Xoch work and archive or finalize job state
 
 Close a completed Xoch job.
 
-`close-job` replaces the old `finalize` command and is the lifecycle opposite of `start-job`.
+`close-job` replaces the old `finalize` command and is the lifecycle opposite of `open-job`.
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Verify review and documentation status, record final job history, clear the acti
 Target flow:
 
 ```text
-start-job -> spec -> plan -> make -> next -> review -> close-job
+open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
 ## Work Model
