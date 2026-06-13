@@ -92,7 +92,7 @@ Identify files needed to understand the implementation approach:
 Use:
 
 ```bash
-bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/tokenEstimator.sh --batch [files...]
 ```
 
 If the read is large, summarize why it is worth the context and ask the engineer before proceeding unless they have already approved exceeding budget.
@@ -123,7 +123,19 @@ Break the work into phases. Each phase should have:
 
 Prefer phases that can be reviewed independently.
 
-### Step 7: Write Plan
+### Step 7: Present Draft Plan
+
+Before writing plan files, present the draft implementation plan and phase breakdown in chat. Include the architectural approach, likely files, phases, validation, risks, and acceptance-criteria coverage.
+
+Then ask:
+
+{{xoch-partial:accept-or-modify.md artifact="plan"}}
+
+If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Repeat until the engineer accepts.
+
+Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state complete until the engineer chooses `[A]`.
+
+### Step 8: Write Accepted Plan
 
 Write:
 
@@ -138,6 +150,7 @@ Use this structure:
 
 **Date**: [today]
 **Spec**: spec.md
+**Status**: Accepted
 
 ---
 
@@ -185,7 +198,7 @@ Budget: 13,000 tokens
 | AC-001 | Phase 1 |
 ```
 
-### Step 8: Write Phases
+### Step 9: Write Accepted Phases
 
 Write:
 
@@ -229,12 +242,13 @@ Optionally create individual phase files under:
 
 when a phase needs more detail than belongs in `phases.md`.
 
-### Step 9: Update State
+### Step 10: Update State
 
 Update `state.md`:
 
 ```yaml
 status: plan_complete
+plan_status: accepted
 current_phase: 1
 review_status: null
 closure_status: null
@@ -257,6 +271,8 @@ Current phase: Phase 1 - [title]
 ## Rules
 
 - Engineer direction wins when explicit.
+- Present the draft plan and get `[A]` acceptance before writing plan artifacts.
+- If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Plans describe how; specs describe what.
 - Phases replace milestones for new work.
 - Preserve AC traceability.

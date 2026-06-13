@@ -211,10 +211,10 @@ For solo work, ignoring all of `.xoch/` is also valid.
 Xoch prompts estimate file reads with:
 
 ```bash
-bin/tokenEstimator.sh --batch file1 file2
+~/.xoch/bin/tokenEstimator.sh --batch file1 file2
 ```
 
-Prompts use token budgets to keep context intentional. Engineers may override budgets when doing so is worth the extra context.
+Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
 
 ## Prompt Partials
 

@@ -55,7 +55,7 @@ State:
 Use token estimates for broad reads:
 
 ```bash
-bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/tokenEstimator.sh --batch [files...]
 ```
 
 ### Step 3: Inspect Evidence

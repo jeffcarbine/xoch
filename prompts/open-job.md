@@ -91,13 +91,13 @@ Documentation targets may be:
 Use:
 
 ```bash
-bin/generateJobId.sh --id "[provided-id]"
+~/.xoch/bin/generateJobId.sh --id "[provided-id]"
 ```
 
 If no ID is provided:
 
 ```bash
-bin/generateJobId.sh
+~/.xoch/bin/generateJobId.sh
 ```
 
 ### Step 4: Create Job Folder

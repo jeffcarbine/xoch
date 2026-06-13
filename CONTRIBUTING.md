@@ -113,6 +113,14 @@ Current helpers:
 
 Helpers should be deterministic, explicit, shell-friendly, and easy to smoke test. Do not add network-dependent helper behavior to the installer.
 
+During install, helper scripts are copied to:
+
+```text
+~/.xoch/bin/
+```
+
+Prompt files should call helpers from the installed path, such as `~/.xoch/bin/tokenEstimator.sh`, so agents do not look for Xoch helpers inside the project currently being worked on.
+
 ---
 
 ## Installer
@@ -125,6 +133,7 @@ Installer expectations:
 - skip `prompts/README.md`
 - skip `prompts/partials/` fragments
 - render prompt partials before installing prompts
+- copy `bin/*.sh` helpers to `~/.xoch/bin/`
 - fail when rendered prompts contain unresolved partial markers
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
 - keep command inventory aligned with `prompts/README.md`

@@ -259,8 +259,8 @@ Ready for next step: `xoch-next`
 
 The current helper scripts are:
 
-- `bin/generateJobId.sh`
-- `bin/tokenEstimator.sh`
+- `~/.xoch/bin/generateJobId.sh`
+- `~/.xoch/bin/tokenEstimator.sh`
 
 Additional helpers such as README generation, documentation drift checks, project dependency resolution, or job archive/unarchive should be added only when they can stay deterministic, shell-friendly, and easy to smoke test.
 
@@ -287,7 +287,7 @@ Supported install targets:
 
 ## Helper Scripts
 
-Helper scripts live under `bin/`. They should be deterministic, explicit, and shell-friendly.
+Helper script sources live under repo `bin/`. During install, they are copied to `~/.xoch/bin/` and prompt files should invoke that installed path. Helpers should be deterministic, explicit, and shell-friendly.
 
 ## Migration Note
 

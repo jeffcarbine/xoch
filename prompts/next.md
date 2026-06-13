@@ -77,20 +77,7 @@ For the current phase, assess:
 
 If requirements changed, recommend `xoch-revise-spec` or `xoch-revise-plan` instead of advancing blindly.
 
-### Step 4: Ask About Additional Changes
-
-Ask whether there were changes outside the git diff, such as:
-
-- manual testing
-- generated files
-- configuration changes
-- external setup
-- documentation decisions
-- known skipped checks
-
-Include the engineer's answer in the phase snapshot.
-
-### Step 5: Provide Phase Review
+### Step 4: Provide Phase Review
 
 Report:
 
@@ -103,17 +90,25 @@ Report:
 
 Keep the review firm but not theatrical. The engineer has final say.
 
-### Step 6: Confirm Advancement
+If the engineer has already mentioned manual testing, generated files, configuration changes, external setup, documentation decisions, or known skipped checks, include that context in the review and later snapshot.
 
-Ask whether to:
+### Step 5: Confirm Advancement
 
-1. Mark the phase complete and advance
-2. Keep the phase in progress
-3. Adjust before advancing
+After the phase review, ask exactly this:
 
-Do not update phase state until the engineer confirms.
+```text
+Ready to move to the next phase? [Y]es - next, [N]o - I am not ready yet
+```
 
-### Step 7: Snapshot And Advance
+If there are no more phases, use:
+
+```text
+Ready to move to review? [Y]es - review, [N]o - I am not ready yet
+```
+
+Do not update phase state until the engineer answers yes. If the engineer answers no, keep the phase open and ask what still needs to be added, checked, or discussed before advancing.
+
+### Step 6: Snapshot And Advance
 
 When confirmed, write a phase snapshot.
 

@@ -56,7 +56,7 @@ Ask what the engineer wants to explore, then answer normally.
 For code or documentation reads, use token estimation when the read is broad:
 
 ```bash
-bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/tokenEstimator.sh --batch [files...]
 ```
 
 ### Step 5: Return Guidance

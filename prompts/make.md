@@ -72,25 +72,34 @@ Use `revise-spec` when the definition of done changes. Use `revise-plan` when th
 
 ### Step 3: Explain The Current Phase
 
-Give the engineer a concise phase briefing:
+Before implementation, give the engineer a concise phase briefing. This briefing is required even when the phase looks straightforward.
 
 - phase title and goal
 - why this phase matters
-- files likely touched
+- files marked for work or likely touched
+- source context already known from the plan/spec
 - acceptance criteria covered
 - expected validation
 - risks or constraints
 - likely next command
 
-Keep this practical. The engineer should know what will happen before edits begin.
+Keep this practical and specific. The engineer should understand what needs to be done, where the work is expected to happen, and how success will be checked before edits begin.
 
-### Step 4: Choose Ownership
+### Step 4: Ask How To Proceed
 
-Ask:
+After the briefing, stop and ask:
 
 {{xoch-partial:action-choice.md agent_action="builds" engineer_action="builds"}}
 
-If the engineer has already made the choice, proceed with that choice and record it in job state or phase notes.
+Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-make`.
+
+Interpret the choices as:
+
+- `[A]` Agent builds: inspect the needed files, implement the phase, validate, and record evidence.
+- `[E]` Engineer builds: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect.
+- `[C]` Collaborate: work interactively, making only the changes the engineer confirms.
+
+Record the chosen path in job state or phase notes when useful.
 
 ### Step 5: Prepare Implementation
 
@@ -104,7 +113,7 @@ For agent-owned or collaborative work:
 Use token estimates for large reads when helpful:
 
 ```bash
-bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/tokenEstimator.sh --batch [files...]
 ```
 
 ### Step 6: Implement

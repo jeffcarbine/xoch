@@ -68,8 +68,8 @@ If no current job exists, ask the engineer for:
 Generate or clean job IDs with:
 
 ```bash
-bin/generateJobId.sh --id "[provided-id]"
-bin/generateJobId.sh
+~/.xoch/bin/generateJobId.sh --id "[provided-id]"
+~/.xoch/bin/generateJobId.sh
 ```
 
 ### Step 2: Ensure Job State
@@ -187,7 +187,19 @@ When continuing a job spec that belongs to or may belong to an arc, include:
 
 This check is advisory. Do not block a deliberately single-job spec if the engineer chooses to continue.
 
-### Step 7: Write Spec
+### Step 7: Present Draft Spec
+
+Before writing the spec file, present the draft spec in chat using the structure below. Keep it concise enough to review, but complete enough that the engineer can see requirements, acceptance criteria, current state, proposed changes, risks, and arc fit.
+
+Then ask:
+
+{{xoch-partial:accept-or-modify.md artifact="spec"}}
+
+If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Repeat until the engineer accepts.
+
+Do not write `spec.md` or mark spec state complete until the engineer chooses `[A]`.
+
+### Step 8: Write Accepted Spec
 
 Write:
 
@@ -201,7 +213,7 @@ Use this structure:
 # Specification - [job-id]
 
 **Date**: [today]
-**Status**: Draft
+**Status**: Accepted
 **Documentation Targets**: [paths or project-wide]
 
 ---
@@ -261,13 +273,13 @@ Budget: 8,000 tokens
 [Files read and estimates]
 ```
 
-### Step 8: Update State
+### Step 9: Update State
 
 Update `state.md`:
 
 ```yaml
 status: spec_complete
-spec_status: draft
+spec_status: accepted
 next_command: xoch-plan
 last_updated: [today]
 ```
@@ -287,6 +299,8 @@ Job: [job-id]
 ## Rules
 
 - Specs describe change, not implementation details.
+- Present the draft spec and get `[A]` acceptance before writing `spec.md`.
+- If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Acceptance criteria must be binary and testable.
 - Use AC IDs for traceability.
 - Always make an explicit job-versus-arc recommendation before routing to `xoch-plan`.

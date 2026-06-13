@@ -85,7 +85,7 @@ Read only what is needed:
 Use token estimates for large reads:
 
 ```bash
-bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/tokenEstimator.sh --batch [files...]
 ```
 
 ### Step 3: Validate Current State

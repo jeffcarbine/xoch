@@ -7,8 +7,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPTS_SOURCE_DIR="$SCRIPT_DIR/prompts"
+BIN_SOURCE_DIR="$SCRIPT_DIR/bin"
 XOCH_RUNTIME_DIR="$HOME/.xoch"
 PROMPTS_DIR="$XOCH_RUNTIME_DIR/prompts"
+BIN_DIR="$XOCH_RUNTIME_DIR/bin"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -30,6 +32,37 @@ fi
 PROMPT_COUNT=$(find "$PROMPTS_SOURCE_DIR" -maxdepth 1 -name "*.md" ! -name "README.md" -type f | wc -l | tr -d ' ')
 echo "Found $PROMPT_COUNT prompt(s) to install"
 echo ""
+
+install_helpers() {
+    echo "Installing helper scripts..."
+
+    rm -rf "$BIN_DIR"
+    mkdir -p "$BIN_DIR"
+
+    if [ ! -d "$BIN_SOURCE_DIR" ]; then
+        echo -e "  ${YELLOW}No bin/ directory found; skipping helpers${NC}"
+        echo ""
+        return
+    fi
+
+    local helper_count=0
+
+    for helper_file in "$BIN_SOURCE_DIR"/*.sh; do
+        if [ -f "$helper_file" ]; then
+            helper_name=$(basename "$helper_file")
+            cp "$helper_file" "$BIN_DIR/$helper_name"
+            chmod +x "$BIN_DIR/$helper_name"
+            helper_count=$((helper_count + 1))
+            echo -e "  ${GREEN}✓${NC} $helper_name → $BIN_DIR"
+        fi
+    done
+
+    if [ $helper_count -eq 0 ]; then
+        echo -e "  ${YELLOW}No helper scripts found${NC}"
+    fi
+
+    echo ""
+}
 
 render_prompt_file() {
     local source_file="$1"
@@ -265,6 +298,7 @@ EOF
 
 # Main installation
 echo ""
+install_helpers
 render_prompts
 cleanup_copilot
 cleanup_codex

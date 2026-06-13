@@ -114,6 +114,7 @@ Expected partial files:
 
 ```text
 partials/action-choice.md
+partials/accept-or-modify.md
 partials/engineer-git-rule.md
 partials/next-step.md
 ```
@@ -143,6 +144,12 @@ Use `action-choice.md` when a prompt asks who should perform the next action. Us
 ```text
 How would you like to proceed? [A]gent builds, [E]ngineer builds, or [C]ollaborate?
 Ready for next step: `xoch-next`
+```
+
+Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as specs or plans before writing them. Rendered prompts should ask:
+
+```text
+Do you want to [A]ccept the spec, or do you have any [M]odifications?
 ```
 
 ---
