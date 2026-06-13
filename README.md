@@ -229,7 +229,7 @@ Partials live in `prompts/partials/`. The installer renders them into top-level 
 Workflow prompts use standard next-action language:
 
 ```text
-How would you like to proceed? [A]gent builds, [E]ngineer builds, or [C]ollaborate?
+How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
 Ready for next step: `xoch-next`
 ```
 

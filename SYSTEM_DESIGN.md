@@ -253,7 +253,7 @@ Copilot and Codex installs use rendered prompt files, not source prompt files. P
 Rendered workflow prompts should use concise, command-like language:
 
 ```text
-How would you like to proceed? [A]gent builds, [E]ngineer builds, or [C]ollaborate?
+How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
 Ready for next step: `xoch-next`
 ```
 

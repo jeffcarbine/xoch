@@ -142,7 +142,7 @@ Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
 ```text
-How would you like to proceed? [A]gent builds, [E]ngineer builds, or [C]ollaborate?
+How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
 Ready for next step: `xoch-next`
 ```
 
