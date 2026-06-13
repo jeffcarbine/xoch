@@ -92,9 +92,44 @@ Keep the review firm but not theatrical. The engineer has final say.
 
 If the engineer has already mentioned manual testing, generated files, configuration changes, external setup, documentation decisions, or known skipped checks, include that context in the review and later snapshot.
 
-### Step 5: Confirm Advancement
+### Step 5: Check Git Commit And Push State
 
-After the phase review, ask exactly this:
+Before asking to advance, check whether the phase changes are committed and pushed.
+
+Use focused git checks such as:
+
+```bash
+git status --short
+git status --branch --short
+git log --oneline @{u}..HEAD
+```
+
+If there are uncommitted changes, staged changes, or local commits that have not been pushed, say:
+
+```text
+Changes haven't been committed and pushed to git yet. Would you like me to [C]ommit and push them for you, or [N]o?
+```
+
+If the engineer chooses `[C]`:
+
+1. Create a focused commit for the current phase changes.
+2. Use this commit message shape when Xoch writes the message:
+
+   ```text
+   [job-id] phase [N]: [description of changes]
+   ```
+
+3. Push the current branch to its configured upstream.
+4. Report the exact commit message and pushed branch to the engineer.
+5. Continue with the normal advancement confirmation.
+
+If the engineer chooses `[N]`, do not commit or push. Continue with the normal advancement confirmation and record in the snapshot that commit/push was deferred.
+
+If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how they want to proceed.
+
+### Step 6: Confirm Advancement
+
+After the phase review and git commit/push check, ask exactly this:
 
 ```text
 Ready to move to the next phase? [Y]es - next, [N]o - I am not ready yet
@@ -108,7 +143,7 @@ Ready to move to review? [Y]es - review, [N]o - I am not ready yet
 
 Do not update phase state until the engineer answers yes. If the engineer answers no, keep the phase open and ask what still needs to be added, checked, or discussed before advancing.
 
-### Step 6: Snapshot And Advance
+### Step 7: Snapshot And Advance
 
 When confirmed, write a phase snapshot.
 
@@ -144,7 +179,7 @@ Use this structure:
 
 ## Additional Notes
 
-[manual testing, skipped checks, risks, or decisions]
+[manual testing, skipped checks, risks, commit/push status, or decisions]
 
 ## Next
 
