@@ -27,6 +27,8 @@ How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollabora
 
 Do not implement until the engineer chooses, unless they already made the choice in the same message.
 
+After the initial `[E]`, `[A]`, or `[C]` choice, treat any follow-up edits, validation, manual checks, skipped checks, or engineer decisions in the same phase conversation as phase evidence. Record those details before routing to `xoch-next`.
+
 When phase work is complete, put details first and make the final line:
 
 ```text

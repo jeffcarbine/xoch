@@ -94,9 +94,27 @@ Keep the review firm but not theatrical. The engineer has final say.
 
 If the engineer has already mentioned manual testing, generated files, configuration changes, external setup, documentation decisions, or known skipped checks, include that context in the review and later snapshot.
 
-### Step 5: Check Git Commit And Push State
+Do not ask a separate catch-up question for manual, external, or skipped-check details. `xoch-make` is responsible for recording follow-up phase evidence during the implementation conversation. If evidence is missing or contradictory, mention the gap in the review and let the `[Y]`/`[N]` advancement choice handle it.
 
-Before asking to advance, check whether the phase changes are committed and pushed.
+### Step 5: Confirm Advancement
+
+After the phase review, ask exactly this:
+
+```text
+Ready to move to the next phase? [Y]es / [N]o
+```
+
+If there are no more phases, use:
+
+```text
+Ready to move to review? [Y]es / [N]o
+```
+
+Do not update phase state until the engineer answers yes. If the engineer answers no, keep the phase open and ask what still needs to be added, checked, or discussed before advancing.
+
+### Step 6: Check Git Commit And Push State
+
+After the engineer confirms advancement, check whether the phase changes are committed and pushed.
 
 Use focused git checks such as:
 
@@ -123,27 +141,11 @@ If the engineer chooses `[C]`:
 
 3. Push the current branch to its configured upstream.
 4. Report the exact commit message and pushed branch to the engineer.
-5. Continue with the normal advancement confirmation.
+5. Continue with snapshot and advancement.
 
-If the engineer chooses `[N]`, do not commit or push. Continue with the normal advancement confirmation and record in the snapshot that commit/push was deferred.
+If the engineer chooses `[N]`, do not commit or push. Continue with snapshot and advancement, and record in the snapshot that commit/push was deferred.
 
 If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how they want to proceed.
-
-### Step 6: Confirm Advancement
-
-After the phase review and git commit/push check, ask exactly this:
-
-```text
-Ready to move to the next phase? [Y]es - next, [N]o - I am not ready yet
-```
-
-If there are no more phases, use:
-
-```text
-Ready to move to review? [Y]es - review, [N]o - I am not ready yet
-```
-
-Do not update phase state until the engineer answers yes. If the engineer answers no, keep the phase open and ask what still needs to be added, checked, or discussed before advancing.
 
 ### Step 7: Snapshot And Advance
 

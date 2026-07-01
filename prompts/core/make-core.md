@@ -103,6 +103,8 @@ Interpret the choices as:
 
 Record the chosen path in job state or phase notes when useful.
 
+After the initial ownership choice, treat all follow-up back-and-forth in the same phase conversation as part of phase implementation evidence. If the agent or engineer makes additional edits, runs manual checks, skips checks, changes validation expectations, or makes decisions after the first build pass, record those details in the final phase summary and in job state, notes, or the current phase file when useful. This lets `xoch-next` review the phase without asking a separate catch-up question.
+
 ### Step 5: Prepare Implementation
 
 {{xoch-partial:context-economy.md}}
@@ -161,6 +163,7 @@ Before ending, summarize:
 - acceptance criteria touched
 - tests/checks run
 - tests/checks not run
+- additional changes, manual checks, skipped checks, or decisions from follow-up back-and-forth
 - risks or follow-up notes
 - whether docs were updated or intentionally deferred
 

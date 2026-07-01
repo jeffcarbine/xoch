@@ -17,23 +17,23 @@ If any required workflow detail, snapshot shape, state field, git check behavior
 
 Do not read the core prompt unless it is needed.
 
-For a fresh invocation, inspect only the active job/current phase context, focused phase evidence, and git state needed to review completion. Report the review first.
+For a fresh invocation, inspect only the active job/current phase context, focused phase evidence, and git state needed to review completion. Report the review first. Do not ask a separate catch-up question for manual or external changes; `xoch-make` records follow-up phase evidence.
 
 Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/tokenEstimator.sh --batch [files...]` and use snippets/search/diffs when that is enough.
 
-Before advancing, if phase changes are not committed and pushed, ask:
+Ask the adventure-style advance choice:
+
+```text
+Ready to move to the next phase? [Y]es / [N]o
+```
+
+If there are no more phases, replace `next phase` with `review`.
+
+After the engineer answers `[Y]`, if phase changes are not committed and pushed, ask:
 
 ```text
 Changes haven't been committed and pushed to git yet. Would you like me to [C]ommit and push them for you, or [N]o?
 ```
-
-Then ask the adventure-style advance choice:
-
-```text
-Ready to move to the next phase? [Y]es - next, [N]o - I am not ready yet
-```
-
-If there are no more phases, replace `next phase` with `review`.
 
 When the phase is advanced, put snapshots, updates, notes, validation, and commit/push status first. Make the final line the next Xoch step, such as:
 
