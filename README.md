@@ -222,6 +222,8 @@ Before full-file reads beyond active Xoch pointer/state files, Xoch should run t
 
 For repeated phase work, `state.md` should act as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.md`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them by section or only when state/prior context is insufficient.
 
+Long workflow explanations live in `~/.xoch/prompts/core/`. Command prompts stay short and should only load core references when the current agent lacks Xoch context or exact artifact/rule details.
+
 ## Prompt Partials
 
 Xoch prompts can include reusable fragments with:

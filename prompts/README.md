@@ -127,11 +127,15 @@ partials/state-phase-index.md
 Expected core reference files:
 
 ```text
+core/foundation-core.md
+core/glossary-core.md
 core/make-core.md
 core/next-core.md
+core/plan-core.md
 core/revise-arc-core.md
 core/revise-plan-core.md
 core/revise-spec-core.md
+core/spec-core.md
 core/trace-core.md
 ```
 
@@ -155,7 +159,7 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `make.md`, `next.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `glossary.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
@@ -175,6 +179,10 @@ Use `response-ending.md` in prompt rules to keep final responses ordered. Summar
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
 
 Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `make`/`next` loop.
+
+## Prompt Style
+
+Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
 ---
 

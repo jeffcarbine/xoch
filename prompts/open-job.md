@@ -5,175 +5,85 @@ description: Open or resume a Xoch job
 
 # Xoch - Open Job
 
-Open or resume a focused unit of work.
+Open or resume a focused Xoch job.
 
-This is the normal entry point for Xoch job work.
-
-## Purpose
-
-Create or resume job state, capture basic metadata, record optional arc association, identify documentation targets when known, and route to `xoch-spec`.
-
-Target flow:
+If you are unfamiliar with Xoch's job model, read:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+~/.xoch/prompts/core/foundation-core.md
 ```
 
-## Work Model
-
-New job work lives under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-The active job pointer is:
-
-```text
-.xoch/work/current.md
-```
-
-Arcs live under:
-
-```text
-.xoch/work/arcs/[arc-id]/
-```
-
-Arcs reference job IDs; job folders are not nested inside arc folders.
-
-Legacy migration jobs may still live under `.xoch/context/`. If a legacy current job exists and the engineer wants to continue it, do not move it automatically.
+Do not read the core prompt if this conversation already has enough Xoch context.
 
 ## Process
 
-### Step 1: Detect Active Work
+1. Check active pointers in order:
+   - `.xoch/work/current.md`
+   - `.xoch/context/current.md` for legacy jobs
+2. If active work exists, summarize job ID, title, status, current phase, and next command. Ask whether to resume it or open a different job. If opening different work, recommend `xoch-pause` first.
+3. Ask only for missing metadata:
+   - job ID or issue ID
+   - title
+   - short description
+   - standalone or arc association
+   - documentation target, if known
+4. If the work sounds like several related jobs, suggest `xoch-open-arc`; continue as one job if the engineer confirms.
+5. Generate or clean the job ID with:
 
-Read active pointers in this order:
+   ```bash
+   ~/.xoch/bin/generateJobId.sh --id "[provided-id]"
+   ~/.xoch/bin/generateJobId.sh
+   ```
 
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+6. Create:
 
-If active work exists:
+   ```text
+   .xoch/work/jobs/[job-id]/
+   .xoch/work/jobs/[job-id]/notes/
+   .xoch/work/jobs/[job-id]/phases/
+   .xoch/work/jobs/[job-id]/revisions/
+   ```
 
-- summarize job ID, title, status, current phase, and next command when available
-- ask whether to resume it or open a different job
+7. Create `.xoch/work/jobs/[job-id]/state.md`:
 
-If the engineer opens a different job while one is active, recommend `xoch-pause` first.
+   ```yaml
+   job_id: [job-id]
+   title: [job title]
+   description: [short description]
+   status: active
+   arc: [arc-id or standalone]
+   current_phase: null
+   phase_count: 0
+   current_phase_title: null
+   current_phase_goal: null
+   current_phase_files: []
+   current_phase_acceptance_criteria: []
+   current_phase_validation: []
+   phase_index: []
+   documentation_targets:
+     - scope: feature|project|docs|unknown
+       path: [path or unknown]
+   decisions: []
+   risks: []
+   unresolved_questions: []
+   review_status: null
+   closure_status: null
+   next_command: xoch-spec
+   started: [today]
+   last_updated: [today]
+   ```
 
-### Step 2: Gather Metadata
+8. Create `.xoch/work/current.md` with job ID, title, arc, status, current phase, next command, job directory, and started date.
 
-Ask only for missing values:
+For legacy jobs, continue the legacy `.xoch/context/` model in place and do not move files automatically.
 
-- job ID or issue ID
-- job title
-- short description
-- standalone job or arc association
-- documentation target, if known
-- whether strict documentation target enforcement is required
-
-If the engineer describes work that sounds like several related jobs, suggest opening an arc first:
-
-```text
-This may be arc-sized. Consider `xoch-open-arc` if you want shared tracking before job-level specs.
-```
-
-Continue creating the job if the engineer confirms this should remain one focused job.
-
-Documentation targets may be:
-
-- a feature README
-- root README/project docs
-- `.xoch/docs/` packets
-- `project-wide`
-- `unknown` for exploratory work
-
-### Step 3: Generate Or Clean Job ID
-
-Use:
-
-```bash
-~/.xoch/bin/generateJobId.sh --id "[provided-id]"
-```
-
-If no ID is provided:
-
-```bash
-~/.xoch/bin/generateJobId.sh
-```
-
-### Step 4: Create Job Folder
-
-Create:
-
-```text
-.xoch/work/jobs/[job-id]/
-.xoch/work/jobs/[job-id]/notes/
-.xoch/work/jobs/[job-id]/phases/
-.xoch/work/jobs/[job-id]/revisions/
-```
-
-Do not create arc folders unless the job belongs to an arc or the engineer asks to open an arc.
-
-### Step 5: Write State
-
-Create:
-
-```text
-.xoch/work/jobs/[job-id]/state.md
-```
-
-Use this shape:
-
-```yaml
-job_id: [job-id]
-title: [job title]
-description: [short description]
-status: active
-arc: [arc-id or standalone]
-current_phase: null
-phase_count: 0
-current_phase_title: null
-current_phase_goal: null
-current_phase_files: []
-current_phase_acceptance_criteria: []
-current_phase_validation: []
-phase_index: []
-documentation_targets:
-  - scope: feature|project|docs|unknown
-    path: [path or unknown]
-decisions: []
-risks: []
-unresolved_questions: []
-review_status: null
-closure_status: null
-next_command: xoch-spec
-started: [today]
-last_updated: [today]
-```
-
-### Step 6: Write Current Pointer
-
-Create `.xoch/work/current.md`:
-
-```markdown
-# Current Job
-
-**Job ID**: [job-id]
-**Title**: [job title]
-**Arc**: [arc-id or standalone]
-**Status**: active
-**Current Phase**: none
-**Next Command**: xoch-spec
-**Job Directory**: .xoch/work/jobs/[job-id]/
-**Started**: [today]
-```
-
-### Step 7: Route
+## Output
 
 End with:
 
 ```text
 Job opened.
-{{xoch-partial:next-step.md command="xoch-spec"}}
+Ready for next step: `xoch-spec`
 ```
 
 ## Rules
