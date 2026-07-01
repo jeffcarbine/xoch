@@ -2,7 +2,7 @@
 
 **Open-source, prompt-first development workflow**
 
-Xoch is a lightweight workflow system for AI-assisted software work. It keeps durable project knowledge in readable documentation, tracks focused job work in local Xoch state, and guides engineers through a clear lifecycle from opening a job to closing it.
+Xoch is a lightweight workflow system for AI-assisted software work[^1]. It keeps durable project knowledge in readable documentation, tracks focused job work in local Xoch state, and guides engineers through a clear lifecycle from opening a job to closing it.
 
 ---
 
@@ -271,3 +271,5 @@ Ready for next step: `xoch-next`
 ## License
 
 MIT License - See [LICENSE](LICENSE).
+
+[^1]: It is also the name of my cat, which is short for Xochi which is in turn short for Xochitl which means "flower" in Nahuatl. She's a little shadow and will just appear next to you from out of the blue, so it seemed like the perfect name for an assistant who follows you around while you work.
