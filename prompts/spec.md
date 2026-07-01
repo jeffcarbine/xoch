@@ -91,6 +91,13 @@ title: [job title]
 status: spec_in_progress
 arc: [arc-id or standalone]
 current_phase: null
+phase_count: 0
+current_phase_title: null
+current_phase_goal: null
+current_phase_files: []
+current_phase_acceptance_criteria: []
+current_phase_validation: []
+phase_index: []
 documentation_targets:
   - [README path, docs packet, or project-wide]
 decisions: []

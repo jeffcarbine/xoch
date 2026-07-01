@@ -45,12 +45,12 @@ Label legacy jobs clearly as legacy.
 For target-model jobs, read:
 
 - `state.md`
-- `spec.md`
-- `plan.md`
-- `phases.md`
+- `spec.md`, `plan.md`, or `phases.md` only when `state.md` does not contain enough current-phase context
 - recent phase snapshots when needed
 
 For legacy jobs, read the equivalent legacy context files.
+
+{{xoch-partial:state-phase-index.md}}
 
 ### Step 4: Restore Archived Job If Needed
 

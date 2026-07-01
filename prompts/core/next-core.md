@@ -43,15 +43,15 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 Load the active job and read:
 
 - `state.md`
-- `spec.md`
-- `plan.md`
-- `phases.md`
-- current `phases/phase-[N].md` when present
+- `spec.md`, `plan.md`, and `phases.md` only when `state.md` does not contain enough current-phase context
+- the current phase section from `phases.md` or current `phases/phase-[N].md` when exact phase text is needed
 - notes or evidence from recent `xoch-make` work
 
 For legacy migration jobs, read the equivalent legacy files.
 
 If the current phase is unclear, ask the engineer which phase should be reviewed.
+
+{{xoch-partial:state-phase-index.md}}
 
 ### Step 2: Inspect Changes
 
@@ -205,6 +205,21 @@ and update `state.md`:
 ```yaml
 status: phase_ready
 current_phase: [N+1]
+current_phase_title: [next phase title]
+current_phase_goal: [one-sentence next phase goal]
+current_phase_files:
+  - [path]
+current_phase_acceptance_criteria:
+  - AC-001
+current_phase_validation:
+  - [expected check]
+phase_index:
+  - phase: [N]
+    title: [completed title]
+    status: complete
+  - phase: [N+1]
+    title: [next title]
+    status: not_started
 next_command: xoch-make
 last_updated: [today]
 ```
@@ -214,6 +229,11 @@ If no phases remain, update `state.md`:
 ```yaml
 status: implementation_complete
 current_phase: null
+current_phase_title: null
+current_phase_goal: null
+current_phase_files: []
+current_phase_acceptance_criteria: []
+current_phase_validation: []
 next_command: xoch-review
 last_updated: [today]
 ```

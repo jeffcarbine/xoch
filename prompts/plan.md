@@ -52,6 +52,8 @@ Then read:
 
 {{xoch-partial:context-economy.md}}
 
+{{xoch-partial:state-phase-index.md}}
+
 Confirm the job before planning.
 
 ### Step 2: Validate Spec Readiness
@@ -252,6 +254,19 @@ Update `state.md`:
 status: plan_complete
 plan_status: accepted
 current_phase: 1
+phase_count: [number of phases]
+current_phase_title: [phase 1 title]
+current_phase_goal: [one-sentence phase goal]
+current_phase_files:
+  - [path]
+current_phase_acceptance_criteria:
+  - AC-001
+current_phase_validation:
+  - [expected check]
+phase_index:
+  - phase: 1
+    title: [title]
+    status: not_started
 review_status: null
 closure_status: null
 next_command: xoch-make

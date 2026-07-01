@@ -218,6 +218,8 @@ Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend 
 
 Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
+For repeated phase work, `state.md` should act as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.md`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them by section or only when state/prior context is insufficient.
+
 ## Prompt Partials
 
 Xoch prompts can include reusable fragments with:

@@ -121,6 +121,7 @@ partials/engineer-git-rule.md
 partials/next-step.md
 partials/response-ending.md
 partials/context-economy.md
+partials/state-phase-index.md
 ```
 
 Expected core reference files:
@@ -172,6 +173,8 @@ Do you want to [A]ccept the spec, or do you have any [M]odifications?
 Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.
 
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
+
+Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `make`/`next` loop.
 
 ---
 

@@ -130,6 +130,13 @@ description: [short description]
 status: active
 arc: [arc-id or standalone]
 current_phase: null
+phase_count: 0
+current_phase_title: null
+current_phase_goal: null
+current_phase_files: []
+current_phase_acceptance_criteria: []
+current_phase_validation: []
+phase_index: []
 documentation_targets:
   - scope: feature|project|docs|unknown
     path: [path or unknown]

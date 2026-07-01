@@ -43,7 +43,7 @@ Load:
 - `state.md`
 - `spec.md`
 - `plan.md`
-- `phases.md`
+- `phases.md` only when state and snapshots do not establish implementation completion clearly
 - phase snapshots
 - `review.md`
 - documentation targets

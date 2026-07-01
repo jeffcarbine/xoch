@@ -49,7 +49,7 @@ Then load:
 - `state.md` when present
 - `spec.md`
 - `plan.md`
-- `phases.md`
+- `phases.md` or only the affected phase sections when state already has a useful phase index
 - completed phase snapshots
 - recent revision notes
 
@@ -174,6 +174,19 @@ For target-model jobs, update `state.md`:
 ```yaml
 status: plan_revised
 current_phase: [N]
+phase_count: [number of phases]
+current_phase_title: [title]
+current_phase_goal: [one-sentence phase goal]
+current_phase_files:
+  - [path]
+current_phase_acceptance_criteria:
+  - AC-001
+current_phase_validation:
+  - [expected check]
+phase_index:
+  - phase: [N]
+    title: [title]
+    status: [not_started | in_progress | complete | deferred]
 review_status: null
 closure_status: null
 last_plan_revision: revisions/plan-[date].md

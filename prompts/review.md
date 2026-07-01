@@ -43,7 +43,7 @@ Read:
 - `state.md`
 - `spec.md`
 - `plan.md`
-- `phases.md`
+- `phases.md` only when state and snapshots do not establish phase completion clearly
 - completed phase snapshots
 - `review.md` if it already exists
 - documentation targets from job state/spec
@@ -51,6 +51,8 @@ Read:
 - git status and diff
 
 For legacy migration jobs, read the equivalent legacy context files.
+
+{{xoch-partial:state-phase-index.md}}
 
 ### Step 2: Check Implementation Completeness
 

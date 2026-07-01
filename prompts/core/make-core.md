@@ -43,14 +43,14 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 Read the active job pointer. For target-model jobs, load:
 
 - `state.md`
-- `spec.md`
-- `plan.md`
-- `phases.md`
-- `phases/phase-[N].md` when present
+- `spec.md`, `plan.md`, and `phases.md` only when `state.md` does not contain enough current-phase context
+- the current phase section from `phases.md` or `phases/phase-[N].md` when exact phase text is needed
 
 For legacy migration jobs, load the equivalent legacy files such as `spec.md`, `plan.md`, and `milestones.md`.
 
 If there is no active job, ask the engineer to run `xoch-open-job` or provide the job ID.
+
+{{xoch-partial:state-phase-index.md}}
 
 ### Step 2: Validate Readiness
 
@@ -79,7 +79,7 @@ Before implementation, give the engineer a concise phase briefing. This briefing
 - phase title and goal
 - why this phase matters
 - files marked for work or likely touched
-- source context already known from the plan/spec
+- source context already known from state, plan, spec, or prior conversation
 - acceptance criteria covered
 - expected validation
 - risks or constraints
@@ -169,12 +169,22 @@ For target-model jobs, update `state.md`:
 ```yaml
 status: phase_in_progress
 current_phase: [N]
+current_phase_title: [title]
+current_phase_goal: [one-sentence phase goal]
+current_phase_files:
+  - [path]
+current_phase_acceptance_criteria:
+  - AC-001
+current_phase_validation:
+  - [expected or completed check]
 last_make_summary: [short summary]
 last_validation:
-  - [check and result]
+  - [latest check and result]
 next_command: xoch-next
 last_updated: [today]
 ```
+
+Keep `last_validation` compact; detailed validation history belongs in phase snapshots or notes.
 
 For legacy migration jobs, record the same information in the legacy job notes or tracker when appropriate.
 
