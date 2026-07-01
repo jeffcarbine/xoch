@@ -174,6 +174,8 @@ Follow-up: [summary]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 {{xoch-partial:engineer-git-rule.md}}
 
 - Keep patches small.

@@ -175,6 +175,8 @@ Targets: [paths]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Docs describe the system as it works now.
 - Prefer updating the narrowest useful documentation target.
 - Use glossary terminology when available.

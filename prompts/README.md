@@ -6,6 +6,8 @@ Prompt source files live in this directory. Each installable top-level markdown 
 
 Reusable prompt fragments live under `prompts/partials/`. They are rendered into top-level prompts during installation and are never installed as commands.
 
+Full reference prompts live under `prompts/core/`. They are rendered to `~/.xoch/prompts/core/` for on-demand loading and are never installed as commands.
+
 ---
 
 ## Invocation
@@ -117,6 +119,18 @@ partials/action-choice.md
 partials/accept-or-modify.md
 partials/engineer-git-rule.md
 partials/next-step.md
+partials/response-ending.md
+```
+
+Expected core reference files:
+
+```text
+core/make-core.md
+core/next-core.md
+core/revise-arc-core.md
+core/revise-plan-core.md
+core/revise-spec-core.md
+core/trace-core.md
 ```
 
 ---
@@ -139,6 +153,8 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `make.md`, `next.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
 ```text
@@ -151,6 +167,8 @@ Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as sp
 ```text
 Do you want to [A]ccept the spec, or do you have any [M]odifications?
 ```
+
+Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.
 
 ---
 
@@ -181,6 +199,7 @@ The installer should:
 - install only top-level prompt markdown files that are commands
 - skip `prompts/README.md`
 - skip `prompts/partials/` fragments
+- render but do not install `prompts/core/` reference prompts
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
 - render prompt partials before installing prompts for Copilot or Codex
 - fail if rendered prompts contain unresolved partial markers

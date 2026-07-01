@@ -183,6 +183,8 @@ Review status: [status]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Do not invent validation that was not run or reported.
 - Waivers must be explicit and recorded.
 - Review does not create QA or PR handoff jobs.

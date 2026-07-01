@@ -144,6 +144,8 @@ Targets: [paths]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Keep map data local and minimal.
 - Do not create synchronized multi-project job state in this first-pass workflow.
 - Do not scan unrelated directories.

@@ -77,6 +77,8 @@ Job paused.
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Do not delete job files.
 - Do not archive the job.
 - Do not modify phase completion status.

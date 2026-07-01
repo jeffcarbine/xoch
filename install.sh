@@ -7,9 +7,11 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROMPTS_SOURCE_DIR="$SCRIPT_DIR/prompts"
+CORE_PROMPTS_SOURCE_DIR="$PROMPTS_SOURCE_DIR/core"
 BIN_SOURCE_DIR="$SCRIPT_DIR/bin"
 XOCH_RUNTIME_DIR="$HOME/.xoch"
 PROMPTS_DIR="$XOCH_RUNTIME_DIR/prompts"
+CORE_PROMPTS_DIR="$PROMPTS_DIR/core"
 BIN_DIR="$XOCH_RUNTIME_DIR/bin"
 
 # Colors for output
@@ -158,13 +160,29 @@ render_prompts() {
         fi
     done
 
+    if [ -d "$CORE_PROMPTS_SOURCE_DIR" ]; then
+        mkdir -p "$CORE_PROMPTS_DIR"
+
+        for core_prompt_file in "$CORE_PROMPTS_SOURCE_DIR"/*.md; do
+            if [ -f "$core_prompt_file" ]; then
+                filename=$(basename "$core_prompt_file" .md)
+                render_prompt_file "$core_prompt_file" "$CORE_PROMPTS_DIR/$filename.md"
+            fi
+        done
+    fi
+
     if grep -R "{{xoch-partial:" "$PROMPTS_DIR" >/dev/null 2>&1; then
         echo -e "${RED}Error: unresolved prompt partial found in rendered prompts${NC}" >&2
         exit 1
     fi
 
     RENDERED_COUNT=$(find "$PROMPTS_DIR" -maxdepth 1 -name "*.md" -type f | wc -l | tr -d ' ')
-    echo -e "  ${GREEN}✓${NC} Rendered prompts -> $PROMPTS_DIR ($RENDERED_COUNT files)"
+    CORE_RENDERED_COUNT=0
+    if [ -d "$CORE_PROMPTS_DIR" ]; then
+        CORE_RENDERED_COUNT=$(find "$CORE_PROMPTS_DIR" -maxdepth 1 -name "*.md" -type f | wc -l | tr -d ' ')
+    fi
+
+    echo -e "  ${GREEN}✓${NC} Rendered prompts -> $PROMPTS_DIR ($RENDERED_COUNT files, $CORE_RENDERED_COUNT core)"
     echo ""
 }
 

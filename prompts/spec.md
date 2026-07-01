@@ -298,6 +298,8 @@ Job: [job-id]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Specs describe change, not implementation details.
 - Present the draft spec and get `[A]` acceptance before writing `spec.md`.
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.

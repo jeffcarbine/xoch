@@ -200,6 +200,8 @@ Follow-up: [summary]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Closing requires either passing review or an explicit review waiver.
 - Stale documentation requires either refresh or an explicit documentation waiver.
 - Do not hide skipped validation.

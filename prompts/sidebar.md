@@ -76,6 +76,8 @@ Sidebar complete.
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Do not change job progress.
 - Do not mark phases complete.
 - If the sidebar changes requirements, route to `xoch-revise-spec`.

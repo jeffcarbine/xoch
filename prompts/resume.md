@@ -118,6 +118,8 @@ Job: [job-id]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Do not migrate legacy job folders automatically.
 - Do not mark phases complete while resuming.
 - Preserve all job history.

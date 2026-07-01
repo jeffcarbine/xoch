@@ -1,0 +1,1 @@
+Put summaries, changed paths, created snapshots, validation notes, caveats, and other details before the final command line or text-game choice. The final line of the response must be either a text-game style choice or `Ready for next step: ...`. Do not add commentary after that final line.

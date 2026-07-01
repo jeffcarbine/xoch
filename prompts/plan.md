@@ -270,6 +270,8 @@ Current phase: Phase 1 - [title]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Engineer direction wins when explicit.
 - Present the draft plan and get `[A]` acceptance before writing plan artifacts.
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.

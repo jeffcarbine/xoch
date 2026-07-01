@@ -147,6 +147,8 @@ Follow-up: [summary]
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Closing an arc does not close jobs.
 - Closing an arc does not archive, delete, or move job folders.
 - Unfinished job references require an explicit keep, move-reference, remove-reference, or keep-active decision.

@@ -171,6 +171,8 @@ Job opened.
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Jobs are first-class units of work.
 - Arcs group job IDs by reference.
 - Missing documentation targets are allowed for exploratory work but must be explicit in `state.md`.

@@ -224,6 +224,8 @@ Job references: .xoch/work/arcs/[arc-id]/jobs.md
 
 ## Rules
 
+{{xoch-partial:response-ending.md}}
+
 - Arcs group jobs by reference.
 - Do not create job folders inside arc folders.
 - Do not rewrite job `state.md` arc fields without engineer confirmation.
