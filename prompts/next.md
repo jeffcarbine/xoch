@@ -19,6 +19,8 @@ Do not read the core prompt unless it is needed.
 
 For a fresh invocation, inspect only the active job/current phase context, focused phase evidence, and git state needed to review completion. Report the review first.
 
+Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/tokenEstimator.sh --batch [files...]` and use snippets/search/diffs when that is enough.
+
 Before advancing, if phase changes are not committed and pushed, ask:
 
 ```text
