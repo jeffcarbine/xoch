@@ -24,7 +24,7 @@ Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/b
 Ask the adventure-style advance choice:
 
 ```text
-Ready to move to the next phase? [Y]es / [N]o
+Ready to move to the next phase? [Y]es or [N]o?
 ```
 
 If there are no more phases, replace `next phase` with `review`.

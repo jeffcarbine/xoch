@@ -151,7 +151,16 @@ If the branch has no upstream, the push fails, or git state is ambiguous, stop t
 
 When confirmed, write a phase snapshot.
 
-For target-model jobs, create or update:
+For target-model jobs, prefer deterministic helpers for file/path mechanics:
+
+```bash
+~/.xoch/bin/xoch-actions.sh snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or xoch-review]"
+~/.xoch/bin/xoch-actions.sh phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+```
+
+If there are no more phases, omit the `--next-*` arguments so the helper routes state to `xoch-review`.
+
+After helper use, replace placeholder snapshot content with the actual summary/evidence. If helpers are unavailable, create or update:
 
 ```text
 .xoch/work/jobs/[job-id]/snapshots/phase-[N].md

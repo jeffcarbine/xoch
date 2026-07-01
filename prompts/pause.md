@@ -54,17 +54,15 @@ Ask the engineer to confirm.
 
 If confirmed:
 
-1. Update `state.md`:
+1. Prefer deterministic helpers:
 
-   ```yaml
-   status: paused
-   next_command: xoch-resume
-   last_updated: [today]
+   ```bash
+   ~/.xoch/bin/xoch-actions.sh state set --job "[job-id]" --field status --value paused
+   ~/.xoch/bin/xoch-actions.sh state set --job "[job-id]" --field next_command --value xoch-resume
+   ~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
    ```
 
-2. Remove `.xoch/work/current.md` only if it points to this job.
-
-3. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
+2. If helpers are unavailable, update `state.md` and remove `.xoch/work/current.md` only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 ### Step 5: Output
 

@@ -91,17 +91,19 @@ Inspect:
 
 If the arc already exists, summarize its state and ask whether to resume it or use `xoch-revise-arc`.
 
-### Step 4: Create Arc Folder
+### Step 4: Create Arc Files
 
-Create:
+Prefer the deterministic helper:
 
-```text
-.xoch/work/arcs/[arc-id]/
-.xoch/work/arcs/[arc-id]/notes/
-.xoch/work/arcs/[arc-id]/revisions/
+```bash
+~/.xoch/bin/xoch-actions.sh arc open --id "[arc-id]" --title "[title]" --purpose "[purpose]" --success "[success outcome]" --doc-scope "[scope]" --doc-path "[path]"
 ```
 
-### Step 5: Write Arc State
+Add `--adopt-active` only when the engineer confirmed adopting the active standalone job.
+
+If the helper is unavailable, create the files manually as below.
+
+### Step 5: Manual Arc State Fallback
 
 Create:
 
@@ -228,6 +230,7 @@ Job references: .xoch/work/arcs/[arc-id]/jobs.md
 
 - Arcs group jobs by reference.
 - Do not create job folders inside arc folders.
+- Prefer `~/.xoch/bin/xoch-actions.sh` for deterministic arc file creation.
 - Do not rewrite job `state.md` arc fields without engineer confirmation.
 - Always check for an active standalone job before creating a new arc.
 - Adopt the active standalone job by reference when the engineer approves or when they asked to infer the arc from that job.

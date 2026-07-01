@@ -184,6 +184,8 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 
 Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
+Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.sh` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
+
 ---
 
 ## Vocabulary

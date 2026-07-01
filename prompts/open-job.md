@@ -35,45 +35,13 @@ Do not read the core prompt if this conversation already has enough Xoch context
    ~/.xoch/bin/generateJobId.sh
    ```
 
-6. Create:
+6. Prefer the deterministic helper to create job folders, `state.md`, and `.xoch/work/current.md`:
 
-   ```text
-   .xoch/work/jobs/[job-id]/
-   .xoch/work/jobs/[job-id]/notes/
-   .xoch/work/jobs/[job-id]/phases/
-   .xoch/work/jobs/[job-id]/revisions/
+   ```bash
+   ~/.xoch/bin/xoch-actions.sh job open --id "[job-id]" --title "[title]" --description "[description]" --arc "[arc-id or standalone]" --doc-scope "[scope]" --doc-path "[path]"
    ```
 
-7. Create `.xoch/work/jobs/[job-id]/state.md`:
-
-   ```yaml
-   job_id: [job-id]
-   title: [job title]
-   description: [short description]
-   status: active
-   arc: [arc-id or standalone]
-   current_phase: null
-   phase_count: 0
-   current_phase_title: null
-   current_phase_goal: null
-   current_phase_files: []
-   current_phase_acceptance_criteria: []
-   current_phase_validation: []
-   phase_index: []
-   documentation_targets:
-     - scope: feature|project|docs|unknown
-       path: [path or unknown]
-   decisions: []
-   risks: []
-   unresolved_questions: []
-   review_status: null
-   closure_status: null
-   next_command: xoch-spec
-   started: [today]
-   last_updated: [today]
-   ```
-
-8. Create `.xoch/work/current.md` with job ID, title, arc, status, current phase, next command, job directory, and started date.
+   If the helper is unavailable, create the same folders and state/current files manually using the foundation core model.
 
 For legacy jobs, continue the legacy `.xoch/context/` model in place and do not move files automatically.
 
@@ -91,6 +59,7 @@ Ready for next step: `xoch-spec`
 {{xoch-partial:response-ending.md}}
 
 - Jobs are first-class units of work.
+- Prefer `~/.xoch/bin/xoch-actions.sh` for deterministic file/folder actions.
 - Arcs group job IDs by reference.
 - Missing documentation targets are allowed for exploratory work but must be explicit in `state.md`.
 - Do not auto-migrate active legacy `.xoch/context/` jobs.

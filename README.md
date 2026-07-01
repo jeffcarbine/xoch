@@ -216,6 +216,14 @@ Xoch prompts estimate file reads with:
 
 Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
 
+Deterministic workflow actions live in:
+
+```bash
+~/.xoch/bin/xoch-actions.sh
+```
+
+Prompts prefer this helper for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents should still use judgment for specs, plans, reviews, summaries, and scope decisions.
+
 Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
 Before full-file reads beyond active Xoch pointer/state files, Xoch should run the estimator against the candidate files and report the estimate when it changes the read strategy, crosses half the relevant budget, or requires engineer approval.

@@ -62,6 +62,22 @@ Before full-file reads beyond active pointer/state files, run:
 
 Prefer search, diffs, file outlines, and targeted snippets before whole-file reads. Do not reread files merely to reacquire background already present in the conversation.
 
+## Deterministic Helpers
+
+Prefer installed helpers for static file and state actions:
+
+```bash
+~/.xoch/bin/xoch-actions.sh job current --json
+~/.xoch/bin/xoch-actions.sh job open ...
+~/.xoch/bin/xoch-actions.sh arc open ...
+~/.xoch/bin/xoch-actions.sh state set ...
+~/.xoch/bin/xoch-actions.sh pointer clear ...
+~/.xoch/bin/xoch-actions.sh snapshot create ...
+~/.xoch/bin/xoch-actions.sh phase advance ...
+```
+
+Use the LLM for judgment, summaries, specs, plans, reviews, and deciding what evidence means. Use helpers for repeatable filesystem/state mechanics when available.
+
 ## Interaction Rules
 
 - Ask before writing foundational artifacts when the prompt requires acceptance.
