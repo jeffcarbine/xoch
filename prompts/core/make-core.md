@@ -105,6 +105,8 @@ Record the chosen path in job state or phase notes when useful.
 
 ### Step 5: Prepare Implementation
 
+{{xoch-partial:context-economy.md}}
+
 For agent-owned or collaborative work:
 
 1. Inspect only the files needed for the current phase.

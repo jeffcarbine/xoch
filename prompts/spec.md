@@ -50,6 +50,8 @@ Check for project glossaries:
 
 If present, read the glossary index and quick reference before requirements clarification. Use glossary-approved terminology in questions, acceptance criteria, and final spec text.
 
+{{xoch-partial:context-economy.md}}
+
 ### Step 1: Identify Current Job
 
 Read active job pointers in this order:
@@ -269,7 +271,7 @@ Use this structure:
 
 ## Token Usage (Spec Phase)
 
-Budget: 8,000 tokens
+Budget: 5,000 tokens
 [Files read and estimates]
 ```
 

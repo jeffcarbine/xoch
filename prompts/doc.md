@@ -74,6 +74,8 @@ If the goal is unclear, ask for the documentation target.
 
 ### Step 2: Load Existing Context
 
+{{xoch-partial:context-economy.md}}
+
 Read only what is needed:
 
 - relevant README files

@@ -216,6 +216,8 @@ Xoch prompts estimate file reads with:
 
 Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
 
+Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
+
 ## Prompt Partials
 
 Xoch prompts can include reusable fragments with:

@@ -50,6 +50,8 @@ Then read:
 - `spec.md`
 - relevant documentation target README/docs
 
+{{xoch-partial:context-economy.md}}
+
 Confirm the job before planning.
 
 ### Step 2: Validate Spec Readiness
@@ -156,7 +158,7 @@ Use this structure:
 
 ## Token Usage (Plan Phase)
 
-Budget: 13,000 tokens
+Budget: 7,000 tokens
 [Files read and estimates]
 
 ---

@@ -27,6 +27,8 @@ If no active job exists, continue without Xoch job context.
 
 ### Step 2: Load Context
 
+{{xoch-partial:context-economy.md}}
+
 For target-model jobs, read:
 
 - `state.md`

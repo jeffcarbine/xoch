@@ -62,6 +62,8 @@ Use token estimates for broad reads:
 
 ### Step 3: Inspect Evidence
 
+{{xoch-partial:context-economy.md}}
+
 Read only relevant:
 
 - source files

@@ -103,7 +103,9 @@ Wait for their choice.
 
 ### Step 3.5: Token Budget Check (Before Reading Glossaries)
 
-**Glossary Phase Token Budget: 8,000 tokens**
+**Glossary Phase Token Budget: 5,000 tokens**
+
+{{xoch-partial:context-economy.md}}
 
 **Before reading glossary files** to understand existing terms and format:
 
@@ -121,8 +123,8 @@ Wait for their choice.
    ```
 
 3. **Check against budget:**
-   - If estimated tokens < 7,200 (< 90% of budget): **Proceed with reading**
-   - If estimated tokens ≥ 7,200 (≥ 90% of budget): **Ask for guidance**
+   - If estimated tokens < 4,500 (< 90% of budget): **Proceed with reading**
+   - If estimated tokens ≥ 4,500 (≥ 90% of budget): **Ask for guidance**
 
 #### If at/over budget (≥ 90%), ask the engineer:
 
@@ -130,7 +132,7 @@ Wait for their choice.
 
 **[List with individual token estimates]**
 
-**Total: ~X tokens (Y% of 8,000 token budget)**
+**Total: ~X tokens (Y% of 5,000 token budget)**
 
 **Options:**
 1. **Read essential files** (just the target glossary)
