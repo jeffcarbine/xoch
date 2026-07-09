@@ -81,7 +81,9 @@ Use the LLM for judgment, summaries, specs, plans, reviews, and deciding what ev
 ## Interaction Rules
 
 - Ask before writing foundational artifacts when the prompt requires acceptance.
+- Specs require engineer-provided source requirements; never invent a spec from only a job name or project context.
 - Use text-game choices exactly when a prompt asks for them.
+- Treat phase boundaries as hard stops: `make` implements only the current phase, `next` only reviews/advances it, and neither command starts the next phase.
 - Put summaries, files, validation, caveats, and notes before the final command line.
-- The final line should be a text-game choice or `Ready for next step: ...`.
+- The final line should be a text-game choice or `Ready for next step: ...`; after that final line, stop instead of executing the next command.
 - Do not commit, push, stash, reset, or otherwise manage git history unless the engineer explicitly asks or the active prompt asks and the engineer confirms.

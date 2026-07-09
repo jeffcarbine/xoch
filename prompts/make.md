@@ -17,6 +17,8 @@ If any required workflow detail, artifact shape, state field, action choice beha
 
 Do not read the core prompt unless it is needed.
 
+{{xoch-partial:phase-boundary.md}}
+
 For a fresh invocation, inspect only the active job/current phase context needed to brief the engineer. Give a compact overview of the phase, likely files, acceptance criteria, validation, and risks, then end with the adventure-style implementation choice:
 
 Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/tokenEstimator.sh --batch [files...]` and use snippets/search/diffs when that is enough.
@@ -28,6 +30,8 @@ How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollabora
 Do not implement until the engineer chooses, unless they already made the choice in the same message.
 
 After the initial `[E]`, `[A]`, or `[C]` choice, treat any follow-up edits, validation, manual checks, skipped checks, or engineer decisions in the same phase conversation as phase evidence. Record those details before routing to `xoch-next`.
+
+After current phase work is complete, do not start, inspect, or implement the next phase. Stop after routing to `xoch-next`.
 
 When phase work is complete, put details first and make the final line:
 

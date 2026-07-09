@@ -17,6 +17,8 @@ If any required workflow detail, snapshot shape, state field, git check behavior
 
 Do not read the core prompt unless it is needed.
 
+{{xoch-partial:phase-boundary.md}}
+
 For a fresh invocation, inspect only the active job/current phase context, focused phase evidence, and git state needed to review completion. Report the review first. Do not ask a separate catch-up question for manual or external changes; `xoch-make` records follow-up phase evidence.
 
 Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/tokenEstimator.sh --batch [files...]` and use snippets/search/diffs when that is enough.
@@ -40,3 +42,5 @@ When the phase is advanced, put snapshots, updates, notes, validation, and commi
 ```text
 Ready for next step: `xoch-make`
 ```
+
+After advancing, do not start the next phase. Stop after the final next-step line.

@@ -115,6 +115,10 @@ For legacy jobs, update the legacy context files in place.
 
 ### Step 3: Gather Source Requirements
 
+Do not draft a spec from only a job ID, job title, branch name, file name, or project context. Those can orient the conversation, but they are not source requirements.
+
+If the engineer invoked `xoch-spec` without providing a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions, stop and ask them to provide that source. Do not infer or invent requirements from the job name.
+
 Ask for or extract:
 
 - problem statement
@@ -127,6 +131,8 @@ Ask for or extract:
 - risks or unknowns
 
 If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
+
+Only continue to current-state analysis and draft spec once source requirements exist.
 
 ### Step 4: Clarify Requirements
 
@@ -312,6 +318,8 @@ Job: [job-id]
 {{xoch-partial:response-ending.md}}
 
 - Specs describe change, not implementation details.
+- Do not draft a spec without engineer-provided source requirements.
+- Do not invent requirements from a job name, branch name, file name, or project context.
 - Present the draft spec and get `[A]` acceptance before writing `spec.md`.
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Acceptance criteria must be binary and testable.

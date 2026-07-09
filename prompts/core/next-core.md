@@ -53,6 +53,8 @@ If the current phase is unclear, ask the engineer which phase should be reviewed
 
 {{xoch-partial:state-phase-index.md}}
 
+{{xoch-partial:phase-boundary.md}}
+
 ### Step 2: Inspect Changes
 
 Run or ask for the equivalent of:
@@ -65,6 +67,8 @@ git diff --staged
 ```
 
 Review the diff against the current phase only. Note unrelated changes as out of scope and avoid reverting them.
+
+If the diff contains next-phase work, call it out separately. Do not expand the current review into implementing or validating that next phase.
 
 ### Step 3: Check Phase Requirements
 
@@ -261,6 +265,8 @@ Next phase: [N+1] - [title]
 {{xoch-partial:next-step.md command="xoch-make"}}
 ```
 
+Stop here. Do not begin the next `xoch-make` phase work in this response.
+
 If implementation is complete:
 
 ```text
@@ -274,6 +280,7 @@ All phases complete.
 
 - Engineer confirmation is required before advancing.
 - Review only the current phase unless the engineer asks for broader review.
+- Advancing to the next phase does not authorize starting that phase.
 - Preserve unrelated worktree changes.
 - Record skipped checks as skipped, not passed.
 - Do not move active legacy job folders during the migration.

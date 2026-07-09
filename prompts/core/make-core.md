@@ -52,6 +52,8 @@ If there is no active job, ask the engineer to run `xoch-open-job` or provide th
 
 {{xoch-partial:state-phase-index.md}}
 
+{{xoch-partial:phase-boundary.md}}
+
 ### Step 2: Validate Readiness
 
 Before implementation, confirm:
@@ -127,6 +129,7 @@ Use token estimates for large reads when helpful:
 When editing:
 
 - keep changes scoped to the current phase
+- do not edit files solely for a later phase
 - avoid unrelated refactors
 - preserve user changes already present in the worktree
 - use deterministic helpers when available
@@ -209,6 +212,7 @@ Current phase: [N] - [title]
 {{xoch-partial:engineer-git-rule.md}}
 
 - Do not start implementation without enough phase context.
+- Do not start or complete the next phase during the current `xoch-make` run.
 - Do not silently change spec scope; use `xoch-revise-spec`.
 - Do not silently reshape remaining phases; use `xoch-revise-plan`.
 - Keep phase work focused.
