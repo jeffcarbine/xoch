@@ -66,6 +66,14 @@ If implementation is plainly incomplete, say so and route to `xoch-make` or `xoc
 
 ### Step 3: Acceptance Coverage
 
+Start with the deterministic coverage report:
+
+```bash
+~/.xoch/bin/coverage-actions.sh compare --job "[job-id]" --require review --json
+```
+
+Use the report to find missing or orphaned IDs; the agent still judges status and evidence.
+
 For each acceptance criterion in the spec, mark:
 
 - Pass
@@ -91,7 +99,15 @@ Review the completed work for:
 
 Focus on real risks. Do not block on taste unless taste reflects a maintainability or correctness issue.
 
+When project validation commands are not already known, inspect advisory candidates with:
+
+```bash
+~/.xoch/bin/project-commands.sh detect --json
+```
+
 ### Step 5: Documentation Freshness
+
+Use `~/.xoch/bin/docs-drift.sh check --json` when a baseline exists. Route reported paths with `~/.xoch/bin/docs-target.sh resolve --path "[path]" --json`. Drift is a review signal, not an automatic documentation failure.
 
 For each documentation target, mark:
 

@@ -72,8 +72,8 @@ If no current job exists, ask the engineer for:
 Generate or clean job IDs with:
 
 ```bash
-~/.xoch/bin/generateJobId.sh --id "[provided-id]"
-~/.xoch/bin/generateJobId.sh
+~/.xoch/bin/generate-job-id.sh --id "[provided-id]"
+~/.xoch/bin/generate-job-id.sh
 ```
 
 ### Step 2: Ensure Job State

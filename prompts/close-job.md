@@ -186,6 +186,15 @@ Ask the engineer whether to:
 
 If helper scripts exist for archive/unarchive, prefer them. Otherwise, move files only with explicit confirmation.
 
+For target-model jobs, after the active pointer is cleared and the engineer chooses archive, run a dry-run first:
+
+```bash
+~/.xoch/bin/archive-actions.sh archive --kind job --id "[job-id]" --dry-run
+~/.xoch/bin/archive-actions.sh archive --kind job --id "[job-id]"
+```
+
+If the helper refuses the move, stop and report why. Do not manually bypass its path or overwrite checks.
+
 ## Output
 
 End with:

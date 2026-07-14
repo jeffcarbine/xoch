@@ -4,8 +4,8 @@
 # Generates unique job IDs for Xoch work/job directories
 
 # Usage modes:
-# 1. With user-provided ID: generateJobId.sh --id "my-job-id"
-# 2. Auto-generate: generateJobId.sh
+# 1. With user-provided ID: generate-job-id.sh --id "my-job-id"
+# 2. Auto-generate: generate-job-id.sh
 
 # Check for user-provided ID
 if [ "$1" == "--id" ] && [ -n "$2" ]; then

@@ -45,8 +45,8 @@ FILE_PATH="$1"
 MODE="${2:-report}"  # report, check, or json
 
 if [ -z "$FILE_PATH" ]; then
-  echo "Usage: tokenEstimator.sh <file_path> [mode]"
-  echo "       tokenEstimator.sh --batch <file1> <file2> ..."
+  echo "Usage: token-estimator.sh <file_path> [mode]"
+  echo "       token-estimator.sh --batch <file1> <file2> ..."
   echo "Modes: report (default), check, json"
   exit 1
 fi

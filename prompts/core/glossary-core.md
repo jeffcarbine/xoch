@@ -121,7 +121,7 @@ Wait for their choice.
 2. **Estimate token cost:**
    
    ```bash
-   ~/.xoch/bin/tokenEstimator.sh --batch glossaries/[file1].md glossaries/[file2].md ...
+   ~/.xoch/bin/token-estimator.sh --batch glossaries/[file1].md glossaries/[file2].md ...
    ```
 
 3. **Check against budget:**

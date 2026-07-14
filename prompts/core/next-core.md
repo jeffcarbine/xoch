@@ -60,6 +60,7 @@ If the current phase is unclear, ask the engineer which phase should be reviewed
 Run or ask for the equivalent of:
 
 ```bash
+~/.xoch/bin/git-state.sh inspect --json
 git status --short
 git diff --stat
 git diff
@@ -120,9 +121,10 @@ Do not update phase state until the engineer answers yes. If the engineer answer
 
 After the engineer confirms advancement, check whether the phase changes are committed and pushed.
 
-Use focused git checks such as:
+Prefer the read-only helper, then inspect focused details as needed:
 
 ```bash
+~/.xoch/bin/git-state.sh inspect --json
 git status --short
 git status --branch --short
 git log --oneline @{u}..HEAD

@@ -25,9 +25,9 @@ slugify() {
 
 generate_id() {
   if [ -n "${1:-}" ]; then
-    "$SCRIPT_DIR/generateJobId.sh" --id "$1"
+    "$SCRIPT_DIR/generate-job-id.sh" --id "$1"
   else
-    "$SCRIPT_DIR/generateJobId.sh"
+    "$SCRIPT_DIR/generate-job-id.sh"
   fi
 }
 

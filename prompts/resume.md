@@ -62,6 +62,15 @@ For target-model jobs, restore to:
 .xoch/work/jobs/[job-id]/
 ```
 
+After confirmation, prefer:
+
+```bash
+~/.xoch/bin/archive-actions.sh restore --kind job --id "[job-id]" --dry-run
+~/.xoch/bin/archive-actions.sh restore --kind job --id "[job-id]"
+```
+
+Do not manually overwrite an active job folder if restore refuses.
+
 For legacy jobs, preserve the legacy context model unless the engineer explicitly asks to migrate it.
 
 ### Step 5: Write Current Pointer

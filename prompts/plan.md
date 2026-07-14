@@ -21,7 +21,7 @@ If any required plan workflow detail, artifact shape, state field, phase-index b
 
 Do not read core prompts unless they are needed.
 
-Identify the active job, read `state.md` and `spec.md`, then use prior context and targeted reads to create the implementation approach. Run `~/.xoch/bin/tokenEstimator.sh --batch [files...]` before full-file reads beyond pointer/state files.
+Identify the active job, read `state.md` and `spec.md`, then use prior context and targeted reads to create the implementation approach. Run `~/.xoch/bin/token-estimator.sh --batch [files...]` before full-file reads beyond pointer/state files.
 
 Confirm the spec is accepted and still suitable for one job. If the spec recommends an arc and the job is standalone, ask whether to open an arc before planning.
 

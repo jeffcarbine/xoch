@@ -118,12 +118,11 @@ your-project/
           jobs.md
           notes.md
     docs/
-      CODEBASE.md
-      PATTERNS.md
-      DEPENDENCIES.json
-      RISKS.md
+      OVERVIEW.md
+      ARCHITECTURE.md
+      SETUP.md
       TESTING.md
-      FEATURES.md
+      CONVENTIONS.md
     glossaries/
       README.md
       quick-reference.md
@@ -211,7 +210,7 @@ For solo work, ignoring all of `.xoch/` is also valid.
 Xoch prompts estimate file reads with:
 
 ```bash
-~/.xoch/bin/tokenEstimator.sh --batch file1 file2
+~/.xoch/bin/token-estimator.sh --batch file1 file2
 ```
 
 Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
@@ -223,6 +222,23 @@ Deterministic workflow actions live in:
 ```
 
 Prompts prefer this helper for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents should still use judgment for specs, plans, reviews, summaries, and scope decisions.
+
+All helper filenames use kebab-case. Installed helpers include:
+
+| Helper | Purpose |
+|---|---|
+| `xoch-actions.sh` | Job, arc, pointer, state, snapshot, and phase mechanics. |
+| `generate-job-id.sh` | Normalize or generate job IDs. |
+| `token-estimator.sh` | Estimate context cost before broad reads. |
+| `readme-actions.sh` | Assemble approved root README packets in manifest order. |
+| `archive-actions.sh` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
+| `coverage-actions.sh` | Compare AC IDs across specs, plans, snapshots, and reviews. |
+| `project-commands.sh` | Detect likely test, lint, typecheck, and build commands without running them. |
+| `git-state.sh` | Report branch, upstream, dirty, ahead, and conflict state without mutation. |
+| `docs-drift.sh` | Report changed source paths that may affect durable docs. |
+| `docs-target.sh` | Route paths to the nearest nested README or approved root packet manifest. |
+| `gitignore-actions.sh` | Maintain explicit local-state/shareable-doc ignore rules. |
+| `prompt-check.sh` | Validate helper syntax/naming and render prompts in an isolated install. |
 
 Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
@@ -251,7 +267,7 @@ Ready for next step: `xoch-next`
 
 ## Support Workflows
 
-`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets such as `CODEBASE.md`, `PATTERNS.md`, `DEPENDENCIES.json`, `RISKS.md`, `TESTING.md`, and `FEATURES.md`.
+`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
 `xoch-map` records local project and dependency relationships without creating synchronized multi-project job state. Use it for lightweight orientation: local paths, package names, service relationships, validation commands, and docs targets.
 

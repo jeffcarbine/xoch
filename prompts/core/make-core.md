@@ -115,13 +115,18 @@ For agent-owned or collaborative work:
 
 1. Inspect only the files needed for the current phase.
 2. Prefer existing project patterns over new abstractions.
-3. Identify focused tests/checks before editing.
+3. Identify focused tests/checks before editing. When commands are not already known, inspect advisory candidates with:
+
+   ```bash
+   ~/.xoch/bin/project-commands.sh detect --json
+   ```
+
 4. Note any risky operations that need engineer approval.
 
 Use token estimates for large reads when helpful:
 
 ```bash
-~/.xoch/bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.sh --batch [files...]
 ```
 
 ### Step 6: Implement

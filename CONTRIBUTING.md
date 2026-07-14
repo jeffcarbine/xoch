@@ -106,12 +106,9 @@ Helper scripts live under:
 bin/
 ```
 
-Current helpers:
-
-- `generateJobId.sh`
-- `tokenEstimator.sh`
-
 Helpers should be deterministic, explicit, shell-friendly, and easy to smoke test. Do not add network-dependent helper behavior to the installer.
+
+The canonical helper inventory and purpose of each command live in the root `README.md`. Do not duplicate that inventory here; this document defines contributor-facing helper conventions.
 
 During install, helper scripts are copied to:
 
@@ -119,7 +116,7 @@ During install, helper scripts are copied to:
 ~/.xoch/bin/
 ```
 
-Prompt files should call helpers from the installed path, such as `~/.xoch/bin/tokenEstimator.sh`, so agents do not look for Xoch helpers inside the project currently being worked on.
+Prompt files should call helpers from the installed path, such as `~/.xoch/bin/token-estimator.sh`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
 
 ---
 
@@ -148,8 +145,7 @@ Run focused checks for your change:
 
 ```bash
 bash -n install.sh
-bash -n bin/generateJobId.sh
-bash -n bin/tokenEstimator.sh
+bin/prompt-check.sh run
 git diff --check
 ```
 

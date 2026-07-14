@@ -27,12 +27,12 @@ First-pass `xoch-map` is intentionally local and lightweight. Full synchronized 
 
 ## Storage
 
-Prefer project-local docs when the map helps the project:
+Prefer project-local docs when the map helps the project. Packet names should follow the engineer-approved root README packet set; examples include:
 
 ```text
-.xoch/docs/DEPENDENCIES.json
-.xoch/docs/CODEBASE.md
-.xoch/docs/FEATURES.md
+.xoch/docs/DEPENDENCIES.md
+.xoch/docs/ARCHITECTURE.md
+.xoch/docs/COMPONENTS.md
 ```
 
 For machine-local path hints that should not be committed, use `.xoch/work/notes/` or another ignored local file only after confirming the repo's ignore strategy.
@@ -95,7 +95,7 @@ Capture:
 - validation commands
 - notes or risks
 
-For JSON dependency packets, prefer this shape:
+For structured dependency data, prefer this shape in a project-approved JSON packet:
 
 ```json
 {
@@ -118,9 +118,8 @@ For JSON dependency packets, prefer this shape:
 
 Write only the selected map target:
 
-- `.xoch/docs/DEPENDENCIES.json` for structured dependency data
-- `.xoch/docs/CODEBASE.md` for codebase orientation
-- `.xoch/docs/FEATURES.md` for feature/docs inventory
+- an approved `.xoch/docs/` packet for root README composition
+- a nested `README.md` for feature-local dependency context
 - job/arc notes when the map is temporary to a job
 
 ### Step 6: Route

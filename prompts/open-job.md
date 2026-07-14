@@ -31,8 +31,8 @@ Do not read the core prompt if this conversation already has enough Xoch context
 5. Generate or clean the job ID with:
 
    ```bash
-   ~/.xoch/bin/generateJobId.sh --id "[provided-id]"
-   ~/.xoch/bin/generateJobId.sh
+   ~/.xoch/bin/generate-job-id.sh --id "[provided-id]"
+   ~/.xoch/bin/generate-job-id.sh
    ```
 
 6. Prefer the deterministic helper to create job folders, `state.md`, and `.xoch/work/current.md`:
@@ -42,6 +42,13 @@ Do not read the core prompt if this conversation already has enough Xoch context
    ```
 
    If the helper is unavailable, create the same folders and state/current files manually using the foundation core model.
+
+7. If the engineer wants Xoch work state kept local while docs remain shareable, preview and confirm the gitignore update:
+
+   ```bash
+   ~/.xoch/bin/gitignore-actions.sh ensure --mode shared-docs --dry-run
+   ~/.xoch/bin/gitignore-actions.sh ensure --mode shared-docs
+   ```
 
 For legacy jobs, continue the legacy `.xoch/context/` model in place and do not move files automatically.
 
@@ -60,6 +67,7 @@ Ready for next step: `xoch-spec`
 
 - Jobs are first-class units of work.
 - Prefer `~/.xoch/bin/xoch-actions.sh` for deterministic file/folder actions.
+- Do not change `.gitignore` without engineer confirmation.
 - Arcs group job IDs by reference.
 - Missing documentation targets are allowed for exploratory work but must be explicit in `state.md`.
 - Do not auto-migrate active legacy `.xoch/context/` jobs.

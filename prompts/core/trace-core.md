@@ -57,12 +57,18 @@ State:
 Use token estimates for broad reads:
 
 ```bash
-~/.xoch/bin/tokenEstimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.sh --batch [files...]
 ```
 
 ### Step 3: Inspect Evidence
 
 {{xoch-partial:context-economy.md}}
+
+When symptoms may involve an interrupted merge, rebase, cherry-pick, or revert, inspect read-only git state with:
+
+```bash
+~/.xoch/bin/git-state.sh inspect --json
+```
 
 Read only relevant:
 

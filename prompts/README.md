@@ -70,7 +70,7 @@ Revision commands preserve prior history and record why foundational job artifac
 
 | Command | Purpose |
 |---|---|
-| `doc` | Create, refresh, repair, or validate project, feature, and `.xoch/docs/` documentation. |
+| `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
 | `map` | Maintain lightweight local project/dependency map context. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
@@ -188,6 +188,8 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
 Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.sh` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
+
+Helper filenames use kebab-case consistently. Additional deterministic helpers assemble README packets, archive/restore Xoch state, compare AC coverage, discover validation commands, inspect git state, report documentation drift, resolve documentation targets, maintain gitignore rules, and validate prompt rendering. See the root README helper inventory.
 
 ---
 
