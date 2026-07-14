@@ -11,6 +11,8 @@ Explore a related question or tangent while preserving the current job state.
 
 Load enough job context to orient the discussion, answer the engineer's question, and leave phase/job progress unchanged.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Detect Current Job

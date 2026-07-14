@@ -50,6 +50,8 @@ If no job exists, ask whether to:
 2. create a small patch note under `.xoch/work/patches/`
 3. proceed without Xoch state and summarize in chat only
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Capture Patch Boundary

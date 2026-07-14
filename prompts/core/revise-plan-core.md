@@ -35,6 +35,8 @@ Revision notes live under:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Current Job
@@ -81,6 +83,8 @@ Ask what changed:
 - dependency or risk
 - discovered complexity
 - arc/job sequencing
+
+For multi-project jobs, also identify project ownership changes and any repository added to or removed from the implementation path. Do not edit `projects.json` implicitly; confirm scope changes with the engineer.
 
 Clarify whether completed phases remain valid.
 
@@ -203,6 +207,8 @@ next_command: xoch-review
 and record why implementation is already complete.
 
 For legacy migration jobs, update the legacy tracker or notes in place.
+
+For multi-project jobs, retain an explicit project owner for every revised phase task and sync the revision note, plan, phases, and state from the primary job.
 
 ### Step 8: Route
 

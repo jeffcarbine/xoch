@@ -11,6 +11,8 @@ Resume paused or archived job work.
 
 Find a job, restore it as current, summarize where work left off, and route to the next useful command.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Check Active Job
@@ -50,6 +52,8 @@ For target-model jobs, read:
 
 For legacy jobs, read the equivalent legacy context files.
 
+If a participant mirror contains `projects.json`, resolve the primary job and use its canonical state before deciding what to resume.
+
 {{xoch-partial:state-phase-index.md}}
 
 ### Step 4: Restore Archived Job If Needed
@@ -71,6 +75,8 @@ After confirmation, prefer:
 
 Do not manually overwrite an active job folder if restore refuses.
 
+If an archived job contains `projects.json`, treat it as a multi-project restore. Validate the archived scope, dry-run every restore, restore the primary job and then each participant mirror with `archive-actions.sh --root "[project path]"`, and reload `projects.json` from the restored primary job. Stop on any collision or missing repository; do not leave the job marked resumed after a partial restore.
+
 For legacy jobs, preserve the legacy context model unless the engineer explicitly asks to migrate it.
 
 ### Step 5: Write Current Pointer
@@ -91,6 +97,8 @@ Create `.xoch/work/current.md`:
 ```
 
 For legacy jobs, update `.xoch/context/current.md` instead.
+
+For a multi-project job, set only the invoked repository's current pointer. Write resumed state through the canonical primary job and sync it to participants.
 
 Update target job `state.md`:
 
@@ -132,3 +140,4 @@ Job: [job-id]
 - Do not migrate legacy job folders automatically.
 - Do not mark phases complete while resuming.
 - Preserve all job history.
+- Do not assume resuming one repository activates the job in every participant.

@@ -11,6 +11,8 @@ Pause the active job so another job can become current without losing progress.
 
 Summarize the active job, preserve its job folder, update job state, and clear `.xoch/work/current.md`.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Find Active Job
@@ -64,6 +66,8 @@ If confirmed:
 
 2. If helpers are unavailable, update `state.md` and remove `.xoch/work/current.md` only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
+For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
+
 ### Step 5: Output
 
 End with:
@@ -81,3 +85,4 @@ Job paused.
 - Do not archive the job.
 - Do not modify phase completion status.
 - Preserve legacy job location when pausing a migration-era job.
+- Multi-project shared state is canonical in the primary; active pointers remain local.

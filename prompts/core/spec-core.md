@@ -39,6 +39,8 @@ Expected files after this command:
 
 Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.md` exists, continue that legacy job in place and do not move it automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 0: Load Glossaries
@@ -157,6 +159,8 @@ Summarize:
 - proposed changes
 - staying the same
 - potential impacts
+
+For a multi-project job, identify requirements, current state, proposed changes, documentation targets, and acceptance evidence by project. Keep one shared specification; do not create separate specs for listed participants.
 
 Ask the engineer whether the change analysis is correct.
 
@@ -278,6 +282,12 @@ Use this structure:
 
 ---
 
+## Project Scope
+
+[For multi-project jobs: each project, its role, requirement ownership, contracts affected, and documentation targets. Omit for standalone jobs.]
+
+---
+
 ## Arc Fit
 
 [Single-job or arc recommendation, rationale, suggested arc, and candidate related jobs]
@@ -303,6 +313,8 @@ last_updated: [today]
 
 If writing a legacy migration job, update the existing `.xoch/context/[job-id]/spec.md` and current pointer instead.
 
+For a multi-project job, write the accepted spec and state to the primary job, then sync participant context. Do not finish successfully if sync fails.
+
 ## Output
 
 End with:
@@ -320,6 +332,7 @@ Job: [job-id]
 - Specs describe change, not implementation details.
 - Do not draft a spec without engineer-provided source requirements.
 - Do not invent requirements from a job name, branch name, file name, or project context.
+- Multi-project specs identify project ownership without splitting the job into independent specifications.
 - Present the draft spec and get `[A]` acceptance before writing `spec.md`.
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Acceptance criteria must be binary and testable.

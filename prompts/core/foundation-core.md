@@ -52,6 +52,16 @@ Arcs group related jobs by job ID reference:
 
 Do not nest job folders inside arcs. Use `xoch-open-arc` when work has multiple related jobs under a larger goal.
 
+## Multi-Project Jobs
+
+Standalone jobs need no additional scope file. A job spanning repositories stores optional routing metadata at:
+
+```text
+.xoch/work/jobs/[job-id]/projects.json
+```
+
+One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and `.xoch/work/current.md` are always repository-local and are never synchronized. Use `project-scope.sh` for routing and `context-sync.sh` after canonical job-context writes.
+
 ## Context Economy
 
 Before full-file reads beyond active pointer/state files, run:

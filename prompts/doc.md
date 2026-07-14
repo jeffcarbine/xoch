@@ -42,6 +42,8 @@ For target-model jobs, documentation targets may appear in:
 
 Legacy migration jobs may still use `.xoch/context/`. Continue them in place and do not move them automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Documentation Packets
 
 `.xoch/docs/` packets are modular source chunks for repo-wide root README content. They exist so the root README can be generated or refreshed from smaller, focused documents instead of becoming one huge file.
@@ -49,6 +51,8 @@ Legacy migration jobs may still use `.xoch/context/`. Continue them in place and
 Packet names are flexible. Choose names that fit the project and the root README structure. Examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `USAGE.md`, `API.md`, `COMPONENTS.md`, `TESTING.md`, `DEPLOYMENT.md`, `CONVENTIONS.md`, `DEPENDENCIES.md`, `RISKS.md`, or other project-specific sections.
 
 Feature-local documentation should usually be a nested `README.md` beside the relevant code, not a `.xoch/docs/` packet. Packets are for repo-level README composition; nested READMEs are for folder or feature documentation.
+
+`.xoch/docs/dependencies.json` is an optional structured dependency declaration, not a README packet. It may record project names, relationship kinds, direction, contracts, and notes, but never absolute machine paths. Confirm dependency project names with the engineer before writing it; `xoch-map` resolves those names locally.
 
 Before creating or reshaping packets, analyze the available project/job context and propose a packet set to the engineer:
 

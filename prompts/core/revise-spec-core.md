@@ -33,6 +33,8 @@ Revision notes live under:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Current Job
@@ -156,6 +158,8 @@ next_command: xoch-make
 and record why no plan revision is needed.
 
 For legacy migration jobs, update the legacy tracker or notes in place.
+
+For multi-project jobs, preserve project ownership in the revised spec and sync the revision note, spec, and state from the primary job.
 
 ### Step 7: Route
 

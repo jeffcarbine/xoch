@@ -101,6 +101,7 @@ your-project/
       jobs/
         job-id/
           state.md
+          projects.json        # multi-project jobs only
           spec.md
           plan.md
           phases.md
@@ -118,6 +119,7 @@ your-project/
           jobs.md
           notes.md
     docs/
+      dependencies.json        # optional project-name contracts
       OVERVIEW.md
       ARCHITECTURE.md
       SETUP.md
@@ -137,6 +139,7 @@ xoch/
       action-choice.md
       engineer-git-rule.md
       next-step.md
+      project-routing.md
 ```
 
 During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/` and installs from that rendered prompt cache. Files under `prompts/partials/` are fragments only; they are not installed as commands. `action-choice.md` standardizes engineer ownership choices, and `next-step.md` standardizes next-command routing.
@@ -148,6 +151,14 @@ During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/`
 - An **arc** is an optional grouping of related jobs.
 
 Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and reference job IDs; job folders are not nested inside arc folders.
+
+### Multi-Project Jobs
+
+A job may span multiple repositories. `projects.json` is created only for those jobs and records one primary project plus one or more participants. The primary job folder owns canonical specs, plans, phases, snapshots, notes, review, and closure state. Participant repositories receive guarded mirrors of those job artifacts.
+
+Source code, git history, validation, and `.xoch/work/current.md` remain local to each repository. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
+
+Machine-local project paths live in `~/.xoch/workspace-map.json`. Shareable dependency names and contracts may live in `.xoch/docs/dependencies.json`; absolute paths must not.
 
 Arc files are intentionally small:
 
@@ -239,6 +250,10 @@ All helper filenames use kebab-case. Installed helpers include:
 | `docs-target.sh` | Route paths to the nearest nested README or approved root packet manifest. |
 | `gitignore-actions.sh` | Maintain explicit local-state/shareable-doc ignore rules. |
 | `prompt-check.sh` | Validate helper syntax/naming and render prompts in an isolated install. |
+| `workspace-actions.sh` | Maintain the machine-local project-name to repository-path map. |
+| `dependency-actions.sh` | Resolve shareable dependency declarations against the local workspace map. |
+| `project-scope.sh` | Create, validate, and query optional multi-project job routing. |
+| `context-sync.sh` | Safely mirror canonical Xoch job artifacts to participant repositories. |
 
 Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
@@ -269,7 +284,7 @@ Ready for next step: `xoch-next`
 
 `xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
-`xoch-map` records local project and dependency relationships without creating synchronized multi-project job state. Use it for lightweight orientation: local paths, package names, service relationships, validation commands, and docs targets.
+`xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open-job` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 

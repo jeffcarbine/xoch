@@ -71,7 +71,7 @@ Revision commands preserve prior history and record why foundational job artifac
 | Command | Purpose |
 |---|---|
 | `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
-| `map` | Maintain lightweight local project/dependency map context. |
+| `map` | Maintain the local workspace map and resolve project dependencies. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
 | `pause` | Pause the active job. |
@@ -183,13 +183,30 @@ Use `context-economy.md` anywhere a prompt may decide which files to inspect. It
 
 Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `make`/`next` loop.
 
+Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
+
+## Multi-Project Jobs
+
+Standalone jobs remain unchanged. Multi-project jobs add `.xoch/work/jobs/[job-id]/projects.json` with one primary project and one or more participants. The primary project owns canonical shared job artifacts; participant job folders are synchronized mirrors.
+
+Prompts must:
+
+- validate and query scope with `project-scope.sh`
+- write job artifacts through the primary job directory
+- tag plan tasks, files, validation, commits, and evidence by project
+- synchronize with `context-sync.sh` after shared context writes
+- keep source files, git operations, and active pointers repository-local
+- stop when scope validation or synchronization fails
+
+Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `workspace-actions.sh`. Shareable dependency declarations may use `.xoch/docs/dependencies.json` and resolve through `dependency-actions.sh`.
+
 ## Prompt Style
 
 Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
 Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.sh` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
 
-Helper filenames use kebab-case consistently. Additional deterministic helpers assemble README packets, archive/restore Xoch state, compare AC coverage, discover validation commands, inspect git state, report documentation drift, resolve documentation targets, maintain gitignore rules, and validate prompt rendering. See the root README helper inventory.
+Helper filenames use kebab-case consistently. Deterministic helpers cover core state mechanics, README assembly, archives, acceptance coverage, project commands, git state, documentation routing, prompt validation, workspace mapping, dependency resolution, multi-project routing, and guarded context synchronization. See the root README helper inventory.
 
 ---
 

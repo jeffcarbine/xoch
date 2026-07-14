@@ -36,6 +36,8 @@ Read active job pointers in this order:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Current Phase
@@ -66,6 +68,8 @@ git diff --stat
 git diff
 git diff --staged
 ```
+
+For a multi-project phase, run these checks in every project touched by the phase and group the review by project. Do not infer one repository's git state from another.
 
 Review the diff against the current phase only. Note unrelated changes as out of scope and avoid reverting them.
 
@@ -136,6 +140,8 @@ If there are uncommitted changes, staged changes, or local commits that have not
 Changes haven't been committed and pushed to git yet. Would you like me to [C]ommit and push them for you, or [N]o?
 ```
 
+For a multi-project phase, report commit/push state per touched project but ask this choice once. If the engineer chooses `[C]`, create and push one focused commit in each repository that has phase changes; never combine repository histories or claim one push covers another.
+
 If the engineer chooses `[C]`:
 
 1. Create a focused commit for the current phase changes.
@@ -186,7 +192,7 @@ Use this structure:
 
 ## Files Changed
 
-- `[file]` - [what changed]
+- `[project]` `[file]` - [what changed]
 
 ## Acceptance Criteria
 
@@ -257,6 +263,8 @@ last_updated: [today]
 
 For legacy migration jobs, write a comparable `milestone-[N].md` or phase snapshot in the legacy job folder and update the legacy tracker in place.
 
+For a multi-project job, include commit, push, validation, and changed-file evidence by project in the canonical snapshot, then sync the snapshot and advanced state to participants. Do not advance when sync fails.
+
 ## Output
 
 If more phases remain:
@@ -284,5 +292,6 @@ All phases complete.
 - Review only the current phase unless the engineer asks for broader review.
 - Advancing to the next phase does not authorize starting that phase.
 - Preserve unrelated worktree changes.
+- Multi-project git, validation, and snapshot evidence must remain project-specific.
 - Record skipped checks as skipped, not passed.
 - Do not move active legacy job folders during the migration.

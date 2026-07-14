@@ -34,6 +34,8 @@ Read active job pointers in this order:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Load Job Evidence
@@ -49,6 +51,8 @@ Read:
 - documentation targets from job state/spec
 - relevant README or `.xoch/docs/` files when documentation freshness is in scope
 - git status and diff
+
+For multi-project jobs, inspect source changes, git state, tests, and documentation independently in every project that the plan or snapshots mark as touched.
 
 For legacy migration jobs, read the equivalent legacy context files.
 
@@ -83,6 +87,8 @@ For each acceptance criterion in the spec, mark:
 - Waived
 
 Include concise evidence. Evidence can come from code changes, docs, validation output, manual testing reported by the engineer, or explicit waiver.
+
+Multi-project acceptance evidence must name the project that supplies it. Criteria may require evidence from more than one project.
 
 ### Step 4: Quality And Risk Review
 
@@ -165,7 +171,7 @@ Use this structure:
 
 ## Validation Evidence
 
-- [check] - [result]
+- `[project]` [check] - [result]
 
 ## Documentation Freshness
 
@@ -190,6 +196,8 @@ last_updated: [today]
 
 For legacy migration jobs, write `review.md` in the legacy job folder.
 
+For multi-project jobs, write the review and state through the primary job and sync them to participants. A sync failure makes the review `blocked` until routing is repaired.
+
 ## Output
 
 End with:
@@ -207,4 +215,5 @@ Review status: [status]
 - Waivers must be explicit and recorded.
 - Review does not create QA or PR handoff jobs.
 - Prefer fixing stale docs before close unless the engineer waives the update.
+- Review every touched project in a multi-project job; one project's passing checks do not cover another.
 - Do not move active legacy job folders during the migration.

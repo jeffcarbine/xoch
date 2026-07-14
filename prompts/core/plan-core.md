@@ -37,6 +37,8 @@ Expected files after this command:
 
 Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` is active and no target-model job exists, continue that legacy job in place.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Current Job
@@ -82,6 +84,8 @@ Ask the engineer for:
 - constraints
 - testing expectations
 - dependency concerns
+
+For multi-project jobs, establish the owning project for every file, validation command, contract change, and implementation task.
 
 If the engineer asks the agent to decide, infer a conservative approach from the spec and existing docs.
 
@@ -135,6 +139,8 @@ Break the work into phases. Each phase should have:
 
 Prefer phases that can be reviewed independently.
 
+In a multi-project job, every phase task and file path must name one project from `projects.json`. A phase may span projects when the work is one coherent contract change, but its per-project validation and commit evidence must remain distinct.
+
 ### Step 7: Present Draft Plan
 
 Before writing plan files, present the draft implementation plan and phase breakdown in chat. Include the architectural approach, likely files, phases, validation, risks, and acceptance-criteria coverage.
@@ -181,7 +187,7 @@ Budget: 7,000 tokens
 
 ## Files to Modify/Create
 
-[List]
+[Standalone: path list. Multi-project: project and path list.]
 
 ---
 
@@ -231,8 +237,11 @@ Use this structure:
 
 [Description]
 
+**Projects:**
+- [project name]
+
 **Files to modify/create:**
-- [file] - [why]
+- `[project]` `[file]` - [why]
 
 **Acceptance criteria covered:**
 - AC-001
@@ -291,6 +300,8 @@ After accepted plan artifacts are written, verify acceptance-criteria references
 
 At plan time, missing snapshot/review coverage is expected; treat `missing_from_plan` and orphaned plan IDs as the actionable fields.
 
+For a multi-project job, run coverage from the primary project, then sync the accepted plan, phases, and state to participants. Stop and report any sync refusal.
+
 ## Output
 
 End with:
@@ -311,4 +322,5 @@ Current phase: Phase 1 - [title]
 - Plans describe how; specs describe what.
 - Phases replace milestones for new work.
 - Preserve AC traceability.
+- Multi-project plan tasks and paths must have explicit project ownership.
 - Do not move active legacy job folders during the migration.

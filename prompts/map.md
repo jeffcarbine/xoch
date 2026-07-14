@@ -9,9 +9,7 @@ Maintain lightweight local project and dependency map context.
 
 ## Purpose
 
-Help Xoch understand related local projects, repository paths, package names, services, and dependency relationships without requiring synchronized multi-project job context.
-
-First-pass `xoch-map` is intentionally local and lightweight. Full synchronized multi-project jobs are deferred.
+Help Xoch resolve project names to local repositories, record machine-independent dependency relationships, and prepare repositories for multi-project jobs.
 
 ## Scope
 
@@ -25,17 +23,31 @@ First-pass `xoch-map` is intentionally local and lightweight. Full synchronized 
 - commands useful for local validation
 - risks or coupling notes
 
+The machine-local workspace map lives at `~/.xoch/workspace-map.json`. Repo-owned dependency declarations may live at `.xoch/docs/dependencies.json` when the engineer approves that structured documentation artifact.
+
 ## Storage
 
-Prefer project-local docs when the map helps the project. Packet names should follow the engineer-approved root README packet set; examples include:
+Keep local paths in the machine-owned workspace map:
 
 ```text
-.xoch/docs/DEPENDENCIES.md
-.xoch/docs/ARCHITECTURE.md
-.xoch/docs/COMPONENTS.md
+~/.xoch/workspace-map.json
 ```
 
-For machine-local path hints that should not be committed, use `.xoch/work/notes/` or another ignored local file only after confirming the repo's ignore strategy.
+Keep shareable dependency names and contracts in project documentation. A structured declaration may use:
+
+```json
+{
+  "project": "web-app",
+  "dependencies": [
+    {
+      "name": "billing-api",
+      "kind": "service",
+      "direction": "consumes",
+      "contract": "Invoice and payment endpoints"
+    }
+  ]
+}
+```
 
 Do not store secrets, credentials, tokens, or private machine details that the engineer does not want captured.
 
@@ -54,14 +66,14 @@ Ask whether the map should cover:
 
 ### Step 2: Identify Roots
 
-Ask for or infer local roots. Examples:
+Ask for or infer local roots. Scan only the current root, explicitly named roots, immediate children, or immediate siblings. Examples:
 
 - current repo root
 - sibling project directories
 - monorepo packages
 - service directories
 
-Do not scan broad home directories. Keep discovery scoped to paths the engineer names or the current repository.
+Do not scan broad home directories. Infer candidate names from an approved dependency declaration, package/build manifests, git remote names, or folder names. Show additions, changed paths, and ambiguous names before writing.
 
 ### Step 3: Inspect Lightly
 
@@ -82,7 +94,20 @@ rg -n "localhost|PORT|dependency|service" README.md .xoch/docs
 
 Adjust commands to the project. Do not run network-dependent discovery unless explicitly requested.
 
-### Step 4: Model Relationships
+### Step 4: Update The Machine Map
+
+After engineer confirmation, use:
+
+```bash
+~/.xoch/bin/workspace-actions.sh add --name "[project]" --path "[absolute path]"
+~/.xoch/bin/workspace-actions.sh remove --name "[project]"
+~/.xoch/bin/workspace-actions.sh validate
+~/.xoch/bin/workspace-actions.sh list --json
+```
+
+Do not replace an existing name with a different path unless the engineer confirms it; pass `--replace` only after that confirmation.
+
+### Step 5: Model Relationships
 
 Capture:
 
@@ -95,39 +120,24 @@ Capture:
 - validation commands
 - notes or risks
 
-For structured dependency data, prefer this shape in a project-approved JSON packet:
+Never put absolute local paths in shareable dependency documentation.
 
-```json
-{
-  "projects": [
-    {
-      "id": "project-id",
-      "path": ".",
-      "role": "app|library|service|docs|unknown",
-      "depends_on": [],
-      "depended_on_by": [],
-      "docs": [],
-      "validation": [],
-      "notes": []
-    }
-  ]
-}
+### Step 6: Resolve Dependencies
+
+If `.xoch/docs/dependencies.json` exists, resolve it with:
+
+```bash
+~/.xoch/bin/dependency-actions.sh resolve
 ```
 
-### Step 5: Write Or Update Map
+When a multi-project job is active, pass `--scope [primary job]/projects.json` so output identifies dependencies already participating in the job. Load only relevant README or `.xoch/docs/` context from resolved repositories.
 
-Write only the selected map target:
-
-- an approved `.xoch/docs/` packet for root README composition
-- a nested `README.md` for feature-local dependency context
-- job/arc notes when the map is temporary to a job
-
-### Step 6: Route
+### Step 7: Route
 
 Recommend:
 
 - `xoch-doc` when docs need updates from the map
-- `xoch-open-job` when the map reveals a job
+- `xoch-open-job` when resolved repositories should participate in one multi-project job
 - `xoch-revise-plan` when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
 
@@ -136,8 +146,10 @@ Recommend:
 End with:
 
 ```text
-Map updated.
-Targets: [paths]
+Workspace map updated.
+Map: ~/.xoch/workspace-map.json
+Resolved dependencies: [count]
+Missing dependencies: [count]
 {{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
@@ -145,8 +157,8 @@ Targets: [paths]
 
 {{xoch-partial:response-ending.md}}
 
-- Keep map data local and minimal.
-- Do not create synchronized multi-project job state in this first-pass workflow.
+- Keep machine paths local and dependency declarations shareable.
 - Do not scan unrelated directories.
 - Do not record secrets.
 - Prefer structured data for dependencies when practical.
+- Do not create a multi-project job without engineer confirmation; route that work to `xoch-open-job`.

@@ -30,6 +30,8 @@ Target-model trace notes live under:
 
 If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Capture Symptom

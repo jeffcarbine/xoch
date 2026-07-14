@@ -34,6 +34,8 @@ Read active job pointers in this order:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically unless the engineer explicitly asks.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Job
@@ -102,6 +104,8 @@ git diff --stat
 
 Summarize remaining uncommitted changes. Do not require a commit to close unless the engineer's workflow requires it.
 
+For multi-project jobs, inspect and report worktree state separately in every listed project.
+
 If unrelated worktree changes exist, mention them and avoid including them in the closure summary.
 
 ### Step 6: Write Closure Notes
@@ -161,6 +165,8 @@ last_updated: [today]
 
 For legacy migration jobs, write `closure.md` or final notes in the legacy job folder.
 
+For multi-project jobs, write closure state through the primary job and sync it before clearing pointers or archiving any mirror.
+
 ### Step 7: Clear Active Pointer
 
 Clear the active pointer only if it points to this job:
@@ -176,6 +182,8 @@ For legacy migration jobs, clear:
 ```
 
 Do not clear a pointer for a different active job.
+
+For multi-project jobs, check `.xoch/work/current.md` in every listed repository. Clear it only where it points to this job; a participant may legitimately have no pointer or another active job.
 
 ### Step 8: Archive Or Leave In Place
 
@@ -194,6 +202,8 @@ For target-model jobs, after the active pointer is cleared and the engineer choo
 ```
 
 If the helper refuses the move, stop and report why. Do not manually bypass its path or overwrite checks.
+
+For multi-project jobs, archive participant mirrors first with `archive-actions.sh --root "[participant path]"`, then archive the canonical primary job last. Use a dry-run for every repository. Leaving all job folders in place is also valid.
 
 ## Output
 
@@ -215,4 +225,5 @@ Follow-up: [summary]
 - Stale documentation requires either refresh or an explicit documentation waiver.
 - Do not hide skipped validation.
 - Do not clear the wrong active job pointer.
+- Synchronize final multi-project closure context before archiving the canonical scope.
 - Do not move active legacy job folders during the migration unless the engineer explicitly asks.

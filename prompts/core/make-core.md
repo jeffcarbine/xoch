@@ -36,6 +36,8 @@ Read active job pointers in this order:
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
+{{xoch-partial:project-routing.md}}
+
 ## Process
 
 ### Step 1: Identify Current Job
@@ -81,6 +83,7 @@ Before implementation, give the engineer a concise phase briefing. This briefing
 - phase title and goal
 - why this phase matters
 - files marked for work or likely touched
+- owning project for every file in a multi-project phase
 - source context already known from state, plan, spec, or prior conversation
 - acceptance criteria covered
 - expected validation
@@ -113,13 +116,15 @@ After the initial ownership choice, treat all follow-up back-and-forth in the sa
 
 For agent-owned or collaborative work:
 
-1. Inspect only the files needed for the current phase.
+1. Inspect only the files needed for the current phase, from their owning project roots.
 2. Prefer existing project patterns over new abstractions.
 3. Identify focused tests/checks before editing. When commands are not already known, inspect advisory candidates with:
 
    ```bash
    ~/.xoch/bin/project-commands.sh detect --json
    ```
+
+   For multi-project phases, run command detection separately from each touched project root.
 
 4. Note any risky operations that need engineer approval.
 
@@ -140,6 +145,7 @@ When editing:
 - use deterministic helpers when available
 - update docs only when this phase's work changes documented behavior
 - avoid adding QA or PR process ceremony
+- never move or copy implementation source between participating repositories
 
 If the job is target-model, append useful implementation notes to:
 
@@ -167,7 +173,7 @@ If validation cannot be run, record why.
 
 Before ending, summarize:
 
-- files changed
+- files changed, grouped by project for multi-project jobs
 - acceptance criteria touched
 - tests/checks run
 - tests/checks not run
@@ -199,6 +205,8 @@ Keep `last_validation` compact; detailed validation history belongs in phase sna
 
 For legacy migration jobs, record the same information in the legacy job notes or tracker when appropriate.
 
+For a multi-project job, write notes and state through the primary job and sync participant context after the final evidence update. A participant sync failure leaves phase work incomplete for handoff purposes even when source edits succeeded.
+
 ## Output
 
 End with:
@@ -221,5 +229,6 @@ Current phase: [N] - [title]
 - Do not silently change spec scope; use `xoch-revise-spec`.
 - Do not silently reshape remaining phases; use `xoch-revise-plan`.
 - Keep phase work focused.
+- In multi-project jobs, edit and validate each file from its declared owning project.
 - Record validation evidence, including skipped checks.
 - Do not move active legacy job folders during the migration.
