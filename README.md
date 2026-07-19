@@ -77,7 +77,8 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-revise-spec` | Revise a job's foundational requirements. |
 | `xoch-revise-plan` | Revise a job's implementation plan or remaining phases. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
-| `xoch-map` | Maintain lightweight local project/dependency map context. |
+| `xoch-map` | Maintain the local workspace map and resolve project dependencies. |
+| `xoch-discovery` | Resolve material unknowns before specification or implementation. |
 | `xoch-trace` | Investigate root cause for bugs or unclear symptoms before changing code. |
 | `xoch-patch` | Use a focused path for small or urgent fixes. |
 | `xoch-pause` | Pause the active job. |
@@ -285,6 +286,8 @@ Ready for next step: `xoch-next`
 `xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
 `xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open-job` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
+
+`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in job `notes/` and normally route back to `xoch-spec` or `xoch-revise-spec`.
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 

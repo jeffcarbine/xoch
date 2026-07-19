@@ -72,6 +72,7 @@ Revision commands preserve prior history and record why foundational job artifac
 |---|---|
 | `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
 | `map` | Maintain the local workspace map and resolve project dependencies. |
+| `discovery` | Resolve material product, domain, API, design, or implementation unknowns. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
 | `pause` | Pause the active job. |
@@ -92,6 +93,7 @@ Expected top-level prompt files:
 close-arc.md
 close-job.md
 doc.md
+discovery.md
 glossary.md
 make.md
 map.md
@@ -129,6 +131,7 @@ Expected core reference files:
 
 ```text
 core/foundation-core.md
+core/discovery-core.md
 core/glossary-core.md
 core/make-core.md
 core/next-core.md
@@ -160,7 +163,7 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `glossary.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `glossary.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 

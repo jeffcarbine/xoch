@@ -132,6 +132,8 @@ Ask for or extract:
 - documentation targets
 - risks or unknowns
 
+Read relevant accepted `notes/discovery-*.md` findings when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
+
 If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
 
 Only continue to current-state analysis and draft spec once source requirements exist.
@@ -148,6 +150,21 @@ Ask targeted questions until these are clear:
 - important edge cases
 
 Prefer a few high-signal questions over a long questionnaire.
+
+If a material unknown remains and the engineer cannot answer it:
+
+1. State the unknown and the requirement, criterion, constraint, or decision it blocks.
+2. Do not substitute model background knowledge or unsupported inference.
+3. Recommend `xoch-discovery` and ask:
+
+   ```text
+   This spec has an unresolved unknown. Start discovery? [Y]es / [N]o
+   ```
+
+4. If `[Y]`, keep `status: spec_in_progress`, set `next_command: xoch-discovery`, and stop without drafting or accepting `spec.md`.
+5. If `[N]`, continue only after the engineer explicitly accepts a documented assumption, narrows the spec, or defers the affected requirement.
+
+When discovery returns, incorporate its accepted findings and cite the discovery note in `Clarifications & Notes`.
 
 ### Step 5: Current-State Analysis
 
@@ -332,6 +349,7 @@ Job: [job-id]
 - Specs describe change, not implementation details.
 - Do not draft a spec without engineer-provided source requirements.
 - Do not invent requirements from a job name, branch name, file name, or project context.
+- Route material unknowns to `xoch-discovery` instead of manufacturing certainty.
 - Multi-project specs identify project ownership without splitting the job into independent specifications.
 - Present the draft spec and get `[A]` acceptance before writing `spec.md`.
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.

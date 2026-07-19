@@ -15,6 +15,12 @@ Xoch tracks focused software work as jobs. The normal flow is:
 open-job -> spec -> plan -> make -> next -> review -> close-job
 ```
 
+When a material unknown blocks honest specification, use the optional loop:
+
+```text
+spec -> discovery -> spec
+```
+
 Jobs live under:
 
 ```text
@@ -38,6 +44,7 @@ Read `.xoch/work/current.md` first. If it is absent, check `.xoch/context/curren
 - `phases/phase-[N].md`: optional detailed phase body.
 - `snapshots/phase-[N].md`: completion evidence captured by `xoch-next`.
 - `notes/`: implementation, trace, or sidebar notes.
+- `notes/discovery-*.md`: accepted findings for unknowns that affect requirements or decisions.
 - `revisions/`: spec, plan, or arc revision history.
 
 Use `state.md` first on repeated commands. It should include current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Read full `spec.md`, `plan.md`, or `phases.md` only when state/prior context is insufficient or exact text is required.
