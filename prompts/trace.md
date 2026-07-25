@@ -21,6 +21,8 @@ If any required workflow detail, trace note shape, routing behavior, artifact pa
 
 Do not read the core prompt unless it is needed.
 
+Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
+
 For a fresh invocation, capture the symptom, frame the investigation, inspect only relevant evidence, and avoid code changes unless the engineer explicitly turns the trace into patch or make work.
 
 When the trace is complete, put evidence, hypotheses, confidence, risks, and recommendations first. Make the final line the next Xoch step, such as:

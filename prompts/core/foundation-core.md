@@ -79,6 +79,8 @@ Before full-file reads beyond active pointer/state files, run:
 ~/.xoch/bin/token-estimator.sh --batch [files...]
 ```
 
+Always show the output in your response before the read proceeds.
+
 Prefer search, diffs, file outlines, and targeted snippets before whole-file reads. Do not reread files merely to reacquire background already present in the conversation.
 
 ## Deterministic Helpers

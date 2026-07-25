@@ -16,11 +16,6 @@ Prefer the smallest useful read:
 - read snippets around relevant symbols before reading whole files
 - if a useful read would exceed budget, ask the engineer whether to narrow, proceed anyway, or rely on existing context
 
-Report the estimate when:
-
-- the estimated read exceeds half the relevant prompt budget
-- any single file is large enough to affect the read strategy
-- you choose snippets, search, diffs, or prior context instead of reading a full file
-- you ask the engineer whether to exceed budget
+Always show the estimator's output in your response before the read proceeds — this is not conditional on budget size or read strategy.
 
 When recording token usage, distinguish files actually read from files only inspected by search, diff, or prior conversation context.

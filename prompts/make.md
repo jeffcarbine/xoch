@@ -23,7 +23,7 @@ Do not read the core prompt unless it is needed.
 
 For a fresh invocation, inspect only the active job/current phase context needed to brief the engineer. Give a compact overview of the phase, likely files, acceptance criteria, validation, and risks, then end with the adventure-style implementation choice:
 
-Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]` and use snippets/search/diffs when that is enough.
+Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
 
 ```text
 How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?

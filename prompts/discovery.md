@@ -21,6 +21,8 @@ If any required workflow detail, source-handling rule, note shape, confidence ru
 
 Do not read the core prompt unless it is needed.
 
+Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
+
 Identify the unknown, the decision it blocks, and what would count as enough confidence to proceed. Use the engineer's knowledge, relevant local files or images, supplied external documentation, targeted web research when appropriate, and model background knowledge with clear source labels.
 
 Do not treat model memory, inference, or outdated external material as verified fact. Do not implement changes during discovery.
