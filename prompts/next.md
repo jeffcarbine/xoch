@@ -23,7 +23,7 @@ Do not read the core prompt unless it is needed.
 
 For a fresh invocation, inspect only the active job/current phase context, focused phase evidence, and git state needed to review completion. Report the review first. Do not ask a separate catch-up question for manual or external changes; `xoch-make` records follow-up phase evidence.
 
-Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
+{{xoch-partial:estimator-reminder.md}}
 
 Ask the adventure-style advance choice:
 

@@ -23,7 +23,7 @@ If any required spec workflow detail, artifact shape, state field, arc-fit behav
 
 Do not read core prompts unless they are needed.
 
-Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
+{{xoch-partial:estimator-reminder.md}}
 
 Identify the active job from the workflow boundary helper result. A job ID, title, branch name, file name, or project context is not enough to draft a spec.
 

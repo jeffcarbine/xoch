@@ -1,0 +1,1 @@
+Before any full-file read beyond active Xoch pointer/state files, run `~/.xoch/bin/token-estimator.sh --batch [files...]`, show the output in your response, and use snippets/search/diffs when that is enough.
