@@ -32,12 +32,12 @@ Target-model job files live under:
 Expected files after this command:
 
 ```text
-.xoch/work/current.md
+.xoch/work/current.json
 .xoch/work/jobs/[job-id]/state.md
 .xoch/work/jobs/[job-id]/spec.md
 ```
 
-Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.md` exists, continue that legacy job in place and do not move it automatically.
+Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.json` exists, continue that legacy job in place and do not move it automatically.
 
 {{xoch-partial:project-routing.md}}
 
@@ -58,10 +58,7 @@ If present, read the glossary index and quick reference before requirements clar
 
 ### Step 1: Identify Current Job
 
-Read active job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 If a current job exists, use its job ID and job folder.
 
@@ -84,7 +81,7 @@ For target-model jobs, ensure:
 
 ```text
 .xoch/work/jobs/[job-id]/state.md
-.xoch/work/current.md
+.xoch/work/current.json
 ```
 
 If `state.md` does not exist, create it with:
@@ -106,6 +103,12 @@ documentation_targets:
   - [README path, docs packet, or project-wide]
 decisions: []
 risks: []
+active_workflow: null
+workflow_stage: null
+pending_action: null
+workflow_artifact: null
+return_command: null
+workflow_started_at: null
 review_status: null
 closure_status: null
 next_command: xoch-spec

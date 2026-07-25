@@ -5,6 +5,10 @@ description: Maintain local project and dependency map context for Xoch
 
 # Xoch - Map
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-map" pending="continue_mapping"}}
+
 Maintain lightweight local project and dependency map context.
 
 ## Purpose
@@ -75,6 +79,12 @@ Ask for or infer local roots. Scan only the current root, explicitly named roots
 
 Do not scan broad home directories. Infer candidate names from an approved dependency declaration, package/build manifests, git remote names, or folder names. Show additions, changed paths, and ambiguous names before writing.
 
+When proposed map changes require confirmation for an active job, update the managed workflow before asking:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-map --stage awaiting_confirmation --pending apply_workspace_map
+```
+
 ### Step 3: Inspect Lightly
 
 Read only useful orientation files:
@@ -140,6 +150,12 @@ Recommend:
 - `xoch-open-job` when resolved repositories should participate in one multi-project job
 - `xoch-revise-plan` when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
+
+After confirmed map changes, validation, dependency resolution, and any job notes are complete, finish the managed workflow before final output or an explicitly chained command:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-map --next "[recommended or explicitly invoked command]"
+```
 
 ## Output
 

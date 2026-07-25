@@ -5,6 +5,8 @@ description: Review the current phase and advance to the next Xoch phase
 
 # Xoch - Next
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-next` work.
 
 If you already know the standard `xoch-next` workflow from this conversation, continue from that context and do not read the core prompt.

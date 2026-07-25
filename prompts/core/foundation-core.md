@@ -30,10 +30,10 @@ Jobs live under:
 The active job pointer is:
 
 ```text
-.xoch/work/current.md
+.xoch/work/current.json
 ```
 
-Read `.xoch/work/current.md` first. If it is absent, check `.xoch/context/current.md` for legacy migration jobs. Continue legacy jobs in place; do not move them unless the engineer explicitly asks.
+Query the active pointer with `~/.xoch/bin/xoch-actions.sh job current --json`; do not read or edit `current.json` directly unless the helper is unavailable. The helper migrates target-model `current.md` pointers and reports legacy `.xoch/context/current.md` metadata without moving legacy jobs.
 
 ## Job Files
 
@@ -46,6 +46,8 @@ Read `.xoch/work/current.md` first. If it is absent, check `.xoch/context/curren
 - `notes/`: implementation, trace, or sidebar notes.
 - `notes/discovery-*.md`: accepted findings for unknowns that affect requirements or decisions.
 - `revisions/`: spec, plan, or arc revision history.
+
+`state.md` also preserves managed side-workflow fields when one is active: `active_workflow`, `workflow_stage`, `pending_action`, `workflow_artifact`, `return_command`, and `workflow_started_at`. `current.json` is the machine-readable runtime projection used for command routing.
 
 Use `state.md` first on repeated commands. It should include current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Read full `spec.md`, `plan.md`, or `phases.md` only when state/prior context is insufficient or exact text is required.
 
@@ -67,7 +69,7 @@ Standalone jobs need no additional scope file. A job spanning repositories store
 .xoch/work/jobs/[job-id]/projects.json
 ```
 
-One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and `.xoch/work/current.md` are always repository-local and are never synchronized. Use `project-scope.sh` for routing and `context-sync.sh` after canonical job-context writes.
+One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and `.xoch/work/current.json` are always repository-local and are never synchronized. Use `project-scope.sh` for routing and `context-sync.sh` after canonical job-context writes.
 
 ## Context Economy
 
@@ -89,6 +91,10 @@ Prefer installed helpers for static file and state actions:
 ~/.xoch/bin/xoch-actions.sh arc open ...
 ~/.xoch/bin/xoch-actions.sh state set ...
 ~/.xoch/bin/xoch-actions.sh pointer clear ...
+~/.xoch/bin/xoch-actions.sh workflow begin ...
+~/.xoch/bin/xoch-actions.sh workflow update ...
+~/.xoch/bin/xoch-actions.sh workflow complete ...
+~/.xoch/bin/xoch-actions.sh workflow abandon ...
 ~/.xoch/bin/xoch-actions.sh snapshot create ...
 ~/.xoch/bin/xoch-actions.sh phase advance ...
 ~/.xoch/bin/readme-actions.sh assemble ...
@@ -102,6 +108,8 @@ Prefer installed helpers for static file and state actions:
 ```
 
 Use the LLM for judgment, summaries, specs, plans, reviews, and deciding what evidence means. Use helpers for repeatable filesystem/state mechanics when available.
+
+Before every stateful Xoch command, enforce the shared workflow boundary. Finish an accepted pending wrap-up before an explicitly chained command; otherwise resume or explicitly abandon the active workflow before starting different work.
 
 ## Interaction Rules
 

@@ -5,6 +5,8 @@ description: Revise the implementation plan or remaining phases for an active Xo
 
 # Xoch - Revise Plan
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-revise-plan` work.
 
 If you already know the standard `xoch-revise-plan` workflow from this conversation, continue from that context and do not read the core prompt.

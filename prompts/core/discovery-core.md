@@ -17,10 +17,7 @@ Use `xoch-discovery` for product, domain, design, API, dependency, workflow, com
 
 ## Work Model
 
-When a job is active, read job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+When a job is active, use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Target-model discovery notes live under:
 
@@ -59,6 +56,12 @@ Ask or establish:
 - time, access, privacy, or source constraints
 
 Turn a broad uncertainty into a short list of answerable discovery questions.
+
+When a target-model job is active and `xoch-discovery` is not already the active workflow, begin it before further research. Preserve the command that should resume afterward:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-spec | xoch-revise-spec | prior next command]"
+```
 
 ### Step 2: Inventory Available Sources
 
@@ -134,13 +137,19 @@ Present a concise draft containing:
 - spec impact
 - recommended next step
 
+Before asking for acceptance, write these findings to the planned discovery note with `Status: Draft`. This preserves the pending result across agents and conversations. Then update the workflow boundary:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "notes/discovery-[topic]-[date].md" --return "[return command]"
+```
+
 Then ask:
 
 ```text
 Do you want to [A]ccept the findings, request [M]odifications, or [R]esearch further?
 ```
 
-If `[M]`, ask what should change and revise the findings. If `[R]`, agree on the next focused question or source before continuing. Do not record findings as accepted until the engineer chooses `[A]`.
+If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`, set the workflow back to `stage: investigating` with `pending_action: continue_discovery`, then agree on the next focused question or source. Do not mark findings accepted until the engineer chooses `[A]`.
 
 ### Step 8: Record Accepted Discovery
 
@@ -203,6 +212,12 @@ unresolved_questions:
   - [question]
 next_command: [xoch-spec | xoch-revise-spec | xoch-discovery]
 last_updated: [today]
+```
+
+After the accepted note and state update exist, complete the workflow before executing any explicitly chained command:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-discovery --next "[recommended or explicitly invoked command]"
 ```
 
 ### Step 9: Route

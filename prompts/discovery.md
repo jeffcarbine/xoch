@@ -5,6 +5,10 @@ description: Resolve important unknowns before specification or implementation
 
 # Xoch - Discovery
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-discovery" pending="continue_discovery"}}
+
 Use this token-light wrapper for normal `xoch-discovery` work.
 
 If you already know the standard discovery workflow from this conversation, continue from that context and do not read the core prompt.

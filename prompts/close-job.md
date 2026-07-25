@@ -5,6 +5,8 @@ description: Close completed Xoch work and archive or finalize job state
 
 # Xoch - Close Job
 
+{{xoch-partial:workflow-boundary.md}}
+
 Close a completed Xoch job.
 
 `close-job` replaces the old `finalize` command and is the lifecycle opposite of `open-job`.
@@ -27,10 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Read active job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+Use the `xoch-actions.sh job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically unless the engineer explicitly asks.
 
@@ -169,10 +168,11 @@ For multi-project jobs, write closure state through the primary job and sync it 
 
 ### Step 7: Clear Active Pointer
 
-Clear the active pointer only if it points to this job:
+Clear the active pointer only if the helper reports that it points to this job:
 
-```text
-.xoch/work/current.md
+```bash
+~/.xoch/bin/xoch-actions.sh job current --json
+~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
 ```
 
 For legacy migration jobs, clear:
@@ -183,7 +183,7 @@ For legacy migration jobs, clear:
 
 Do not clear a pointer for a different active job.
 
-For multi-project jobs, check `.xoch/work/current.md` in every listed repository. Clear it only where it points to this job; a participant may legitimately have no pointer or another active job.
+For multi-project jobs, run the same helper checks from every listed repository. Clear only pointers that identify this job; a participant may legitimately have no pointer or another active job.
 
 ### Step 8: Archive Or Leave In Place
 

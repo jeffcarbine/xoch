@@ -5,6 +5,10 @@ description: Explore a related question without advancing Xoch job state
 
 # Xoch - Sidebar
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-sidebar" pending="continue_sidebar"}}
+
 Explore a related question or tangent while preserving the current job state.
 
 ## Purpose
@@ -17,15 +21,15 @@ Load enough job context to orient the discussion, answer the engineer's question
 
 ### Step 1: Detect Current Job
 
-Read:
-
-```text
-.xoch/work/current.md
-```
-
-If absent, check `.xoch/context/current.md` for a legacy migration job.
+Use the `xoch-actions.sh job current --json` result from the workflow boundary. It reports target-model or legacy pointer state.
 
 If no active job exists, continue without Xoch job context.
+
+When a target-model job is active and `xoch-sidebar` is not already active, begin the side workflow while preserving the job's current `next_command`:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow begin --job "[job-id]" --name xoch-sidebar --stage exploring --pending complete_sidebar --return "[current next command]"
+```
 
 ### Step 2: Load Context
 
@@ -70,6 +74,12 @@ When the sidebar appears complete, remind the engineer of the likely return comm
 - `xoch-make` to continue implementation
 - `xoch-next` to review/advance the current phase
 - `xoch-revise-plan` if the sidebar changed the plan
+
+Before the final output or an explicitly chained command, complete the sidebar workflow:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-sidebar --next "[recommended or explicitly invoked command]"
+```
 
 End with:
 

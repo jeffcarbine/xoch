@@ -5,6 +5,8 @@ description: Implement or guide implementation for the current Xoch phase
 
 # Xoch - Make
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-make` work.
 
 If you already know the standard `xoch-make` workflow from this conversation, continue from that context and do not read the core prompt.

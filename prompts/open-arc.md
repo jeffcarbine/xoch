@@ -5,6 +5,8 @@ description: Open an optional Xoch arc for grouping related jobs
 
 # Xoch - Open Arc
 
+{{xoch-partial:workflow-boundary.md}}
+
 Open an optional arc: a larger goal that groups related jobs by reference.
 
 ## Purpose
@@ -33,10 +35,7 @@ Arc membership is by job ID reference only. Do not move or nest job folders insi
 
 ### Step 1: Check Active Job Context
 
-Before gathering arc metadata, inspect active job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+Before gathering arc metadata, use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
 If an active target-model job exists, read its `state.md` and determine whether it is already part of an arc:
 

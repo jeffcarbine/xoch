@@ -5,6 +5,8 @@ description: Resume paused or archived Xoch work
 
 # Xoch - Resume
 
+{{xoch-partial:workflow-boundary.md}}
+
 Resume paused or archived job work.
 
 ## Purpose
@@ -17,11 +19,7 @@ Find a job, restore it as current, summarize where work left off, and route to t
 
 ### Step 1: Check Active Job
 
-Read:
-
-```text
-.xoch/work/current.md
-```
+Use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
 If another job is active, ask the engineer to pause it first or cancel resume.
 
@@ -81,20 +79,15 @@ For legacy jobs, preserve the legacy context model unless the engineer explicitl
 
 ### Step 5: Write Current Pointer
 
-Create `.xoch/work/current.md`:
+For target-model jobs, recreate the machine-readable pointer from job state:
 
-```markdown
-# Current Job
-
-**Job ID**: [job-id]
-**Title**: [job title]
-**Arc**: [arc-id or standalone]
-**Status**: resumed
-**Current Phase**: [phase number or none]
-**Next Command**: [next command]
-**Job Directory**: .xoch/work/jobs/[job-id]/
-**Resumed**: [today]
+```bash
+~/.xoch/bin/xoch-actions.sh job set-current --job "[job-id]"
 ```
+
+This restores any managed workflow preserved in `state.md`. Do not write `current.json` manually.
+
+Run `xoch-actions.sh job current --json` again after setting the pointer. If it reports an active workflow, resume that workflow and its pending action before routing to phase work.
 
 For legacy jobs, update `.xoch/context/current.md` instead.
 

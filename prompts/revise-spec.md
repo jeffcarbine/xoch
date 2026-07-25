@@ -5,6 +5,8 @@ description: Revise the foundational specification for an active Xoch job
 
 # Xoch - Revise Spec
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-revise-spec` work.
 
 If you already know the standard `xoch-revise-spec` workflow from this conversation, continue from that context and do not read the core prompt.

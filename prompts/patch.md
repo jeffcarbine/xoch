@@ -5,6 +5,8 @@ description: Handle focused small or urgent fixes with Xoch
 
 # Xoch - Patch
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use a focused path for small or urgent fixes.
 
 ## Purpose
@@ -33,10 +35,7 @@ Use the normal lifecycle when:
 
 ## Work Model
 
-If a job is active, read job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+If a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
 Patch notes for target-model jobs may live under:
 

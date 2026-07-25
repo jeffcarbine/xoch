@@ -62,7 +62,7 @@ Common files:
 
 | File | Purpose | Created By |
 |---|---|---|
-| `.xoch/work/current.md` | Active job pointer | `open-job` |
+| `.xoch/work/current.json` | Active job pointer | `open-job` |
 | `state.md` | Job status and routing | `open-job` |
 | `spec.md` | Requirements and ACs | `spec` |
 | `plan.md` | Implementation approach | `plan` |
@@ -118,6 +118,8 @@ During install, helper scripts are copied to:
 
 Prompt files should call helpers from the installed path, such as `~/.xoch/bin/token-estimator.sh`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
 
+Treat `.xoch/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch-actions.sh job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
+
 ---
 
 ## Installer
@@ -133,6 +135,7 @@ Installer expectations:
 - copy `bin/*.sh` helpers to `~/.xoch/bin/`
 - fail when rendered prompts contain unresolved partial markers
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
+- install Claude Code commands as personal skills under `~/.claude/skills/`
 - keep command inventory aligned with `prompts/README.md`
 
 Prompt partials live under `prompts/partials/` and use `{{xoch-partial:...}}` include syntax. Keep partials small, deterministic, and documented in `prompts/README.md`.

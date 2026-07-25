@@ -5,6 +5,8 @@ description: Open or resume a Xoch job
 
 # Xoch - Open Job
 
+{{xoch-partial:workflow-boundary.md}}
+
 Open or resume a focused Xoch job.
 
 If you are unfamiliar with Xoch's job model, read:
@@ -17,9 +19,7 @@ Do not read the core prompt if this conversation already has enough Xoch context
 
 ## Process
 
-1. Check active pointers in order:
-   - `.xoch/work/current.md`
-   - `.xoch/context/current.md` for legacy jobs
+1. Use the `xoch-actions.sh job current --json` result from the workflow boundary to check target-model or legacy active work.
 2. If active work exists, summarize job ID, title, status, current phase, and next command. Ask whether to resume it or open a different job. If opening different work, recommend `xoch-pause` first.
 3. Ask only for missing metadata:
    - job ID or issue ID
@@ -36,7 +36,7 @@ Do not read the core prompt if this conversation already has enough Xoch context
    ~/.xoch/bin/generate-job-id.sh
    ```
 
-6. Prefer the deterministic helper to create job folders, `state.md`, and `.xoch/work/current.md`:
+6. Prefer the deterministic helper to create job folders, `state.md`, and `.xoch/work/current.json`:
 
    ```bash
    ~/.xoch/bin/xoch-actions.sh job open --id "[job-id]" --title "[title]" --description "[description]" --arc "[arc-id or standalone]" --doc-scope "[scope]" --doc-path "[path]"
@@ -49,7 +49,7 @@ Do not read the core prompt if this conversation already has enough Xoch context
 7. For a multi-project job:
    - Use `~/.xoch/workspace-map.json` to resolve project names; run `xoch-map` first when required projects are missing.
    - Confirm one primary repository and every participant repository with the engineer.
-   - Check `.xoch/work/current.md` in every selected repository. Never displace unrelated active work.
+   - Run `xoch-actions.sh job current --json` from every selected repository. Never displace unrelated active work.
    - Create the canonical scope in the primary job:
 
      ```bash

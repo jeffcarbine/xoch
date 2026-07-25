@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # XochDev Installer
-# Installs rendered Xoch prompts for Copilot and Codex.
+# Installs rendered Xoch prompts for Copilot, Codex, and Claude Code.
 
 set -e
 
@@ -244,6 +244,33 @@ cleanup_codex() {
     fi
 }
 
+# Clean up orphaned Claude Code skills
+cleanup_claude() {
+    CLAUDE_DIR="$HOME/.claude/skills"
+
+    if [ ! -d "$CLAUDE_DIR" ]; then
+        return
+    fi
+
+    local removed=0
+
+    for installed in "$CLAUDE_DIR"/xoch-*; do
+        if [ -d "$installed" ]; then
+            installed_name=$(basename "$installed" | sed 's/^xoch-//')
+
+            if [ "$installed_name" = "README" ] || [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+                rm -rf "$installed"
+                echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
+                removed=$((removed + 1))
+            fi
+        fi
+    done
+
+    if [ $removed -gt 0 ]; then
+        echo ""
+    fi
+}
+
 # Install for GitHub Copilot (VS Code)
 install_copilot() {
     COPILOT_DIR="$HOME/Library/Application Support/Code/User/prompts"
@@ -314,15 +341,52 @@ EOF
     done
 }
 
+# Install for Claude Code
+install_claude() {
+    CLAUDE_DIR="$HOME/.claude/skills"
+
+    if [ ! -d "$CLAUDE_DIR" ]; then
+        echo -e "${YELLOW}Claude Code skills directory not found. Creating...${NC}"
+        mkdir -p "$CLAUDE_DIR"
+    fi
+
+    echo "Installing for Claude Code..."
+
+    for prompt_file in "$PROMPTS_DIR"/*.md; do
+        if [ -f "$prompt_file" ]; then
+            filename=$(basename "$prompt_file" .md)
+            [ "$filename" = "README" ] && continue
+            skill_dir="$CLAUDE_DIR/xoch-$filename"
+
+            mkdir -p "$skill_dir"
+
+            # Xoch lifecycle commands should only run when the engineer invokes them.
+            awk '
+                NR == 1 && $0 == "---" { in_frontmatter = 1; print; next }
+                in_frontmatter && $0 == "---" {
+                    print "disable-model-invocation: true"
+                    in_frontmatter = 0
+                }
+                { print }
+            ' "$prompt_file" > "$skill_dir/SKILL.md"
+
+            echo -e "  ${GREEN}✓${NC} xoch-$filename → Claude Code"
+        fi
+    done
+}
+
 # Main installation
 echo ""
 install_helpers
 render_prompts
 cleanup_copilot
 cleanup_codex
+cleanup_claude
 install_copilot
 echo ""
 install_codex
+echo ""
+install_claude
 
 echo ""
 echo -e "${GREEN}Installation complete!${NC}"
@@ -330,6 +394,7 @@ echo ""
 echo "Usage:"
 echo "  GitHub Copilot: Type #xoch-meow in chat"
 echo "  Codex: Type \$xoch-meow in chat"
+echo "  Claude Code: Type /xoch-meow in chat"
 echo "  Cursor: Type #xoch-meow in chat (uses VS Code prompts)"
 echo ""
-echo "Note: You may need to restart VS Code or Codex for changes to take effect."
+echo "Note: You may need to restart your AI tool if its skills directory was just created."

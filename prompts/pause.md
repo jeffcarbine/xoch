@@ -5,11 +5,13 @@ description: Pause the active Xoch job
 
 # Xoch - Pause
 
+{{xoch-partial:workflow-boundary.md}}
+
 Pause the active job so another job can become current without losing progress.
 
 ## Purpose
 
-Summarize the active job, preserve its job folder, update job state, and clear `.xoch/work/current.md`.
+Summarize the active job, preserve its job folder, update job state, and clear `.xoch/work/current.json`.
 
 {{xoch-partial:project-routing.md}}
 
@@ -17,13 +19,7 @@ Summarize the active job, preserve its job folder, update job state, and clear `
 
 ### Step 1: Find Active Job
 
-Read:
-
-```text
-.xoch/work/current.md
-```
-
-If absent, check `.xoch/context/current.md` for a legacy migration job.
+Use the `xoch-actions.sh job current --json` result from the workflow boundary. It reports target-model or legacy active work.
 
 If no active job exists, say there is nothing to pause and stop.
 
@@ -64,7 +60,7 @@ If confirmed:
    ~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
    ```
 
-2. If helpers are unavailable, update `state.md` and remove `.xoch/work/current.md` only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
+2. If helpers are unavailable, update `state.md` and remove `.xoch/work/current.json` only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
 

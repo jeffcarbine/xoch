@@ -11,7 +11,7 @@ You are helping an engineer add or update project-specific glossary terms. Your 
 
 ## Your Role
 
-Work with the engineer to define new terminology, understand its context, and integrate it into the project's glossary system. This is a **sidebar operation** - it doesn't affect current job context.
+Work with the engineer to define new terminology, understand its context, and integrate it into the project's glossary system. This is a **sidebar operation**: it does not advance job or phase state, but an active job records the managed glossary workflow until wrap-up is complete.
 
 ---
 
@@ -247,6 +247,12 @@ Wait for their response.
 4. Wait for approval
 5. Create the file
 
+Before any final approval that authorizes glossary writes for an active job, run:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-glossary --stage awaiting_confirmation --pending apply_glossary_update
+```
+
 ---
 
 ### Step 4b.2: Update Glossary Index
@@ -354,6 +360,12 @@ Proceed?
 
 After completing the glossary update:
 
+For an active target-model job, complete the managed workflow after all glossary/index writes succeed and before final output or an explicitly chained command:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-glossary --next "[prior, recommended, or explicitly invoked command]"
+```
+
 **"✅ Glossary updated successfully!**
 
 **Summary:**
@@ -377,7 +389,8 @@ After completing the glossary update:
 
 ### This is a Sidebar Operation
 
-- Does **NOT** affect `.xoch/work/current.md`
+- Does **NOT** change active job identity or phase state
+- Temporarily records `xoch-glossary` in `.xoch/work/current.json` when a job is active
 - Does **NOT** create job context files
 - Does **NOT** require Job ID
 - Can be used anytime during development

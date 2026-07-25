@@ -37,6 +37,12 @@ In Codex:
 $xoch-meow
 ```
 
+In Claude Code:
+
+```text
+/xoch-meow
+```
+
 ---
 
 ## Core Workflow
@@ -78,6 +84,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-revise-plan` | Revise a job's implementation plan or remaining phases. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
 | `xoch-map` | Maintain the local workspace map and resolve project dependencies. |
+| `xoch-roadmap` | Show current progress and the contents of remaining phases. |
 | `xoch-discovery` | Resolve material unknowns before specification or implementation. |
 | `xoch-trace` | Investigate root cause for bugs or unclear symptoms before changing code. |
 | `xoch-patch` | Use a focused path for small or urgent fixes. |
@@ -98,7 +105,7 @@ your-project/
   README.md
   .xoch/
     work/
-      current.md
+      current.json
       jobs/
         job-id/
           state.md
@@ -141,6 +148,8 @@ xoch/
       engineer-git-rule.md
       next-step.md
       project-routing.md
+      workflow-boundary.md
+      managed-workflow.md
 ```
 
 During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/` and installs from that rendered prompt cache. Files under `prompts/partials/` are fragments only; they are not installed as commands. `action-choice.md` standardizes engineer ownership choices, and `next-step.md` standardizes next-command routing.
@@ -153,11 +162,23 @@ During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/`
 
 Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and reference job IDs; job folders are not nested inside arc folders.
 
+### Active Pointer And Workflows
+
+`.xoch/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
+
+```bash
+~/.xoch/bin/xoch-actions.sh job current --json
+```
+
+Do not edit the pointer manually. `state.md` keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
+
+Discovery, sidebar, trace, documentation, map, and glossary work use managed workflow actions. A new command cannot silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
+
 ### Multi-Project Jobs
 
 A job may span multiple repositories. `projects.json` is created only for those jobs and records one primary project plus one or more participants. The primary job folder owns canonical specs, plans, phases, snapshots, notes, review, and closure state. Participant repositories receive guarded mirrors of those job artifacts.
 
-Source code, git history, validation, and `.xoch/work/current.md` remain local to each repository. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
+Source code, git history, validation, and `.xoch/work/current.json` remain local to each repository. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
 
 Machine-local project paths live in `~/.xoch/workspace-map.json`. Shareable dependency names and contracts may live in `.xoch/docs/dependencies.json`; absolute paths must not.
 
@@ -286,6 +307,8 @@ Ready for next step: `xoch-next`
 `xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
 `xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open-job` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
+
+`xoch-roadmap` is a read-only progress view. It summarizes the active workflow, current phase, completed phases, upcoming phase goals/files/acceptance, risks, and the actual next command without modifying state.
 
 `xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in job `notes/` and normally route back to `xoch-spec` or `xoch-revise-spec`.
 

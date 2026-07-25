@@ -5,6 +5,8 @@ description: Capture Xoch job requirements and acceptance criteria
 
 # Xoch - Spec
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-spec` work.
 
 If you are unfamiliar with Xoch's job model, read:
@@ -21,7 +23,7 @@ If any required spec workflow detail, artifact shape, state field, arc-fit behav
 
 Do not read core prompts unless they are needed.
 
-Identify the active job from `.xoch/work/current.md` or legacy `.xoch/context/current.md`. A job ID, title, branch name, file name, or project context is not enough to draft a spec.
+Identify the active job from the workflow boundary helper result. A job ID, title, branch name, file name, or project context is not enough to draft a spec.
 
 Before drafting, require engineer-provided source requirements: a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions. If the engineer invoked `xoch-spec` without providing requirements, stop and ask them to provide the spec source. Do not invent requirements from the job name.
 

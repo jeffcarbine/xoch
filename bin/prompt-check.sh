@@ -46,4 +46,15 @@ if rg -n '\{\{xoch-partial:|\{\{[A-Za-z_][A-Za-z0-9_]*\}\}' "$temp_home/.xoch/pr
   exit 1
 fi
 
+for prompt_file in "$temp_home/.xoch/prompts"/*.md; do
+  [ -f "$prompt_file" ] || continue
+  prompt_name="$(basename "$prompt_file" .md)"
+  claude_skill="$temp_home/.claude/skills/xoch-$prompt_name/SKILL.md"
+  [ -f "$claude_skill" ] || { echo "Prompt check failed: missing Claude skill xoch-$prompt_name" >&2; exit 1; }
+  grep -q '^disable-model-invocation: true$' "$claude_skill" || {
+    echo "Prompt check failed: Claude skill xoch-$prompt_name permits model invocation" >&2
+    exit 1
+  }
+done
+
 echo "Xoch prompt and helper checks passed."

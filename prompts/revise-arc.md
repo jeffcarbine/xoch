@@ -5,6 +5,8 @@ description: Revise an existing Xoch arc
 
 # Xoch - Revise Arc
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-revise-arc` work.
 
 If you already know the standard `xoch-revise-arc` workflow from this conversation, continue from that context and do not read the core prompt.

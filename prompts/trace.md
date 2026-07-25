@@ -5,6 +5,10 @@ description: Investigate root cause for defects or unclear symptoms
 
 # Xoch - Trace
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-trace" pending="continue_trace"}}
+
 Use this token-light wrapper for normal `xoch-trace` work.
 
 If you already know the standard `xoch-trace` workflow from this conversation, continue from that context and do not read the core prompt.

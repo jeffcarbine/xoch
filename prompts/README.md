@@ -15,6 +15,7 @@ Full reference prompts live under `prompts/core/`. They are rendered to `~/.xoch
 ```text
 GitHub Copilot / Cursor: #xoch-[name]
 Codex:                  $xoch-[name]
+Claude Code:            /xoch-[name]
 ```
 
 ---
@@ -27,7 +28,7 @@ open-job -> spec -> plan -> make -> next -> review -> close-job
 
 | Command | Purpose | Primary Output |
 |---|---|---|
-| `open-job` | Open or resume job work. | `.xoch/work/current.md`, job `state.md` |
+| `open-job` | Open or resume job work. | `.xoch/work/current.json`, job `state.md` |
 | `spec` | Capture requirements, acceptance criteria, and job-versus-arc fit. | job `spec.md` |
 | `plan` | Create implementation approach and phases after confirming spec shape. | job `plan.md`, `phases.md` |
 | `make` | Implement or guide current phase work. | source changes, test evidence |
@@ -72,6 +73,7 @@ Revision commands preserve prior history and record why foundational job artifac
 |---|---|
 | `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
 | `map` | Maintain the local workspace map and resolve project dependencies. |
+| `roadmap` | Show active workflow, current progress, and upcoming phase contents without changing state. |
 | `discovery` | Resolve material product, domain, API, design, or implementation unknowns. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
@@ -104,6 +106,7 @@ pause.md
 plan.md
 resume.md
 review.md
+roadmap.md
 revise-arc.md
 revise-plan.md
 revise-spec.md
@@ -125,6 +128,9 @@ partials/response-ending.md
 partials/phase-boundary.md
 partials/context-economy.md
 partials/state-phase-index.md
+partials/project-routing.md
+partials/workflow-boundary.md
+partials/managed-workflow.md
 ```
 
 Expected core reference files:
@@ -188,6 +194,8 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 
+Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, map, and glossary a common begin/resume/complete lifecycle.
+
 ## Multi-Project Jobs
 
 Standalone jobs remain unchanged. Multi-project jobs add `.xoch/work/jobs/[job-id]/projects.json` with one primary project and one or more participants. The primary project owns canonical shared job artifacts; participant job folders are synchronized mirrors.
@@ -242,5 +250,6 @@ The installer should:
 - skip `prompts/partials/` fragments
 - render but do not install `prompts/core/` reference prompts
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
-- render prompt partials before installing prompts for Copilot or Codex
+- render prompt partials before installing prompts for Copilot, Codex, or Claude Code
+- install Claude Code commands as user-invoked personal skills under `~/.claude/skills/`
 - fail if rendered prompts contain unresolved partial markers

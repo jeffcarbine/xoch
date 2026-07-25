@@ -17,10 +17,7 @@ Use `xoch-trace` when the problem is not yet clear enough for `xoch-make` or whe
 
 ## Work Model
 
-When a job is active, read job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+When a job is active, use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Target-model trace notes live under:
 
@@ -29,6 +26,12 @@ Target-model trace notes live under:
 ```
 
 If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
+
+When a target-model job is active and `xoch-trace` is not already active, begin the workflow while preserving the job's prior next command:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow begin --job "[job-id]" --name xoch-trace --stage investigating --pending continue_trace --return "[current next command]"
+```
 
 {{xoch-partial:project-routing.md}}
 
@@ -113,6 +116,13 @@ When a job exists, write:
 
 ```text
 .xoch/work/jobs/[job-id]/notes/trace-[date].md
+```
+
+Before writing the final trace note, update the boundary, then complete it after the note exists:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-trace --stage finalizing --pending record_trace --artifact "notes/trace-[date].md"
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-trace --next "[recommended or explicitly invoked command]"
 ```
 
 Use this structure:

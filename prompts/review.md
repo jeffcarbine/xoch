@@ -5,6 +5,8 @@ description: Review completed Xoch work against acceptance, quality, tests, and 
 
 # Xoch - Review
 
+{{xoch-partial:workflow-boundary.md}}
+
 Review completed implementation before job closure.
 
 `review` is Xoch's lightweight quality gate. It borrows the useful rigor of an audit without adding RepFlow-specific QA or PR ceremony.
@@ -27,10 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Read active job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+Use the `xoch-actions.sh job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 

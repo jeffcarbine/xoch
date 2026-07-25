@@ -5,6 +5,8 @@ description: Close an Xoch arc after its related jobs are complete or intentiona
 
 # Xoch - Close Arc
 
+{{xoch-partial:workflow-boundary.md}}
+
 Close an optional arc when its related jobs are complete, intentionally parked, or moved out of the arc.
 
 ## Purpose

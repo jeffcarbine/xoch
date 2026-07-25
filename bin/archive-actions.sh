@@ -50,8 +50,13 @@ def valid_id!(id)
 end
 
 def points_to_job?(root, id)
-  pointer = File.join(root, ".xoch", "work", "current.md")
-  File.file?(pointer) && File.read(pointer).include?("**Job ID**: #{id}")
+  json_pointer = File.join(root, ".xoch", "work", "current.json")
+  if File.file?(json_pointer)
+    require "json"
+    return JSON.parse(File.read(json_pointer)).dig("job", "id") == id
+  end
+  markdown_pointer = File.join(root, ".xoch", "work", "current.md")
+  File.file?(markdown_pointer) && File.read(markdown_pointer).include?("**Job ID**: #{id}")
 end
 
 case command

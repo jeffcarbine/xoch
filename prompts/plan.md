@@ -5,6 +5,8 @@ description: Create an implementation approach and phases for a Xoch job
 
 # Xoch - Plan
 
+{{xoch-partial:workflow-boundary.md}}
+
 Use this token-light wrapper for normal `xoch-plan` work.
 
 If you are unfamiliar with Xoch's job model, read:

@@ -1,1 +1,3 @@
 Put summaries, changed paths, created snapshots, validation notes, caveats, and other details before the final command line or text-game choice. The final line of the response must be either a text-game style choice or `Ready for next step: ...`. Do not add commentary after that final line, and do not execute the next step after printing it.
+
+For a managed side workflow, record the pending stage/action before ending with a text-game choice. Do not print `Ready for next step: ...` until required wrap-up writes and `workflow complete` have succeeded. If the engineer explicitly chained another command in the same message, finish the prior workflow before executing the chained command; do not print a next-step line and then continue automatically.

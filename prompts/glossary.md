@@ -5,6 +5,10 @@ description: Add or update project glossary terms and concepts
 
 # Xoch - Glossary
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-glossary" pending="continue_glossary"}}
+
 Use this token-light wrapper for normal `xoch-glossary` work.
 
 If any required glossary workflow detail, template, setup behavior, or rule is missing, read and follow:
@@ -15,7 +19,7 @@ If any required glossary workflow detail, template, setup behavior, or rule is m
 
 Do not read the core prompt unless it is needed.
 
-This is sidebar work. Do not change the active Xoch job pointer or create job context.
+This is sidebar work. Do not change active job identity or phase state. When a job is active, only the managed workflow fields change until glossary wrap-up completes.
 
 Find `.xoch/glossaries/`. If it does not exist, ask whether to create it. If it exists, list glossary files and read only the index/target glossary needed.
 

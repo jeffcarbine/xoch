@@ -43,10 +43,7 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 ### Step 1: Identify Current Job
 
-Read active pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Then read:
 

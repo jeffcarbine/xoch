@@ -9,7 +9,7 @@ Usage:
   context-sync.sh check --scope PATH
 
 The primary repository owns canonical job context. This helper mirrors only Xoch
-job artifacts to participants; it never copies source files or current.md.
+job artifacts to participants; it never copies source files or current.json.
 EOF
 }
 

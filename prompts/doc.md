@@ -5,6 +5,10 @@ description: Create, refresh, repair, or validate Xoch project and feature docum
 
 # Xoch - Doc
 
+{{xoch-partial:workflow-boundary.md}}
+
+{{xoch-partial:managed-workflow.md command="xoch-doc" pending="continue_documentation"}}
+
 Create, refresh, repair, or validate documentation.
 
 `doc` is Xoch's documentation command. It replaces the old split between app initialization, feature initialization, and validation prompts.
@@ -27,10 +31,7 @@ It should not turn documentation into an append-only changelog.
 
 ## Work Model
 
-When a job is active, read job pointers in this order:
-
-1. `.xoch/work/current.md`
-2. `.xoch/context/current.md` for legacy migration jobs
+When a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
 For target-model jobs, documentation targets may appear in:
 
@@ -126,6 +127,12 @@ Compare documentation against source and job evidence:
 
 Summarize proposed documentation changes before editing when the change is broad.
 
+When an active-job documentation proposal needs engineer approval, record the boundary before asking:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-doc --stage awaiting_confirmation --pending apply_documentation
+```
+
 For packet work, propose the packet set first. Use project-specific packet names rather than forcing a fixed schema. The engineer may accept, rename, combine, split, add, or remove packets before writing begins.
 
 Prefer:
@@ -200,6 +207,12 @@ Recommend:
 - `xoch-make` when stale docs reveal implementation gaps
 - `xoch-glossary` when terminology needs formal definition
 - `xoch-map` when docs need local dependency/project mapping
+
+After documentation writes, status notes, accepted baselines, and multi-project synchronization are complete, finish the managed workflow before final output or an explicitly chained command:
+
+```bash
+~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-doc --next "[recommended or explicitly invoked command]"
+```
 
 ## Output
 
