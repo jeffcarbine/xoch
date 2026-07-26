@@ -1,6 +1,6 @@
 ---
 name: xoch-close-job
-description: Close completed Xoch work and archive or finalize job state
+description: Close completed Xoch work and finalize job state
 ---
 
 # Xoch - Close Job
@@ -13,7 +13,7 @@ Close a completed Xoch job.
 
 ## Purpose
 
-Verify review and documentation status, record final job history, clear the active job pointer, and archive or mark the job closed.
+Verify review and documentation status, record final job history, clear the active job pointer, and mark the job closed.
 
 Target flow:
 
@@ -164,7 +164,7 @@ last_updated: [today]
 
 For legacy migration jobs, write `closure.md` or final notes in the legacy job folder.
 
-For multi-project jobs, write closure state through the primary job and sync it before clearing pointers or archiving any mirror.
+For multi-project jobs, write closure state through the primary job and sync it before clearing pointers in any mirror.
 
 ### Step 7: Clear Active Pointer
 
@@ -185,25 +185,9 @@ Do not clear a pointer for a different active job.
 
 For multi-project jobs, run the same helper checks from every listed repository. Clear only pointers that identify this job; a participant may legitimately have no pointer or another active job.
 
-### Step 8: Archive Or Leave In Place
+### Step 8: Leave Job In Place
 
-Ask the engineer whether to:
-
-1. Leave the closed job in place
-2. Move it under an archive folder
-
-If helper scripts exist for archive/unarchive, prefer them. Otherwise, move files only with explicit confirmation.
-
-For target-model jobs, after the active pointer is cleared and the engineer chooses archive, run a dry-run first:
-
-```bash
-~/.xoch/bin/archive-actions.sh archive --kind job --id "[job-id]" --dry-run
-~/.xoch/bin/archive-actions.sh archive --kind job --id "[job-id]"
-```
-
-If the helper refuses the move, stop and report why. Do not manually bypass its path or overwrite checks.
-
-For multi-project jobs, archive participant mirrors first with `archive-actions.sh --root "[participant path]"`, then archive the canonical primary job last. Use a dry-run for every repository. Leaving all job folders in place is also valid.
+Closed jobs stay in their existing folder; marking `status: closed` in `state.md` and clearing the active pointer is sufficient. Do not move or archive job folders.
 
 ## Output
 
@@ -225,5 +209,5 @@ Follow-up: [summary]
 - Stale documentation requires either refresh or an explicit documentation waiver.
 - Do not hide skipped validation.
 - Do not clear the wrong active job pointer.
-- Synchronize final multi-project closure context before archiving the canonical scope.
+- Synchronize final multi-project closure context before clearing the canonical scope's pointer.
 - Do not move active legacy job folders during the migration unless the engineer explicitly asks.

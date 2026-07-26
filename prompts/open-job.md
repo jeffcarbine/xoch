@@ -22,24 +22,29 @@ Do not read the core prompt if this conversation already has enough Xoch context
 1. Use the `xoch-actions.sh job current --json` result from the workflow boundary to check target-model or legacy active work.
 2. If active work exists, summarize job ID, title, status, current phase, and next command. Ask whether to resume it or open a different job. If opening different work, recommend `xoch-pause` first.
 3. Ask only for missing metadata:
-   - job ID or issue ID
-   - title
-   - short description
+   - job identifier (a slug like `token-estimator-fix` or a human phrase like `Xoch Tweaks 07/25/26` — either is fine)
    - standalone or arc association
    - single-project or multi-project scope
-   - documentation target, if known
 4. If the work sounds like several related jobs, suggest `xoch-open-arc`; continue as one job if the engineer confirms.
-5. Generate or clean the job ID with:
+5. Derive the job's id and title from the one identifier given:
 
    ```bash
-   ~/.xoch/bin/generate-job-id.sh --id "[provided-id]"
+   ~/.xoch/bin/generate-job-id.sh --id "[identifier]"
    ~/.xoch/bin/generate-job-id.sh
    ```
+
+   - If the cleaned slug differs from the raw identifier, the identifier was title-like: use it verbatim as `title`, use the cleaned slug as `id`.
+   - If the cleaned slug matches the raw identifier, the identifier was already slug-shaped: derive a human title by replacing hyphens with spaces and title-casing each word.
+   - Confirm the derived pair with the engineer before proceeding:
+
+     ```text
+     Use ID `[id]` and title `[title]`? [Y]es or [N]o, I'll adjust
+     ```
 
 6. Prefer the deterministic helper to create job folders, `state.md`, and `.xoch/work/current.json`:
 
    ```bash
-   ~/.xoch/bin/xoch-actions.sh job open --id "[job-id]" --title "[title]" --description "[description]" --arc "[arc-id or standalone]" --doc-scope "[scope]" --doc-path "[path]"
+   ~/.xoch/bin/xoch-actions.sh job open --id "[job-id]" --title "[title]" --arc "[arc-id or standalone]" --doc-scope "[scope]" --doc-path "[path]"
    ```
 
    For multi-project work, run this command from the confirmed primary repository root even when `xoch-open-job` was invoked from a participant repository.

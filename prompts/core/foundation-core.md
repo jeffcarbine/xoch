@@ -117,7 +117,7 @@ Before every stateful Xoch command, enforce the shared workflow boundary. Finish
 
 - Ask before writing foundational artifacts when the prompt requires acceptance.
 - Specs require engineer-provided source requirements; never invent a spec from only a job name or project context.
-- Use text-game choices exactly when a prompt asks for them.
+- Whenever you need a decision or selection from the engineer, ask it in text-game style — bracketed single-letter options, e.g. `[Y]es`/`[N]o`, `[A]ccept`/`[M]odify`. This applies to every engineer-input request, including ad hoc questions you construct yourself, not only choices a prompt already spells out verbatim.
 - Treat phase boundaries as hard stops: `make` implements only the current phase, `next` only reviews/advances it, and neither command starts the next phase.
 - Put summaries, files, validation, caveats, and notes before the final command line.
 - The final line should be a text-game choice or `Ready for next step: ...`; after that final line, stop instead of executing the next command.
