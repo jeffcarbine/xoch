@@ -1,4 +1,4 @@
-# Xoch - Spec-Driven Development
+# Xoch
 
 **Open-source, prompt-first development workflow**
 
