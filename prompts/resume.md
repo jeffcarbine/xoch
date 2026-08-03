@@ -29,11 +29,11 @@ If no target-model current pointer exists, check `.xoch/context/current.md` for 
 
 If a job ID was supplied, use it.
 
-Otherwise list candidates from:
+Otherwise list candidates from (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
 
 ```text
-.xoch/work/jobs/
-.xoch/work/jobs/archive/
+[xoch-root]/work/jobs/
+[xoch-root]/work/jobs/archive/
 .xoch/context/
 .xoch/context/archive/
 ```
@@ -61,7 +61,7 @@ If the job is archived, ask before moving or restoring it.
 For target-model jobs, restore to:
 
 ```text
-.xoch/work/jobs/[job-id]/
+[xoch-root]/work/jobs/[job-id]/
 ```
 
 After confirmation, prefer:

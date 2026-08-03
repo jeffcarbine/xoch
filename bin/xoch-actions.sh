@@ -73,6 +73,7 @@ Usage:
   xoch-actions.sh arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
   xoch-actions.sh snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.sh phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+  xoch-actions.sh config root
 EOF
 }
 
@@ -875,6 +876,7 @@ main() {
   shift || true
 
   case "$group:$action" in
+    config:root) xoch_root ;;
     job:current) job_current "$@" ;;
     job:open) job_open "$@" ;;
     job:set-current) job_set_current "$@" ;;

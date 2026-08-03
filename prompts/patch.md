@@ -37,16 +37,16 @@ Use the normal lifecycle when:
 
 If a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
-Patch notes for target-model jobs may live under:
+Patch notes for target-model jobs may live under the active job's resolved directory (the `directory` field from `job current --json`):
 
 ```text
-.xoch/work/jobs/[job-id]/notes/patch-[date].md
+[job-directory]/notes/patch-[date].md
 ```
 
 If no job exists, ask whether to:
 
 1. open a normal job with `xoch-open-job`
-2. create a small patch note under `.xoch/work/patches/`
+2. create a small patch note under `[xoch-root]/work/patches/` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`)
 3. proceed without Xoch state and summarize in chat only
 
 {{xoch-partial:project-routing.md}}
@@ -115,13 +115,13 @@ If validation cannot run, record why.
 When useful, write:
 
 ```text
-.xoch/work/jobs/[job-id]/notes/patch-[date].md
+[job-directory]/notes/patch-[date].md
 ```
 
 or:
 
 ```text
-.xoch/work/patches/patch-[date]-[slug].md
+[xoch-root]/work/patches/patch-[date]-[slug].md
 ```
 
 Use this structure:

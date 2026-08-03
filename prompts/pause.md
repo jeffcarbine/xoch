@@ -25,11 +25,11 @@ If no active job exists, say there is nothing to pause and stop.
 
 ### Step 2: Load Job State
 
-For target-model jobs, read:
+For target-model jobs, read (using the `directory` field from `job current --json` as `[job-directory]`):
 
-- `.xoch/work/jobs/[job-id]/state.md`
-- `.xoch/work/jobs/[job-id]/spec.md` when present
-- `.xoch/work/jobs/[job-id]/phases.md` when present
+- `[job-directory]/state.md`
+- `[job-directory]/spec.md` when present
+- `[job-directory]/phases.md` when present
 
 For legacy jobs, read the corresponding `.xoch/context/[job-id]/` files without moving them.
 
@@ -60,7 +60,7 @@ If confirmed:
    ~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
    ```
 
-2. If helpers are unavailable, update `state.md` and remove `.xoch/work/current.json` only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
+2. If helpers are unavailable, update `state.md` and remove `[xoch-root]/work/current.json` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`) only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
 

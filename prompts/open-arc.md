@@ -17,16 +17,16 @@ Arcs are not required for normal Xoch work. Use them when several jobs share a l
 
 ## Work Model
 
-Arcs live under:
+Arcs live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
 
 ```text
-.xoch/work/arcs/[arc-id]/
+[xoch-root]/work/arcs/[arc-id]/
 ```
 
 Jobs remain first-class folders under:
 
 ```text
-.xoch/work/jobs/[job-id]/
+[xoch-root]/work/jobs/[job-id]/
 ```
 
 Arc membership is by job ID reference only. Do not move or nest job folders inside an arc.
@@ -45,7 +45,7 @@ If an active target-model job exists, read its `state.md` and determine whether 
 For an active standalone job:
 
 1. Summarize the job ID, title, current status, current phase, documentation targets, and next command.
-2. Check whether `.xoch/work/jobs/[job-id]/spec.md` exists.
+2. Check whether `[job-directory]/spec.md` exists (`[job-directory]` is the `directory` field from `job current --json`).
 3. If a spec exists, summarize the spec purpose, acceptance criteria clusters, and potential arc signals.
 4. Ask whether to:
    - infer the arc purpose and initial job list from the active job spec
@@ -85,7 +85,7 @@ Ask for confirmation or edits to those inferred values.
 Inspect:
 
 ```text
-.xoch/work/arcs/
+[xoch-root]/work/arcs/
 ```
 
 If the arc already exists, summarize its state and ask whether to resume it or use `xoch-revise-arc`.
@@ -107,7 +107,7 @@ If the helper is unavailable, create the files manually as below.
 Create:
 
 ```text
-.xoch/work/arcs/[arc-id]/state.md
+[xoch-root]/work/arcs/[arc-id]/state.md
 ```
 
 Use this shape:
@@ -133,7 +133,7 @@ next_command: xoch-open-job
 Create:
 
 ```text
-.xoch/work/arcs/[arc-id]/jobs.md
+[xoch-root]/work/arcs/[arc-id]/jobs.md
 ```
 
 Use this structure:
@@ -160,14 +160,14 @@ Use this structure:
 
 If an active standalone job was adopted, include it under `Active` automatically unless the engineer declined adoption.
 
-If known jobs already exist under `.xoch/work/jobs/`, ask before updating their `state.md` arc field to `[arc-id]`.
+If known jobs already exist under `[xoch-root]/work/jobs/`, ask before updating their `state.md` arc field to `[arc-id]`.
 
 ### Step 7: Write Notes
 
 Create:
 
 ```text
-.xoch/work/arcs/[arc-id]/notes.md
+[xoch-root]/work/arcs/[arc-id]/notes.md
 ```
 
 Capture:
@@ -184,7 +184,7 @@ Capture:
 If an active standalone target-model job was adopted and the engineer approved the back-reference, update:
 
 ```text
-.xoch/work/jobs/[job-id]/state.md
+[job-directory]/state.md
 ```
 
 Set:
@@ -219,7 +219,7 @@ End with:
 ```text
 Arc opened.
 Arc: [arc-id]
-Job references: .xoch/work/arcs/[arc-id]/jobs.md
+Job references: [xoch-root]/work/arcs/[arc-id]/jobs.md
 {{xoch-partial:next-step.md command="xoch-open-job"}}
 ```
 
