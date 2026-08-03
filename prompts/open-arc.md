@@ -44,9 +44,11 @@ If an active target-model job exists, read its `state.md` and determine whether 
 
 For an active standalone job:
 
+{{xoch-partial:job-evidence.md}}
+
 1. Summarize the job ID, title, current status, current phase, documentation targets, and next command.
-2. Check whether `[job-directory]/spec.md` exists (`[job-directory]` is the `directory` field from `job current --json`).
-3. If a spec exists, summarize the spec purpose, acceptance criteria clusters, and potential arc signals.
+2. Check the `spec` field it returns.
+3. If a spec exists (non-`null`), summarize the spec purpose, acceptance criteria clusters, and potential arc signals.
 4. Ask whether to:
    - infer the arc purpose and initial job list from the active job spec
    - use engineer-provided arc spec/metadata instead
@@ -104,11 +106,7 @@ If the helper is unavailable, create the files manually as below.
 
 ### Step 5: Manual Arc State Fallback
 
-Create:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/state.md
-```
+Create `state.md` under the new arc's directory, `[xoch-root]/work/arcs/[arc-id]/` (Steps 6-7 below create files in this same directory).
 
 Use this shape:
 
@@ -130,11 +128,7 @@ next_command: xoch-open-job
 
 ### Step 6: Write Job References
 
-Create:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/jobs.md
-```
+Create `jobs.md` in the same arc directory.
 
 Use this structure:
 
@@ -164,11 +158,7 @@ If known jobs already exist under `[xoch-root]/work/jobs/`, ask before updating 
 
 ### Step 7: Write Notes
 
-Create:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/notes.md
-```
+Create `notes.md` in the same arc directory.
 
 Capture:
 
@@ -181,11 +171,7 @@ Capture:
 
 ### Step 8: Update Adopted Job State
 
-If an active standalone target-model job was adopted and the engineer approved the back-reference, update:
-
-```text
-[job-directory]/state.md
-```
+If an active standalone target-model job was adopted and the engineer approved the back-reference, update `state` (from Step 1's `job evidence` call).
 
 Set:
 

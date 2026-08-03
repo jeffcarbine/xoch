@@ -41,16 +41,16 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Identify Current Job
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+{{xoch-partial:job-evidence.md}}
 
 Then load:
 
-- `state.md` when present
-- `spec.md`
-- `plan.md`
-- `phases.md` or only the affected phase sections when state already has a useful phase index
-- completed phase snapshots
-- recent revision notes
+- `state` when returned
+- `spec`
+- `plan`
+- `phases`, or only the affected phase sections, when state already has a useful phase index
+- completed phase snapshots (`current_phase_snapshot`, or list `snapshots_dir`)
+- recent files under `revisions_dir`
 
 If no active job exists, ask for the job ID.
 
@@ -100,11 +100,7 @@ Classify phases as:
 
 ### Step 5: Write Revision Note
 
-Create:
-
-```text
-.xoch/work/jobs/[job-id]/revisions/plan-[date].md
-```
+Create `plan-[date].md` under `revisions_dir` (from Step 1's `job evidence` call).
 
 Use this structure:
 

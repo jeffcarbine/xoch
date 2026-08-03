@@ -17,12 +17,14 @@ Use `xoch-trace` when the problem is not yet clear enough for `xoch-make` or whe
 
 ## Work Model
 
-When a job is active, use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+When a job is active:
 
-Target-model trace notes live under:
+{{xoch-partial:job-evidence.md}}
+
+Target-model trace notes live under its `notes_dir`:
 
 ```text
-.xoch/work/jobs/[job-id]/notes/trace-[date].md
+[notes-dir]/trace-[date].md
 ```
 
 If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
@@ -112,11 +114,7 @@ Do not overstate certainty.
 
 ### Step 6: Write Trace Note
 
-When a job exists, write:
-
-```text
-.xoch/work/jobs/[job-id]/notes/trace-[date].md
-```
+When a job exists, write to `[notes-dir]/trace-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
 
 Before writing the final trace note, update the boundary, then complete it after the note exists:
 

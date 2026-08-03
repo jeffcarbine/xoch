@@ -36,19 +36,11 @@ Arc membership is represented by job ID references. Job folders remain under `.x
 
 ### Step 1: Identify Arc
 
-If the engineer provides an arc ID, use it. Otherwise list arcs under:
+If the engineer provides an arc ID, use it. Otherwise list arcs under `[xoch-root]/work/arcs/` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`).
 
-```text
-.xoch/work/arcs/
-```
+{{xoch-partial:arc-evidence.md}}
 
-Then load:
-
-- `state.md`
-- `jobs.md`
-- `notes.md`
-- recent files under `revisions/`
-- job `state.md` files for member jobs only when membership changes
+{{xoch-partial:arc-context.md}}
 
 ### Step 2: Identify The Revision
 
@@ -79,11 +71,7 @@ If job implementation order changed, route affected jobs to `xoch-revise-plan`.
 
 ### Step 4: Write Revision Note
 
-Create:
-
-```text
-.xoch/work/arcs/[arc-id]/revisions/arc-[date].md
-```
+Create `arc-[date].md` under `revisions_dir` (from Step 1's `arc evidence` call).
 
 Use this structure:
 
