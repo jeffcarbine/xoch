@@ -37,10 +37,12 @@ Use the normal lifecycle when:
 
 If a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary.
 
-Patch notes for target-model jobs may live under the active job's resolved directory (the `directory` field from `job current --json`):
+{{xoch-partial:job-evidence.md}}
+
+Patch notes for target-model jobs may live under its `notes_dir`:
 
 ```text
-[job-directory]/notes/patch-[date].md
+[notes-dir]/patch-[date].md
 ```
 
 If no job exists, ask whether to:
@@ -115,7 +117,7 @@ If validation cannot run, record why.
 When useful, write:
 
 ```text
-[job-directory]/notes/patch-[date].md
+[notes-dir]/patch-[date].md
 ```
 
 or:

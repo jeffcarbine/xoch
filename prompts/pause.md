@@ -25,11 +25,15 @@ If no active job exists, say there is nothing to pause and stop.
 
 ### Step 2: Load Job State
 
-For target-model jobs, read (using the `directory` field from `job current --json` as `[job-directory]`):
+For target-model jobs:
 
-- `[job-directory]/state.md`
-- `[job-directory]/spec.md` when present
-- `[job-directory]/phases.md` when present
+{{xoch-partial:job-evidence.md}}
+
+Read:
+
+- `state`
+- `spec` when returned (not `null`)
+- `phases` when returned (not `null`)
 
 For legacy jobs, read the corresponding `.xoch/context/[job-id]/` files without moving them.
 

@@ -39,14 +39,16 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Identify Job
 
-Load:
+{{xoch-partial:job-evidence.md}}
 
-- `state.md`
-- `spec.md`
-- `plan.md`
-- `phases.md` only when state and snapshots do not establish implementation completion clearly
-- phase snapshots
-- `review.md`
+Then load:
+
+- `state`
+- `spec`
+- `plan`
+- `phases` only when state and snapshots do not establish implementation completion clearly
+- phase snapshots (`current_phase_snapshot`, or list `snapshots_dir` for the full set)
+- `review`
 - documentation targets
 - git status
 
@@ -109,11 +111,7 @@ If unrelated worktree changes exist, mention them and avoid including them in th
 
 ### Step 6: Write Closure Notes
 
-For target-model jobs, write:
-
-```text
-.xoch/work/jobs/[job-id]/closure.md
-```
+For target-model jobs, write `closure.md` under the `job_directory` field returned by `job evidence`.
 
 Use this structure:
 

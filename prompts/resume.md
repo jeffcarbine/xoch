@@ -42,11 +42,15 @@ Label legacy jobs clearly as legacy.
 
 ### Step 3: Load Job Files
 
-For target-model jobs, read:
+For target-model jobs:
 
-- `state.md`
-- `spec.md`, `plan.md`, or `phases.md` only when `state.md` does not contain enough current-phase context
-- recent phase snapshots when needed
+{{xoch-partial:job-evidence.md}}
+
+Read:
+
+- `state`
+- `spec`, `plan`, or `phases` (whichever are returned) only when `state` does not contain enough current-phase context
+- `current_phase_snapshot`, or list `snapshots_dir` for older ones, when needed
 
 For legacy jobs, read the equivalent legacy context files.
 

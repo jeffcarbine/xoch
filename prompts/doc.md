@@ -25,21 +25,17 @@ Keep README and Xoch documentation current-state oriented. `xoch-doc` may create
 - feature READMEs
 - `.xoch/docs/` packets
 - `.xoch/glossaries/`
-- job documentation targets from `[job-directory]/state.md`
+- job documentation targets from the `state` file returned by `job evidence`
 
 It should not turn documentation into an append-only changelog.
 
 ## Work Model
 
-When a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary. `[job-directory]` below is that result's `directory` field, not a literal `.xoch/work/jobs/[job-id]/` path.
+When a job is active:
 
-For target-model jobs, documentation targets may appear in:
+{{xoch-partial:job-evidence.md}}
 
-```text
-[job-directory]/state.md
-[job-directory]/spec.md
-[job-directory]/review.md
-```
+For target-model jobs, documentation targets may appear in the `state`, `spec`, and `review` files it returns.
 
 Legacy migration jobs may still use `.xoch/context/`. Continue them in place and do not move them automatically.
 
@@ -188,13 +184,7 @@ When a job is active, record one of:
 - waived
 - unknown
 
-For target-model jobs, update or append to the relevant job file:
-
-```text
-[job-directory]/notes/
-[job-directory]/review.md
-[job-directory]/closure.md
-```
+For target-model jobs, update or append to the relevant job file returned by `job evidence`: `notes_dir`, `review`, `closure`.
 
 For legacy migration jobs, record equivalent notes in the legacy job folder when useful.
 

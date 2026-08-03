@@ -39,14 +39,16 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Load Job Evidence
 
-Read:
+{{xoch-partial:job-evidence.md}}
 
-- `state.md`
-- `spec.md`
-- `plan.md`
-- `phases.md` only when state and snapshots do not establish phase completion clearly
-- completed phase snapshots
-- `review.md` if it already exists
+Then read:
+
+- `state`
+- `spec`
+- `plan`
+- `phases` only when state and snapshots do not establish phase completion clearly
+- completed phase snapshots (`current_phase_snapshot`, or list `snapshots_dir` for the full set)
+- `review` if it already exists (non-`null`)
 - documentation targets from job state/spec
 - relevant README or `.xoch/docs/` files when documentation freshness is in scope
 - git status and diff
@@ -144,11 +146,7 @@ Use one of these statuses:
 
 ### Step 7: Write Review Result
 
-For target-model jobs, write:
-
-```text
-.xoch/work/jobs/[job-id]/review.md
-```
+For target-model jobs, write `review.md` under the `job_directory` field returned by `job evidence`.
 
 Use this structure:
 
