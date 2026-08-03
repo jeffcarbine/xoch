@@ -164,7 +164,15 @@ Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and refer
 
 ### Storage Location
 
-By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` in `~/.xoch/config.json` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name):
+By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). Use `./config.sh` from a clone of this repo to set it:
+
+```bash
+./config.sh set storage.mode centralized   # or: in-repo
+./config.sh show                           # print the resolved config
+./config.sh                                # interactive mode
+```
+
+This writes `~/.xoch/config.json`, which you can also edit by hand if `config.sh` isn't available:
 
 ```json
 {
