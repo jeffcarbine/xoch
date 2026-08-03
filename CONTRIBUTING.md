@@ -12,7 +12,7 @@ Use Xoch to work on Xoch:
 xoch-open-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
 ```
 
-For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `~/.xoch/config.json` sets `storage.mode` to `centralized`. Resolve it with `~/.xoch/bin/xoch-actions.sh config root`.
+For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`./config.sh set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `~/.xoch/bin/xoch-actions.sh config root`.
 
 ---
 
