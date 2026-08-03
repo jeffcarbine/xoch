@@ -74,6 +74,8 @@ Usage:
   xoch-actions.sh snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.sh phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
   xoch-actions.sh config root
+  xoch-actions.sh job evidence --job ID [--json]
+  xoch-actions.sh arc evidence --arc ID [--json]
 EOF
 }
 
@@ -216,6 +218,97 @@ else
   puts "active_workflow: #{data.dig("workflow", "name") || "none"}"
   puts "workflow_stage: #{data.dig("workflow", "stage") || "none"}"
   puts "pointer: #{pointer}"
+end
+RUBY
+}
+
+job_evidence() {
+  local job_id="" mode="text"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --job) job_id="$2"; shift 2 ;;
+      --json) mode="json"; shift ;;
+      *) die "unknown job evidence option: $1" ;;
+    esac
+  done
+  [ -n "$job_id" ] || die "job evidence requires --job"
+  local job_dir="$(xoch_root)/work/jobs/$job_id"
+  [ -f "$job_dir/state.md" ] || die "job not found: $job_id"
+
+  ruby -rjson - "$job_dir" "$mode" <<'RUBY'
+job_dir, mode = ARGV
+
+def scalar_state(path)
+  File.readlines(path).each_with_object({}) do |line, data|
+    data[Regexp.last_match(1)] = Regexp.last_match(2).strip if line =~ /^([A-Za-z0-9_]+):\s*(.*)$/
+  end
+end
+
+def existing(path)
+  File.file?(path) ? path : nil
+end
+
+state = scalar_state(File.join(job_dir, "state.md"))
+current_phase = state["current_phase"]
+current_phase = nil if current_phase.nil? || current_phase.empty? || current_phase == "null"
+
+result = {
+  "job_directory" => job_dir,
+  "state" => File.join(job_dir, "state.md"),
+  "spec" => existing(File.join(job_dir, "spec.md")),
+  "plan" => existing(File.join(job_dir, "plan.md")),
+  "phases" => existing(File.join(job_dir, "phases.md")),
+  "review" => existing(File.join(job_dir, "review.md")),
+  "closure" => existing(File.join(job_dir, "closure.md")),
+  "current_phase" => current_phase,
+  "current_phase_snapshot" => current_phase ? existing(File.join(job_dir, "snapshots", "phase-#{current_phase}.md")) : nil,
+  "current_phase_body" => current_phase ? existing(File.join(job_dir, "phases", "phase-#{current_phase}.md")) : nil,
+  "notes_dir" => File.join(job_dir, "notes"),
+  "snapshots_dir" => File.join(job_dir, "snapshots"),
+  "revisions_dir" => File.join(job_dir, "revisions")
+}
+
+if mode == "json"
+  puts JSON.pretty_generate(result)
+else
+  result.each { |key, value| puts "#{key}: #{value.nil? ? "(not found)" : value}" }
+end
+RUBY
+}
+
+arc_evidence() {
+  local arc_id="" mode="text"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --arc) arc_id="$2"; shift 2 ;;
+      --json) mode="json"; shift ;;
+      *) die "unknown arc evidence option: $1" ;;
+    esac
+  done
+  [ -n "$arc_id" ] || die "arc evidence requires --arc"
+  local arc_dir="$(xoch_root)/work/arcs/$arc_id"
+  [ -f "$arc_dir/state.md" ] || die "arc not found: $arc_id"
+
+  ruby -rjson - "$arc_dir" "$mode" <<'RUBY'
+arc_dir, mode = ARGV
+
+def existing(path)
+  File.file?(path) ? path : nil
+end
+
+result = {
+  "arc_directory" => arc_dir,
+  "state" => File.join(arc_dir, "state.md"),
+  "jobs" => existing(File.join(arc_dir, "jobs.md")),
+  "notes" => existing(File.join(arc_dir, "notes.md")),
+  "closure" => existing(File.join(arc_dir, "closure.md")),
+  "revisions_dir" => File.join(arc_dir, "revisions")
+}
+
+if mode == "json"
+  puts JSON.pretty_generate(result)
+else
+  result.each { |key, value| puts "#{key}: #{value.nil? ? "(not found)" : value}" }
 end
 RUBY
 }
@@ -878,6 +971,8 @@ main() {
   case "$group:$action" in
     config:root) xoch_root ;;
     job:current) job_current "$@" ;;
+    job:evidence) job_evidence "$@" ;;
+    arc:evidence) arc_evidence "$@" ;;
     job:open) job_open "$@" ;;
     job:set-current) job_set_current "$@" ;;
     state:set) state_set "$@" ;;
