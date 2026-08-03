@@ -39,15 +39,15 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Identify Current Job
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+{{xoch-partial:job-evidence.md}}
 
 Then load:
 
-- `state.md` when present
-- `spec.md`
-- `plan.md`
-- `phases.md`
-- recent revision notes
+- `state` when returned
+- `spec`
+- `plan`
+- `phases`
+- recent files under `revisions_dir`
 - relevant documentation target files when the spec change affects docs
 
 If no active job exists, ask for the job ID.
@@ -82,11 +82,7 @@ If the arc association changes, recommend `xoch-revise-arc` as well.
 
 ### Step 4: Write Revision Note
 
-Create:
-
-```text
-.xoch/work/jobs/[job-id]/revisions/spec-[date].md
-```
+Create `spec-[date].md` under `revisions_dir` (from Step 1's `job evidence` call).
 
 Use this structure:
 

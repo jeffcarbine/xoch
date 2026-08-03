@@ -39,13 +39,9 @@ If the engineer provides an arc ID, use it. Otherwise list arcs under:
 [xoch-root]/work/arcs/
 ```
 
-Load:
+{{xoch-partial:arc-evidence.md}}
 
-- `state.md`
-- `jobs.md`
-- `notes.md`
-- recent revision notes
-- job `state.md` files for referenced job IDs when available
+{{xoch-partial:arc-context.md}}
 
 ### Step 2: Summarize Job Membership
 
@@ -76,11 +72,7 @@ If the arc affected shared docs, feature READMEs, or `.xoch/docs/`, ask whether 
 
 ### Step 5: Write Closure Notes
 
-Create:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/closure.md
-```
+Create `closure.md` under `arc_directory` (from Step 1's `arc evidence` call).
 
 Use this structure:
 
@@ -119,11 +111,7 @@ Use this structure:
 
 ### Step 6: Mark Arc Closed
 
-Update:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/state.md
-```
+Update `state` (from the same `arc evidence` call).
 
 Set:
 

@@ -27,7 +27,9 @@ If a managed workflow is active, report its name, stage, pending action, artifac
 
 ### Step 2: Load Compact Job State
 
-For target-model jobs, read `state.md` first. Use its phase index, current-phase fields, status, risks, unresolved questions, and next command when they are sufficient.
+{{xoch-partial:job-evidence.md}}
+
+For target-model jobs, read `state` first. Use its phase index, current-phase fields, status, risks, unresolved questions, and next command when they are sufficient.
 
 For legacy jobs, use the existing tracker and milestone files in place without migrating them.
 
@@ -35,7 +37,7 @@ For legacy jobs, use the existing tracker and milestone files in place without m
 
 ### Step 3: Load Remaining Phase Details
 
-Read only the current and upcoming sections of `phases.md` or the corresponding `phases/phase-[N].md` files. Do not reread completed snapshots, the full spec, or the full plan unless compact state and phase sections cannot explain the roadmap accurately.
+Read only the current and upcoming sections of `phases` (from Step 2's `job evidence` call) or `current_phase_body`. Do not reread completed snapshots, the full spec, or the full plan unless compact state and phase sections cannot explain the roadmap accurately.
 
 For each remaining phase, capture:
 
