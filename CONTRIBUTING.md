@@ -12,7 +12,7 @@ Use Xoch to work on Xoch:
 xoch-open-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
 ```
 
-For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target `.xoch/work/`.
+For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `~/.xoch/config.json` sets `storage.mode` to `centralized`. Resolve it with `~/.xoch/bin/xoch-actions.sh config root`.
 
 ---
 
@@ -52,17 +52,19 @@ When adding or changing prompts:
 
 ## Work Files
 
-Target-model job files live under:
+Target-model job files live under the resolved Xoch storage root:
 
 ```text
-.xoch/work/jobs/[job-id]/
+[xoch-root]/work/jobs/[job-id]/
 ```
+
+`[xoch-root]` is `.xoch` by default (in-repo), or `~/.xoch/projects/<slug>` when centralized storage is enabled — see `bin/xoch-actions.sh`'s `xoch_root()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch-actions.sh config root` instead.
 
 Common files:
 
 | File | Purpose | Created By |
 |---|---|---|
-| `.xoch/work/current.json` | Active job pointer | `open-job` |
+| `[xoch-root]/work/current.json` | Active job pointer | `open-job` |
 | `state.md` | Job status and routing | `open-job` |
 | `spec.md` | Requirements and ACs | `spec` |
 | `plan.md` | Implementation approach | `plan` |
@@ -75,7 +77,7 @@ Common files:
 Arcs live under:
 
 ```text
-.xoch/work/arcs/[arc-id]/
+[xoch-root]/work/arcs/[arc-id]/
 ```
 
 Arcs reference job IDs in `jobs.md`; they do not contain job folders.
@@ -118,7 +120,7 @@ During install, helper scripts are copied to:
 
 Prompt files should call helpers from the installed path, such as `~/.xoch/bin/token-estimator.sh`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
 
-Treat `.xoch/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch-actions.sh job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
+Treat `[xoch-root]/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch-actions.sh job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
 
 ---
 

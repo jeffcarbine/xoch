@@ -162,6 +162,21 @@ During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/`
 
 Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and reference job IDs; job folders are not nested inside arc folders.
 
+### Storage Location
+
+By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` in `~/.xoch/config.json` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name):
+
+```json
+{
+  "version": 1,
+  "storage": { "mode": "centralized" }
+}
+```
+
+Centralized mode leaves zero files in the repo — not even a gitignored `.xoch/` folder. The setting is global and applies to every project; there is no per-project override, and no automatic migration when switching modes. Missing or invalid config falls back to the default in-repo behavior.
+
+Resolve the active root directly with `~/.xoch/bin/xoch-actions.sh config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
+
 ### Active Pointer And Workflows
 
 `.xoch/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
@@ -178,7 +193,7 @@ Discovery, sidebar, trace, documentation, map, and glossary work use managed wor
 
 A job may span multiple repositories. `projects.json` is created only for those jobs and records one primary project plus one or more participants. The primary job folder owns canonical specs, plans, phases, snapshots, notes, review, and closure state. Participant repositories receive guarded mirrors of those job artifacts.
 
-Source code, git history, validation, and `.xoch/work/current.json` remain local to each repository. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
+Source code, git history, validation, and the active pointer remain project-specific and are never synchronized between repositories. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
 
 Machine-local project paths live in `~/.xoch/workspace-map.json`. Shareable dependency names and contracts may live in `.xoch/docs/dependencies.json`; absolute paths must not.
 
@@ -207,7 +222,7 @@ Each job has a `state.md` file that records the active workflow state:
 
 Typical state includes the job ID, title, optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
 
-New work should use `.xoch/work/`. Older migration-era jobs may still exist under `.xoch/context/`; Xoch prompts should not move those legacy jobs unless the engineer explicitly asks.
+New work should use the resolved Xoch storage root's `work/` directory (see [Storage Location](#storage-location)). Older migration-era jobs may still exist under `.xoch/context/` (always repository-local, unaffected by the storage-location setting); Xoch prompts should not move those legacy jobs unless the engineer explicitly asks.
 
 ### Revision Commands
 
@@ -235,6 +250,8 @@ Choose what your team wants to share:
 ```
 
 For solo work, ignoring all of `.xoch/` is also valid.
+
+If `storage.mode` is set to `centralized` (see [Storage Location](#storage-location)), none of this is needed — job/arc state lives entirely under `~/.xoch/projects/<project-slug>/`, so there's nothing under `.xoch/work/` in the repo to ignore in the first place.
 
 ---
 
