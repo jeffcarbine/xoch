@@ -321,8 +321,6 @@ Ready for next step: `xoch-next`
 ## Documentation
 
 - [prompts/README.md](prompts/README.md) - Command inventory and prompt behavior.
-- [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) - System model and workflow design.
-- [docs/XOCH_REPFLOW_EVOLUTION_PLAN.md](docs/XOCH_REPFLOW_EVOLUTION_PLAN.md) - Reference plan for this workflow evolution.
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidance.
 
 ---
