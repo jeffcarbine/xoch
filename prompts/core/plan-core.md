@@ -43,12 +43,12 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 ### Step 1: Identify Current Job
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+{{xoch-partial:job-evidence.md}}
 
 Then read:
 
-- `state.md` when present
-- `spec.md`
+- `state` when returned
+- `spec`
 - relevant documentation target README/docs
 
 {{xoch-partial:context-economy.md}}
@@ -152,11 +152,7 @@ Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state 
 
 ### Step 8: Write Accepted Plan
 
-Write:
-
-```text
-.xoch/work/jobs/[job-id]/plan.md
-```
+Write `plan.md` under the `job_directory` from Step 1's `job evidence` call.
 
 Use this structure:
 
@@ -215,11 +211,7 @@ Budget: 7,000 tokens
 
 ### Step 9: Write Accepted Phases
 
-Write:
-
-```text
-.xoch/work/jobs/[job-id]/phases.md
-```
+Write `phases.md` under the same `job_directory`.
 
 Use this structure:
 

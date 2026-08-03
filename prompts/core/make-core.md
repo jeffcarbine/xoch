@@ -39,13 +39,9 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Identify Current Job
 
-Read the active job pointer. For target-model jobs, load:
+{{xoch-partial:job-evidence.md}}
 
-- `state.md`
-- `spec.md`, `plan.md`, and `phases.md` only when `state.md` does not contain enough current-phase context
-- the current phase section from `phases.md` or `phases/phase-[N].md` when exact phase text is needed
-
-For legacy migration jobs, load the equivalent legacy files such as `spec.md`, `plan.md`, and `milestones.md`.
+{{xoch-partial:current-phase-context.md}}
 
 If there is no active job, ask the engineer to run `xoch-open-job` or provide the job ID.
 
@@ -144,13 +140,7 @@ When editing:
 - avoid adding QA or PR process ceremony
 - never move or copy implementation source between participating repositories
 
-If the job is target-model, append useful implementation notes to:
-
-```text
-.xoch/work/jobs/[job-id]/notes/
-```
-
-or the current phase file when it exists.
+If the job is target-model, append useful implementation notes to `notes_dir` (from Step 1's `job evidence` call), or the current phase file (`current_phase_body`) when it exists.
 
 For legacy migration jobs, add notes to the existing legacy job folder when useful.
 

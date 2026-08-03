@@ -39,14 +39,11 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 ### Step 1: Identify Current Phase
 
-Load the active job and read:
+{{xoch-partial:job-evidence.md}}
 
-- `state.md`
-- `spec.md`, `plan.md`, and `phases.md` only when `state.md` does not contain enough current-phase context
-- the current phase section from `phases.md` or current `phases/phase-[N].md` when exact phase text is needed
-- notes or evidence from recent `xoch-make` work
+{{xoch-partial:current-phase-context.md}}
 
-For legacy migration jobs, read the equivalent legacy files.
+Also check notes or evidence from recent `xoch-make` work, under `notes_dir`.
 
 If the current phase is unclear, ask the engineer which phase should be reviewed.
 
@@ -169,11 +166,7 @@ For target-model jobs, prefer deterministic helpers for file/path mechanics:
 
 If there are no more phases, omit the `--next-*` arguments so the helper routes state to `xoch-review`.
 
-After helper use, replace placeholder snapshot content with the actual summary/evidence. If helpers are unavailable, create or update:
-
-```text
-.xoch/work/jobs/[job-id]/snapshots/phase-[N].md
-```
+After helper use, replace placeholder snapshot content with the actual summary/evidence. If helpers are unavailable, create or update `phase-[N].md` under `snapshots_dir` (from Step 1's `job evidence` call).
 
 Use this structure:
 

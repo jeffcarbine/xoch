@@ -242,11 +242,7 @@ Do not write `spec.md` or mark spec state complete until the engineer chooses `[
 
 ### Step 8: Write Accepted Spec
 
-Write:
-
-```text
-.xoch/work/jobs/[job-id]/spec.md
-```
+Write `spec.md` under the job directory (`~/.xoch/bin/xoch-actions.sh job evidence --job "[job-id]" --json`'s `job_directory` field).
 
 Use this structure:
 

@@ -17,12 +17,14 @@ Use `xoch-discovery` for product, domain, design, API, dependency, workflow, com
 
 ## Work Model
 
-When a job is active, use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+When a job is active:
 
-Target-model discovery notes live under:
+{{xoch-partial:job-evidence.md}}
+
+Target-model discovery notes live under its `notes_dir`:
 
 ```text
-.xoch/work/jobs/[job-id]/notes/discovery-[topic]-[date].md
+[notes-dir]/discovery-[topic]-[date].md
 ```
 
 If no job exists, discovery may continue in chat. Ask before writing an ad hoc note or opening a job.
@@ -153,11 +155,7 @@ If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`
 
 ### Step 8: Record Accepted Discovery
 
-When a job exists, write:
-
-```text
-.xoch/work/jobs/[job-id]/notes/discovery-[topic]-[date].md
-```
+When a job exists, write to `[notes-dir]/discovery-[topic]-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
 
 Normalize the topic portion when needed with `~/.xoch/bin/generate-job-id.sh --id "[topic]"`. If that note path already exists, add a short numeric suffix rather than overwriting prior discovery.
 
