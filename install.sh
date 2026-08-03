@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # XochDev Installer
-# Installs rendered Xoch prompts for Copilot, Codex, and Claude Code.
+# Installs rendered Xoch prompts for Copilot, Codex, Claude Code, and Kiro.
 
 set -e
 
@@ -271,6 +271,33 @@ cleanup_claude() {
     fi
 }
 
+# Clean up orphaned Kiro steering files
+cleanup_kiro() {
+    KIRO_DIR="$HOME/.kiro/steering"
+
+    if [ ! -d "$KIRO_DIR" ]; then
+        return
+    fi
+
+    local removed=0
+
+    for installed in "$KIRO_DIR"/xoch-*.md; do
+        if [ -f "$installed" ]; then
+            installed_name=$(basename "$installed" .md | sed 's/^xoch-//')
+
+            if [ "$installed_name" = "README" ] || [ ! -f "$PROMPTS_DIR/$installed_name.md" ]; then
+                rm "$installed"
+                echo -e "  ${YELLOW}✗${NC} Removed orphaned: xoch-$installed_name"
+                removed=$((removed + 1))
+            fi
+        fi
+    done
+
+    if [ $removed -gt 0 ]; then
+        echo ""
+    fi
+}
+
 # Install for GitHub Copilot (VS Code)
 install_copilot() {
     COPILOT_DIR="$HOME/Library/Application Support/Code/User/prompts"
@@ -375,6 +402,38 @@ install_claude() {
     done
 }
 
+# Install for Kiro IDE
+install_kiro() {
+    KIRO_DIR="$HOME/.kiro/steering"
+
+    if [ ! -d "$KIRO_DIR" ]; then
+        echo -e "${YELLOW}Kiro steering directory not found. Creating...${NC}"
+        mkdir -p "$KIRO_DIR"
+    fi
+
+    echo "Installing for Kiro..."
+
+    for prompt_file in "$PROMPTS_DIR"/*.md; do
+        if [ -f "$prompt_file" ]; then
+            filename=$(basename "$prompt_file" .md)
+            [ "$filename" = "README" ] && continue
+            target="$KIRO_DIR/xoch-$filename.md"
+
+            # Kiro only surfaces a steering file as an on-demand slash command with inclusion: manual.
+            awk '
+                NR == 1 && $0 == "---" { in_frontmatter = 1; print; next }
+                in_frontmatter && $0 == "---" {
+                    print "inclusion: manual"
+                    in_frontmatter = 0
+                }
+                { print }
+            ' "$prompt_file" > "$target"
+
+            echo -e "  ${GREEN}✓${NC} xoch-$filename → Kiro"
+        fi
+    done
+}
+
 # Main installation
 echo ""
 install_helpers
@@ -382,11 +441,14 @@ render_prompts
 cleanup_copilot
 cleanup_codex
 cleanup_claude
+cleanup_kiro
 install_copilot
 echo ""
 install_codex
 echo ""
 install_claude
+echo ""
+install_kiro
 
 echo ""
 echo -e "${GREEN}Installation complete!${NC}"
@@ -396,5 +458,6 @@ echo "  GitHub Copilot: Type #xoch-meow in chat"
 echo "  Codex: Type \$xoch-meow in chat"
 echo "  Claude Code: Type /xoch-meow in chat"
 echo "  Cursor: Type #xoch-meow in chat (uses VS Code prompts)"
+echo "  Kiro: Type #xoch-meow in chat"
 echo ""
 echo "Note: You may need to restart your AI tool if its skills directory was just created."
