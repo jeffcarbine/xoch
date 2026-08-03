@@ -115,9 +115,50 @@ cmd_show() {
     print_config
 }
 
+run_interactive() {
+    echo "Xoch Config"
+    echo "==========="
+    echo ""
+
+    local current
+    current="$(read_storage_mode)"
+    echo "Current storage.mode: $current"
+    echo ""
+    echo "Choose storage mode:"
+    echo "  1) in-repo — job/arc state lives in .xoch/work/ inside each repo (default)"
+    echo "  2) centralized — job/arc state lives under ~/.xoch/projects/<slug>/work/"
+    echo "  3) leave unchanged"
+    echo ""
+    read -r -p "Selection [1/2/3]: " choice
+
+    local target=""
+    case "$choice" in
+        1) target="in-repo" ;;
+        2) target="centralized" ;;
+        3|"")
+            echo "Left unchanged."
+            return
+            ;;
+        *)
+            echo -e "${RED}Error: invalid selection: $choice${NC}" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ "$target" = "$current" ]; then
+        echo "Already $target; nothing changed."
+        return
+    fi
+
+    write_storage_mode "$target"
+    echo -e "${GREEN}✓${NC} storage.mode set to $target"
+    print_migration_warning
+}
+
 usage() {
     cat <<EOF
 Usage:
+  ./config.sh                          Interactive mode
   ./config.sh show                     Print resolved config
   ./config.sh get storage.mode         Print current storage.mode
   ./config.sh set storage.mode VALUE   Set storage.mode (in-repo|centralized)
@@ -125,6 +166,9 @@ EOF
 }
 
 case "${1:-}" in
+    "")
+        run_interactive
+        ;;
     show)
         cmd_show
         ;;
