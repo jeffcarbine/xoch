@@ -23,6 +23,33 @@ slugify() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//'
 }
 
+# Resolve the Xoch storage root for the current project directory.
+# Prints ".xoch" (relative, in-repo mode) by default, or an absolute
+# "$HOME/.xoch/projects/<slug>" path when ~/.xoch/config.json sets
+# storage.mode to "centralized". Any missing/invalid config falls back
+# to in-repo so existing projects are unaffected.
+xoch_root() {
+  local config="$HOME/.xoch/config.json"
+  local mode="in-repo"
+  if [ -f "$config" ]; then
+    mode="$(ruby -rjson -e '
+      begin
+        data = JSON.parse(File.read(ARGV[0]))
+        m = data.dig("storage", "mode")
+        print(%w[in-repo centralized].include?(m) ? m : "in-repo")
+      rescue StandardError
+        print "in-repo"
+      end
+    ' "$config")"
+  fi
+
+  if [ "$mode" = "centralized" ]; then
+    echo "$HOME/.xoch/projects/$(slugify "$(basename "$PWD")")"
+  else
+    echo ".xoch"
+  fi
+}
+
 generate_id() {
   if [ -n "${1:-}" ]; then
     "$SCRIPT_DIR/generate-job-id.sh" --id "$1"
@@ -46,21 +73,23 @@ Usage:
   xoch-actions.sh arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
   xoch-actions.sh snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.sh phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+  xoch-actions.sh config root
 EOF
 }
 
 require_project_root() {
-  [ -d ".xoch" ] || mkdir -p ".xoch"
+  mkdir -p "$(xoch_root)"
 }
 
 job_current() {
   local mode="text"
   [ "${1:-}" = "--json" ] && mode="json"
 
-  ruby -rjson -rfileutils -rtime - "$mode" <<'RUBY'
+  ruby -rjson -rfileutils -rtime - "$mode" "$(xoch_root)" <<'RUBY'
 mode = ARGV[0]
-json_path = ".xoch/work/current.json"
-markdown_path = ".xoch/work/current.md"
+root = ARGV[1]
+json_path = File.join(root, "work", "current.json")
+markdown_path = File.join(root, "work", "current.md")
 legacy_path = ".xoch/context/current.md"
 
 def markdown_fields(path)
@@ -102,11 +131,11 @@ def workflow_from_state(state, existing = nil)
   workflow
 end
 
-def validate_pointer(data, path)
+def validate_pointer(data, path, root)
   abort("Invalid Xoch pointer version in #{path}") unless data["version"] == 1
   job = data["job"]
   abort("Invalid Xoch job pointer in #{path}") unless job.is_a?(Hash) && !job["id"].to_s.empty? && !job["directory"].to_s.empty?
-  expected_directory = File.join(".xoch", "work", "jobs", job["id"].to_s)
+  expected_directory = File.join(root, "work", "jobs", job["id"].to_s)
   abort("Invalid Xoch job directory in #{path}") unless job["directory"].to_s.sub(%r{/\z}, "") == expected_directory
   workflow = data["workflow"]
   if workflow
@@ -124,7 +153,7 @@ if File.file?(json_path)
   rescue JSON::ParserError => e
     abort("Invalid JSON in #{json_path}: #{e.message}")
   end
-  validate_pointer(data, json_path)
+  validate_pointer(data, json_path, root)
   state = scalar_state(File.join(data.dig("job", "directory"), "state.md"))
   unless state.empty?
     projected_workflow = workflow_from_state(state, data["workflow"])
@@ -141,7 +170,7 @@ elsif File.file?(markdown_path)
   fields = markdown_fields(markdown_path)
   job_id = fields["job_id"] || fields["task_id"]
   abort("Cannot migrate #{markdown_path}: job ID is missing") if job_id.to_s.empty?
-  state = scalar_state(File.join(".xoch", "work", "jobs", job_id, "state.md"))
+  state = scalar_state(File.join(root, "work", "jobs", job_id, "state.md"))
   workflow = workflow_from_state(state)
   data = {
     "version" => 1,
@@ -149,7 +178,7 @@ elsif File.file?(markdown_path)
       "id" => job_id,
       "title" => fields["title"] || state["title"] || job_id,
       "arc" => fields["arc"] || state["arc"] || "standalone",
-      "directory" => fields["job_directory"] || File.join(".xoch", "work", "jobs", job_id)
+      "directory" => fields["job_directory"] || File.join(root, "work", "jobs", job_id)
     },
     "workflow" => workflow,
     "updated_at" => Time.now.utc.iso8601
@@ -196,12 +225,14 @@ write_current() {
   local title="$2"
   local arc="$3"
   local started="$4"
-  local job_dir=".xoch/work/jobs/$job_id"
+  local root
+  root="$(xoch_root)"
+  local job_dir="$root/work/jobs/$job_id"
 
-  mkdir -p ".xoch/work"
-  ruby -rjson -rtime - "$job_id" "$title" "$arc" "$job_dir" "$started" <<'RUBY'
-job_id, title, arc, job_dir, started = ARGV
-path = ".xoch/work/current.json"
+  mkdir -p "$root/work"
+  ruby -rjson -rtime - "$job_id" "$title" "$arc" "$job_dir" "$started" "$root" <<'RUBY'
+job_id, title, arc, job_dir, started, root = ARGV
+path = File.join(root, "work", "current.json")
 data = {
   "version" => 1,
   "job" => { "id" => job_id, "title" => title, "arc" => arc, "directory" => job_dir },
@@ -212,7 +243,8 @@ data = {
 temp = "#{path}.tmp.#{$$}"
 File.write(temp, JSON.pretty_generate(data) + "\n")
 File.rename(temp, path)
-File.delete(".xoch/work/current.md") if File.file?(".xoch/work/current.md")
+current_md = File.join(root, "work", "current.md")
+File.delete(current_md) if File.file?(current_md)
 RUBY
 }
 
@@ -235,7 +267,7 @@ job_open() {
   description="${description:-$title}"
   local started
   started="$(today)"
-  local job_dir=".xoch/work/jobs/$id"
+  local job_dir="$(xoch_root)/work/jobs/$id"
 
   mkdir -p "$job_dir/notes" "$job_dir/phases" "$job_dir/revisions" "$job_dir/snapshots"
   cat > "$job_dir/state.md" <<EOF
@@ -285,11 +317,13 @@ job_set_current() {
     esac
   done
   [ -n "$job_id" ] || die "job set-current requires --job"
-  local state=".xoch/work/jobs/$job_id/state.md"
+  local root
+  root="$(xoch_root)"
+  local state="$root/work/jobs/$job_id/state.md"
   [ -f "$state" ] || die "state not found: $state"
 
-  ruby -rjson -rfileutils -rtime - "$state" <<'RUBY'
-state = ARGV[0]
+  ruby -rjson -rfileutils -rtime - "$state" "$root" <<'RUBY'
+state, root = ARGV
 data = {}
 File.readlines(state).each do |line|
   if line =~ /^([A-Za-z0-9_]+):\s*(.*)$/
@@ -311,11 +345,11 @@ workflow = active ? {
   "started_at" => data["workflow_started_at"] == "null" ? nil : data["workflow_started_at"],
   "updated_at" => Time.now.utc.iso8601
 } : nil
-FileUtils.mkdir_p(".xoch/work")
-path = ".xoch/work/current.json"
+FileUtils.mkdir_p(File.join(root, "work"))
+path = File.join(root, "work", "current.json")
 pointer = {
   "version" => 1,
-  "job" => { "id" => job_id, "title" => title, "arc" => arc, "directory" => ".xoch/work/jobs/#{job_id}" },
+  "job" => { "id" => job_id, "title" => title, "arc" => arc, "directory" => File.join(root, "work", "jobs", job_id) },
   "workflow" => workflow,
   "started_at" => started,
   "updated_at" => Time.now.utc.iso8601
@@ -323,7 +357,8 @@ pointer = {
 temp = "#{path}.tmp.#{$$}"
 File.write(temp, JSON.pretty_generate(pointer) + "\n")
 File.rename(temp, path)
-File.delete(".xoch/work/current.md") if File.file?(".xoch/work/current.md")
+current_md = File.join(root, "work", "current.md")
+File.delete(current_md) if File.file?(current_md)
 RUBY
   echo "Current job set: $job_id"
 }
@@ -340,7 +375,7 @@ state_set() {
   done
   [ -n "$job_id" ] || die "state set requires --job"
   [ -n "$field" ] || die "state set requires --field"
-  local state=".xoch/work/jobs/$job_id/state.md"
+  local state="$(xoch_root)/work/jobs/$job_id/state.md"
   [ -f "$state" ] || die "state not found: $state"
   ruby - "$state" "$field" "$value" "$(today)" <<'RUBY'
 state, field, value, today = ARGV
@@ -388,10 +423,10 @@ workflow_action() {
   # Reading current state also migrates a target-model current.md pointer.
   job_current --json >/dev/null
 
-  ruby -rjson -rtime - "$action" "$job_id" "$name" "$stage" "$pending" "$artifact" "$return_command" "$next_command" "$reason" <<'RUBY'
-action, job_id, name, stage, pending, artifact, return_command, next_command, reason = ARGV
-pointer_path = ".xoch/work/current.json"
-state_path = File.join(".xoch", "work", "jobs", job_id, "state.md")
+  ruby -rjson -rtime - "$action" "$job_id" "$name" "$stage" "$pending" "$artifact" "$return_command" "$next_command" "$reason" "$(xoch_root)" <<'RUBY'
+action, job_id, name, stage, pending, artifact, return_command, next_command, reason, root = ARGV
+pointer_path = File.join(root, "work", "current.json")
+state_path = File.join(root, "work", "jobs", job_id, "state.md")
 abort("Current Xoch pointer not found: #{pointer_path}") unless File.file?(pointer_path)
 abort("Job state not found: #{state_path}") unless File.file?(state_path)
 
@@ -547,9 +582,9 @@ pointer_clear() {
     esac
   done
   [ -n "$job_id" ] || die "pointer clear requires --job"
-  ruby -rjson - "$job_id" <<'RUBY'
-job_id = ARGV[0]
-json_path = ".xoch/work/current.json"
+  ruby -rjson - "$job_id" "$(xoch_root)" <<'RUBY'
+job_id, root = ARGV
+json_path = File.join(root, "work", "current.json")
 if File.file?(json_path)
   data = JSON.parse(File.read(json_path))
   if data.dig("job", "id") == job_id
@@ -557,7 +592,7 @@ if File.file?(json_path)
     puts "Cleared pointer: #{json_path}"
   end
 end
-[".xoch/work/current.md", ".xoch/context/current.md"].each do |file|
+[File.join(root, "work", "current.md"), ".xoch/context/current.md"].each do |file|
   next unless File.file?(file)
   text = File.read(file)
   next unless text.include?("**Job ID**: #{job_id}") || text.include?("**Task ID**: #{job_id}")
@@ -587,7 +622,9 @@ arc_open() {
   success="${success:-TBD}"
   local started
   started="$(today)"
-  local arc_dir=".xoch/work/arcs/$id"
+  local root
+  root="$(xoch_root)"
+  local arc_dir="$root/work/arcs/$id"
   mkdir -p "$arc_dir/notes" "$arc_dir/revisions"
   cat > "$arc_dir/state.md" <<EOF
 arc_id: $id
@@ -608,13 +645,13 @@ EOF
   if [ "$adopt_active" = "true" ]; then
     job_current --json >/dev/null
   fi
-  if [ "$adopt_active" = "true" ] && [ -f ".xoch/work/current.json" ]; then
+  if [ "$adopt_active" = "true" ] && [ -f "$root/work/current.json" ]; then
     local current_job current_title
-    current_job="$(ruby -rjson -e 'print JSON.parse(File.read(ARGV[0])).dig("job", "id")' .xoch/work/current.json)"
-    current_title="$(ruby -rjson -e 'print JSON.parse(File.read(ARGV[0])).dig("job", "title")' .xoch/work/current.json)"
+    current_job="$(ruby -rjson -e 'print JSON.parse(File.read(ARGV[0])).dig("job", "id")' "$root/work/current.json")"
+    current_title="$(ruby -rjson -e 'print JSON.parse(File.read(ARGV[0])).dig("job", "title")' "$root/work/current.json")"
     if [ -n "$current_job" ]; then
       active_line="- \`$current_job\` - ${current_title:-unknown}"
-      [ -f ".xoch/work/jobs/$current_job/state.md" ] && ruby - ".xoch/work/jobs/$current_job/state.md" "$id" "$(today)" <<'RUBY'
+      [ -f "$root/work/jobs/$current_job/state.md" ] && ruby - "$root/work/jobs/$current_job/state.md" "$id" "$(today)" <<'RUBY'
 state, arc, today = ARGV
 lines = File.readlines(state, chomp: true)
 found = false
@@ -678,7 +715,7 @@ snapshot_create() {
   [ -n "$phase" ] || die "snapshot create requires --phase"
   title="${title:-Phase $phase}"
   next_text="${next_text:-TBD}"
-  local dir=".xoch/work/jobs/$job_id/snapshots"
+  local dir="$(xoch_root)/work/jobs/$job_id/snapshots"
   mkdir -p "$dir"
   local file="$dir/phase-$phase.md"
   if [ -n "$body_file" ]; then
@@ -736,7 +773,7 @@ phase_advance() {
   done
   [ -n "$job_id" ] || die "phase advance requires --job"
   [ -n "$phase" ] || die "phase advance requires --phase"
-  local job_dir=".xoch/work/jobs/$job_id"
+  local job_dir="$(xoch_root)/work/jobs/$job_id"
   local state="$job_dir/state.md"
   local phases="$job_dir/phases.md"
   [ -f "$state" ] || die "state not found: $state"
@@ -839,6 +876,7 @@ main() {
   shift || true
 
   case "$group:$action" in
+    config:root) xoch_root ;;
     job:current) job_current "$@" ;;
     job:open) job_open "$@" ;;
     job:set-current) job_set_current "$@" ;;

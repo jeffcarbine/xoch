@@ -35,6 +35,8 @@ The active job pointer is:
 
 Query the active pointer with `~/.xoch/bin/xoch-actions.sh job current --json`; do not read or edit `current.json` directly unless the helper is unavailable. The helper migrates target-model `current.md` pointers and reports legacy `.xoch/context/current.md` metadata without moving legacy jobs.
 
+Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's resolved Xoch storage root, not literally `<repo>/.xoch`. By default the root is `.xoch` inside the repository. When `~/.xoch/config.json` sets `storage.mode` to `centralized`, the root instead resolves to `~/.xoch/projects/<project-slug>/`, entirely outside the repository — nothing gets written under the repo in that mode. Get the active job's real directory from `job current --json`'s `directory` field; get the root directly (e.g. before any job exists) with `~/.xoch/bin/xoch-actions.sh config root`. Never assume `.xoch/work/...` is literally relative to the repo root.
+
 ## Job Files
 
 - `state.md`: compact working index and durable job status.
@@ -69,7 +71,7 @@ Standalone jobs need no additional scope file. A job spanning repositories store
 .xoch/work/jobs/[job-id]/projects.json
 ```
 
-One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and `.xoch/work/current.json` are always repository-local and are never synchronized. Use `project-scope.sh` for routing and `context-sync.sh` after canonical job-context writes.
+One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and the active pointer are always project-specific and are never synchronized. Use `project-scope.sh` for routing and `context-sync.sh` after canonical job-context writes.
 
 ## Context Economy
 

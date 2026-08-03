@@ -15,16 +15,16 @@ Summarize the larger goal, record final job membership state, capture unfinished
 
 ## Work Model
 
-Arc files live under:
+Arc files live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
 
 ```text
-.xoch/work/arcs/[arc-id]/
+[xoch-root]/work/arcs/[arc-id]/
 ```
 
 Job folders stay under:
 
 ```text
-.xoch/work/jobs/[job-id]/
+[xoch-root]/work/jobs/[job-id]/
 ```
 
 Closing an arc does not close, archive, delete, or move any job.
@@ -36,7 +36,7 @@ Closing an arc does not close, archive, delete, or move any job.
 If the engineer provides an arc ID, use it. Otherwise list arcs under:
 
 ```text
-.xoch/work/arcs/
+[xoch-root]/work/arcs/
 ```
 
 Load:
@@ -79,7 +79,7 @@ If the arc affected shared docs, feature READMEs, or `.xoch/docs/`, ask whether 
 Create:
 
 ```text
-.xoch/work/arcs/[arc-id]/closure.md
+[xoch-root]/work/arcs/[arc-id]/closure.md
 ```
 
 Use this structure:
@@ -122,7 +122,7 @@ Use this structure:
 Update:
 
 ```text
-.xoch/work/arcs/[arc-id]/state.md
+[xoch-root]/work/arcs/[arc-id]/state.md
 ```
 
 Set:
