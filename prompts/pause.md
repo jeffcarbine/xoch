@@ -19,7 +19,7 @@ Summarize the active job, preserve its job folder, update job state, and clear `
 
 ### Step 1: Find Active Job
 
-Use the `xoch-actions.sh job current --json` result from the workflow boundary. It reports target-model or legacy active work.
+Use the `xoch-actions.js job current --json` result from the workflow boundary. It reports target-model or legacy active work.
 
 If no active job exists, say there is nothing to pause and stop.
 
@@ -59,12 +59,12 @@ If confirmed:
 1. Prefer deterministic helpers:
 
    ```bash
-   ~/.xoch/bin/xoch-actions.sh state set --job "[job-id]" --field status --value paused
-   ~/.xoch/bin/xoch-actions.sh state set --job "[job-id]" --field next_command --value xoch-resume
-   ~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
+   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field status --value paused
+   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field next_command --value xoch-resume
+   ~/.xoch/bin/xoch-actions.js pointer clear --job "[job-id]"
    ```
 
-2. If helpers are unavailable, update `state.md` and remove `[xoch-root]/work/current.json` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`) only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
+2. If helpers are unavailable, update `state.md` and remove `[xoch-root]/work/current.json` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`) only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
 

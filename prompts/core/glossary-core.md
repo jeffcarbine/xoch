@@ -121,7 +121,7 @@ Wait for their choice.
 2. **Estimate token cost:**
    
    ```bash
-   ~/.xoch/bin/token-estimator.sh --batch glossaries/[file1].md glossaries/[file2].md ...
+   ~/.xoch/bin/token-estimator.js --batch glossaries/[file1].md glossaries/[file2].md ...
    ```
 
 3. **Check against budget:**
@@ -250,7 +250,7 @@ Wait for their response.
 Before any final approval that authorizes glossary writes for an active job, run:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-glossary --stage awaiting_confirmation --pending apply_glossary_update
+~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-glossary --stage awaiting_confirmation --pending apply_glossary_update
 ```
 
 ---
@@ -363,7 +363,7 @@ After completing the glossary update:
 For an active target-model job, complete the managed workflow after all glossary/index writes succeed and before final output or an explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-glossary --next "[prior, recommended, or explicitly invoked command]"
+~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-glossary --next "[prior, recommended, or explicitly invoked command]"
 ```
 
 **"✅ Glossary updated successfully!**

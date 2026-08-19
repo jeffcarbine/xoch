@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
@@ -56,7 +56,7 @@ If the current phase is unclear, ask the engineer which phase should be reviewed
 Run or ask for the equivalent of:
 
 ```bash
-~/.xoch/bin/git-state.sh inspect --json
+~/.xoch/bin/git-state.js inspect --json
 git status --short
 git diff --stat
 git diff
@@ -122,7 +122,7 @@ After the engineer confirms advancement, check whether the phase changes are com
 Prefer the read-only helper, then inspect focused details as needed:
 
 ```bash
-~/.xoch/bin/git-state.sh inspect --json
+~/.xoch/bin/git-state.js inspect --json
 git status --short
 git status --branch --short
 git log --oneline @{u}..HEAD
@@ -160,8 +160,8 @@ When confirmed, write a phase snapshot.
 For target-model jobs, prefer deterministic helpers for file/path mechanics:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or xoch-review]"
-~/.xoch/bin/xoch-actions.sh phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+~/.xoch/bin/xoch-actions.js snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or xoch-review]"
+~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
 ```
 
 If there are no more phases, omit the `--next-*` arguments so the helper routes state to `xoch-review`.

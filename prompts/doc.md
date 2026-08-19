@@ -104,7 +104,7 @@ Read only what is needed:
 Use token estimates for large reads:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 ### Step 3: Validate Current State
@@ -126,7 +126,7 @@ Summarize proposed documentation changes before editing when the change is broad
 When an active-job documentation proposal needs engineer approval, record the boundary before asking:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-doc --stage awaiting_confirmation --pending apply_documentation
+~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-doc --stage awaiting_confirmation --pending apply_documentation
 ```
 
 For packet work, propose the packet set first. Use project-specific packet names rather than forcing a fixed schema. The engineer may accept, rename, combine, split, add, or remove packets before writing begins.
@@ -157,7 +157,7 @@ For `.xoch/docs/` packets:
 - assemble packet content into the root README with:
 
   ```bash
-  ~/.xoch/bin/readme-actions.sh assemble --manifest .xoch/docs/readme-packets.json
+  ~/.xoch/bin/readme-actions.js assemble --manifest .xoch/docs/readme-packets.json
   ```
 
 - keep the root README useful as the repo entry point, with links to nested feature READMEs when feature-specific detail belongs there
@@ -166,9 +166,9 @@ For `.xoch/docs/` packets:
 Use documentation routing and drift helpers when useful:
 
 ```bash
-~/.xoch/bin/docs-target.sh resolve --path "[changed path]" --json
-~/.xoch/bin/docs-drift.sh check --json
-~/.xoch/bin/docs-drift.sh baseline
+~/.xoch/bin/docs-target.js resolve --path "[changed path]" --json
+~/.xoch/bin/docs-drift.js check --json
+~/.xoch/bin/docs-drift.js baseline
 ```
 
 Treat drift paths as signals, not proof that documentation must change. Refresh the baseline only after the engineer accepts the resulting documentation state.
@@ -201,7 +201,7 @@ Recommend:
 After documentation writes, status notes, accepted baselines, and multi-project synchronization are complete, finish the managed workflow before final output or an explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-doc --next "[recommended or explicitly invoked command]"
+~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-doc --next "[recommended or explicitly invoked command]"
 ```
 
 ## Output

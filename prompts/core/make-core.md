@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
@@ -114,7 +114,7 @@ For agent-owned or collaborative work:
 3. Identify focused tests/checks before editing. When commands are not already known, inspect advisory candidates with:
 
    ```bash
-   ~/.xoch/bin/project-commands.sh detect --json
+   ~/.xoch/bin/project-commands.js detect --json
    ```
 
    For multi-project phases, run command detection separately from each touched project root.
@@ -124,7 +124,7 @@ For agent-owned or collaborative work:
 Use token estimates for large reads when helpful:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 ### Step 6: Implement

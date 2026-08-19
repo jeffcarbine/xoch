@@ -7,7 +7,7 @@ Before reading a file, check whether this conversation already contains enough c
 Before any full-file read beyond active Xoch pointer/state files, run the estimator on the candidate files:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 Prefer the smallest useful read:

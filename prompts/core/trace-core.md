@@ -32,7 +32,7 @@ If no job exists, write findings only after asking whether to open a job with `x
 When a target-model job is active and `xoch-trace` is not already active, begin the workflow while preserving the job's prior next command:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow begin --job "[job-id]" --name xoch-trace --stage investigating --pending continue_trace --return "[current next command]"
+~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-trace --stage investigating --pending continue_trace --return "[current next command]"
 ```
 
 {{xoch-partial:project-routing.md}}
@@ -64,7 +64,7 @@ State:
 Use token estimates for broad reads:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 ### Step 3: Inspect Evidence
@@ -74,7 +74,7 @@ Use token estimates for broad reads:
 When symptoms may involve an interrupted merge, rebase, cherry-pick, or revert, inspect read-only git state with:
 
 ```bash
-~/.xoch/bin/git-state.sh inspect --json
+~/.xoch/bin/git-state.js inspect --json
 ```
 
 Read only relevant:
@@ -119,8 +119,8 @@ When a job exists, write to `[notes-dir]/trace-[date].md` (`notes_dir` from the 
 Before writing the final trace note, update the boundary, then complete it after the note exists:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-trace --stage finalizing --pending record_trace --artifact "notes/trace-[date].md"
-~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-trace --next "[recommended or explicitly invoked command]"
+~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-trace --stage finalizing --pending record_trace --artifact "notes/trace-[date].md"
+~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-trace --next "[recommended or explicitly invoked command]"
 ```
 
 Use this structure:

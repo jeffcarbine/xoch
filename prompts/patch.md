@@ -35,7 +35,7 @@ Use the normal lifecycle when:
 
 ## Work Model
 
-If a job is active, use the `xoch-actions.sh job current --json` result from the workflow boundary.
+If a job is active, use the `xoch-actions.js job current --json` result from the workflow boundary.
 
 {{xoch-partial:job-evidence.md}}
 
@@ -48,7 +48,7 @@ Patch notes for target-model jobs may live under its `notes_dir`:
 If no job exists, ask whether to:
 
 1. open a normal job with `xoch-open-job`
-2. create a small patch note under `[xoch-root]/work/patches/` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`)
+2. create a small patch note under `[xoch-root]/work/patches/` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`)
 3. proceed without Xoch state and summarize in chat only
 
 {{xoch-partial:project-routing.md}}

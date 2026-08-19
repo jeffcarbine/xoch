@@ -19,7 +19,7 @@ Find a job, restore it as current, summarize where work left off, and route to t
 
 ### Step 1: Check Active Job
 
-Use the `xoch-actions.sh job current --json` result from the workflow boundary.
+Use the `xoch-actions.js job current --json` result from the workflow boundary.
 
 If another job is active, ask the engineer to pause it first or cancel resume.
 
@@ -29,7 +29,7 @@ If no target-model current pointer exists, check `.xoch/context/current.md` for 
 
 If a job ID was supplied, use it.
 
-Otherwise list candidates from (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
+Otherwise list candidates from (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`):
 
 ```text
 [xoch-root]/work/jobs/
@@ -71,13 +71,13 @@ For target-model jobs, restore to:
 After confirmation, prefer:
 
 ```bash
-~/.xoch/bin/archive-actions.sh restore --kind job --id "[job-id]" --dry-run
-~/.xoch/bin/archive-actions.sh restore --kind job --id "[job-id]"
+~/.xoch/bin/archive-actions.js restore --kind job --id "[job-id]" --dry-run
+~/.xoch/bin/archive-actions.js restore --kind job --id "[job-id]"
 ```
 
 Do not manually overwrite an active job folder if restore refuses.
 
-If an archived job contains `projects.json`, treat it as a multi-project restore. Validate the archived scope, dry-run every restore, restore the primary job and then each participant mirror with `archive-actions.sh --root "[project path]"`, and reload `projects.json` from the restored primary job. Stop on any collision or missing repository; do not leave the job marked resumed after a partial restore.
+If an archived job contains `projects.json`, treat it as a multi-project restore. Validate the archived scope, dry-run every restore, restore the primary job and then each participant mirror with `archive-actions.js --root "[project path]"`, and reload `projects.json` from the restored primary job. Stop on any collision or missing repository; do not leave the job marked resumed after a partial restore.
 
 For legacy jobs, preserve the legacy context model unless the engineer explicitly asks to migrate it.
 
@@ -86,12 +86,12 @@ For legacy jobs, preserve the legacy context model unless the engineer explicitl
 For target-model jobs, recreate the machine-readable pointer from job state:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh job set-current --job "[job-id]"
+~/.xoch/bin/xoch-actions.js job set-current --job "[job-id]"
 ```
 
 This restores any managed workflow preserved in `state.md`. Do not write `current.json` manually.
 
-Run `xoch-actions.sh job current --json` again after setting the pointer. If it reports an active workflow, resume that workflow and its pending action before routing to phase work.
+Run `xoch-actions.js job current --json` again after setting the pointer. If it reports an active workflow, resume that workflow and its pending action before routing to phase work.
 
 For legacy jobs, update `.xoch/context/current.md` instead.
 
