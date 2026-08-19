@@ -17,7 +17,7 @@ Arcs are not required for normal Xoch work. Use them when several jobs share a l
 
 ## Work Model
 
-Arcs live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
+Arcs live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`):
 
 ```text
 [xoch-root]/work/arcs/[arc-id]/
@@ -35,7 +35,7 @@ Arc membership is by job ID reference only. Do not move or nest job folders insi
 
 ### Step 1: Check Active Job Context
 
-Before gathering arc metadata, use the `xoch-actions.sh job current --json` result from the workflow boundary.
+Before gathering arc metadata, use the `xoch-actions.js job current --json` result from the workflow boundary.
 
 If an active target-model job exists, read its `state.md` and determine whether it is already part of an arc:
 
@@ -97,7 +97,7 @@ If the arc already exists, summarize its state and ask whether to resume it or u
 Prefer the deterministic helper:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh arc open --id "[arc-id]" --title "[title]" --purpose "[purpose]" --success "[success outcome]" --doc-scope "[scope]" --doc-path "[path]"
+~/.xoch/bin/xoch-actions.js arc open --id "[arc-id]" --title "[title]" --purpose "[purpose]" --success "[success outcome]" --doc-scope "[scope]" --doc-path "[path]"
 ```
 
 Add `--adopt-active` only when the engineer confirmed adopting the active standalone job.
@@ -215,7 +215,7 @@ Job references: [xoch-root]/work/arcs/[arc-id]/jobs.md
 
 - Arcs group jobs by reference.
 - Do not create job folders inside arc folders.
-- Prefer `~/.xoch/bin/xoch-actions.sh` for deterministic arc file creation.
+- Prefer `~/.xoch/bin/xoch-actions.js` for deterministic arc file creation.
 - Do not rewrite job `state.md` arc fields without engineer confirmation.
 - Always check for an active standalone job before creating a new arc.
 - Adopt the active standalone job by reference when the engineer approves or when they asked to infer the arc from that job.

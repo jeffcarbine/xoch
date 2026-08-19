@@ -28,7 +28,7 @@ Ask what term or concept to add/update, gather enough context to define it clear
 Before full glossary reads, run:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 Use existing glossary formatting. Keep entries concise and focused on terms that reduce confusion.

@@ -58,7 +58,7 @@ If present, read the glossary index and quick reference before requirements clar
 
 ### Step 1: Identify Current Job
 
-Use the `xoch-actions.sh job current --json` result from the command wrapper. Run it now if the result is unavailable.
+Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 If a current job exists, use its job ID and job folder.
 
@@ -71,8 +71,8 @@ If no current job exists, ask the engineer for:
 Generate or clean job IDs with:
 
 ```bash
-~/.xoch/bin/generate-job-id.sh --id "[provided-id]"
-~/.xoch/bin/generate-job-id.sh
+~/.xoch/bin/generate-job-id.js --id "[provided-id]"
+~/.xoch/bin/generate-job-id.js
 ```
 
 ### Step 2: Ensure Job State
@@ -242,7 +242,7 @@ Do not write `spec.md` or mark spec state complete until the engineer chooses `[
 
 ### Step 8: Write Accepted Spec
 
-Write `spec.md` under the job directory (`~/.xoch/bin/xoch-actions.sh job evidence --job "[job-id]" --json`'s `job_directory` field).
+Write `spec.md` under the job directory (`~/.xoch/bin/xoch-actions.js job evidence --job "[job-id]" --json`'s `job_directory` field).
 
 Use this structure:
 

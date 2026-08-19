@@ -15,7 +15,7 @@ Summarize the larger goal, record final job membership state, capture unfinished
 
 ## Work Model
 
-Arc files live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.sh config root`):
+Arc files live under (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`):
 
 ```text
 [xoch-root]/work/arcs/[arc-id]/

@@ -21,14 +21,14 @@ Load enough job context to orient the discussion, answer the engineer's question
 
 ### Step 1: Detect Current Job
 
-Use the `xoch-actions.sh job current --json` result from the workflow boundary. It reports target-model or legacy pointer state.
+Use the `xoch-actions.js job current --json` result from the workflow boundary. It reports target-model or legacy pointer state.
 
 If no active job exists, continue without Xoch job context.
 
 When a target-model job is active and `xoch-sidebar` is not already active, begin the side workflow while preserving the job's current `next_command`:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow begin --job "[job-id]" --name xoch-sidebar --stage exploring --pending complete_sidebar --return "[current next command]"
+~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-sidebar --stage exploring --pending complete_sidebar --return "[current next command]"
 ```
 
 ### Step 2: Load Context
@@ -64,7 +64,7 @@ Ask what the engineer wants to explore, then answer normally.
 For code or documentation reads, use token estimation when the read is broad:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 ### Step 5: Return Guidance
@@ -78,7 +78,7 @@ When the sidebar appears complete, remind the engineer of the likely return comm
 Before the final output or an explicitly chained command, complete the sidebar workflow:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-sidebar --next "[recommended or explicitly invoked command]"
+~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-sidebar --next "[recommended or explicitly invoked command]"
 ```
 
 End with:

@@ -82,7 +82,7 @@ Do not scan broad home directories. Infer candidate names from an approved depen
 When proposed map changes require confirmation for an active job, update the managed workflow before asking:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow update --job "[job-id]" --name xoch-map --stage awaiting_confirmation --pending apply_workspace_map
+~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-map --stage awaiting_confirmation --pending apply_workspace_map
 ```
 
 ### Step 3: Inspect Lightly
@@ -109,10 +109,10 @@ Adjust commands to the project. Do not run network-dependent discovery unless ex
 After engineer confirmation, use:
 
 ```bash
-~/.xoch/bin/workspace-actions.sh add --name "[project]" --path "[absolute path]"
-~/.xoch/bin/workspace-actions.sh remove --name "[project]"
-~/.xoch/bin/workspace-actions.sh validate
-~/.xoch/bin/workspace-actions.sh list --json
+~/.xoch/bin/workspace-actions.js add --name "[project]" --path "[absolute path]"
+~/.xoch/bin/workspace-actions.js remove --name "[project]"
+~/.xoch/bin/workspace-actions.js validate
+~/.xoch/bin/workspace-actions.js list --json
 ```
 
 Do not replace an existing name with a different path unless the engineer confirms it; pass `--replace` only after that confirmation.
@@ -137,7 +137,7 @@ Never put absolute local paths in shareable dependency documentation.
 If `.xoch/docs/dependencies.json` exists, resolve it with:
 
 ```bash
-~/.xoch/bin/dependency-actions.sh resolve
+~/.xoch/bin/dependency-actions.js resolve
 ```
 
 When a multi-project job is active, pass `--scope [primary job]/projects.json` so output identifies dependencies already participating in the job. Load only relevant README or `.xoch/docs/` context from resolved repositories.
@@ -154,7 +154,7 @@ Recommend:
 After confirmed map changes, validation, dependency resolution, and any job notes are complete, finish the managed workflow before final output or an explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh workflow complete --job "[job-id]" --name xoch-map --next "[recommended or explicitly invoked command]"
+~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-map --next "[recommended or explicitly invoked command]"
 ```
 
 ## Output

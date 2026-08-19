@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.sh job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
+Use the `xoch-actions.js job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically unless the engineer explicitly asks.
 
@@ -169,8 +169,8 @@ For multi-project jobs, write closure state through the primary job and sync it 
 Clear the active pointer only if the helper reports that it points to this job:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh job current --json
-~/.xoch/bin/xoch-actions.sh pointer clear --job "[job-id]"
+~/.xoch/bin/xoch-actions.js job current --json
+~/.xoch/bin/xoch-actions.js pointer clear --job "[job-id]"
 ```
 
 For legacy migration jobs, clear:

@@ -99,7 +99,7 @@ Identify files needed to understand the implementation approach:
 Use:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch [files...]
+~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
 If the read is large, summarize why it is worth the context and ask the engineer before proceeding unless they have already approved exceeding budget.
@@ -107,7 +107,7 @@ If the read is large, summarize why it is worth the context and ask the engineer
 When validation commands are not already established by project context, detect advisory candidates with:
 
 ```bash
-~/.xoch/bin/project-commands.sh detect --json
+~/.xoch/bin/project-commands.js detect --json
 ```
 
 ### Step 5: Analyze Approach
@@ -284,7 +284,7 @@ For legacy migration jobs, write `plan.md` and `milestones.md` in the existing l
 After accepted plan artifacts are written, verify acceptance-criteria references when practical:
 
 ```bash
-~/.xoch/bin/coverage-actions.sh compare --job "[job-id]" --require plan --json
+~/.xoch/bin/coverage-actions.js compare --job "[job-id]" --require plan --json
 ```
 
 At plan time, missing snapshot/review coverage is expected; treat `missing_from_plan` and orphaned plan IDs as the actionable fields.

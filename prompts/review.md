@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.sh job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
+Use the `xoch-actions.js job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
@@ -74,7 +74,7 @@ If implementation is plainly incomplete, say so and route to `xoch-make` or `xoc
 Start with the deterministic coverage report:
 
 ```bash
-~/.xoch/bin/coverage-actions.sh compare --job "[job-id]" --require review --json
+~/.xoch/bin/coverage-actions.js compare --job "[job-id]" --require review --json
 ```
 
 Use the report to find missing or orphaned IDs; the agent still judges status and evidence.
@@ -109,12 +109,12 @@ Focus on real risks. Do not block on taste unless taste reflects a maintainabili
 When project validation commands are not already known, inspect advisory candidates with:
 
 ```bash
-~/.xoch/bin/project-commands.sh detect --json
+~/.xoch/bin/project-commands.js detect --json
 ```
 
 ### Step 5: Documentation Freshness
 
-Use `~/.xoch/bin/docs-drift.sh check --json` when a baseline exists. Route reported paths with `~/.xoch/bin/docs-target.sh resolve --path "[path]" --json`. Drift is a review signal, not an automatic documentation failure.
+Use `~/.xoch/bin/docs-drift.js check --json` when a baseline exists. Route reported paths with `~/.xoch/bin/docs-target.js resolve --path "[path]" --json`. Drift is a review signal, not an automatic documentation failure.
 
 For each documentation target, mark:
 

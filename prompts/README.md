@@ -203,20 +203,20 @@ Standalone jobs remain unchanged. Multi-project jobs add `.xoch/work/jobs/[job-i
 
 Prompts must:
 
-- validate and query scope with `project-scope.sh`
+- validate and query scope with `project-scope.js`
 - write job artifacts through the primary job directory
 - tag plan tasks, files, validation, commits, and evidence by project
-- synchronize with `context-sync.sh` after shared context writes
+- synchronize with `context-sync.js` after shared context writes
 - keep source files, git operations, and active pointers repository-local
 - stop when scope validation or synchronization fails
 
-Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `workspace-actions.sh`. Shareable dependency declarations may use `.xoch/docs/dependencies.json` and resolve through `dependency-actions.sh`.
+Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `workspace-actions.js`. Shareable dependency declarations may use `.xoch/docs/dependencies.json` and resolve through `dependency-actions.js`.
 
 ## Prompt Style
 
 Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
-Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.sh` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
+Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.js` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
 
 Helper filenames use kebab-case consistently. Deterministic helpers cover core state mechanics, README assembly, archives, acceptance coverage, project commands, git state, documentation routing, prompt validation, workspace mapping, dependency resolution, multi-project routing, and guarded context synchronization. See the root README helper inventory.
 

@@ -16,7 +16,7 @@ Show where the active job stands and what remains without changing job, phase, w
 Use the result already returned by:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh job current --json
+~/.xoch/bin/xoch-actions.js job current --json
 ```
 
 If no job is active, say so and route to `xoch-open-job` or `xoch-resume`.

@@ -22,7 +22,7 @@ Xoch is a lightweight workflow system for AI-assisted software work[^1]. It keep
 ```bash
 git clone https://github.com/jeffcarbine/xoch.git
 cd xoch
-./install.sh
+./install.js
 ```
 
 Verify installation:
@@ -164,15 +164,15 @@ Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and refer
 
 ### Storage Location
 
-By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). Use `./config.sh` from a clone of this repo to set it:
+By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). Use `./config.js` from a clone of this repo to set it:
 
 ```bash
-./config.sh set storage.mode centralized   # or: in-repo
-./config.sh show                           # print the resolved config
-./config.sh                                # interactive mode
+./config.js set storage.mode centralized   # or: in-repo
+./config.js show                           # print the resolved config
+./config.js                                # interactive mode
 ```
 
-This writes `~/.xoch/config.json`, which you can also edit by hand if `config.sh` isn't available:
+This writes `~/.xoch/config.json`, which you can also edit by hand if `config.js` isn't available:
 
 ```json
 {
@@ -183,14 +183,14 @@ This writes `~/.xoch/config.json`, which you can also edit by hand if `config.sh
 
 Centralized mode leaves zero files in the repo — not even a gitignored `.xoch/` folder. The setting is global and applies to every project; there is no per-project override, and no automatic migration when switching modes. Missing or invalid config falls back to the default in-repo behavior.
 
-Resolve the active root directly with `~/.xoch/bin/xoch-actions.sh config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
+Resolve the active root directly with `~/.xoch/bin/xoch-actions.js config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
 
 ### Active Pointer And Workflows
 
 `.xoch/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh job current --json
+~/.xoch/bin/xoch-actions.js job current --json
 ```
 
 Do not edit the pointer manually. `state.md` keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
@@ -268,7 +268,7 @@ If `storage.mode` is set to `centralized` (see [Storage Location](#storage-locat
 Xoch prompts estimate file reads with:
 
 ```bash
-~/.xoch/bin/token-estimator.sh --batch file1 file2
+~/.xoch/bin/token-estimator.js --batch file1 file2
 ```
 
 Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
@@ -276,7 +276,7 @@ Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend 
 Deterministic workflow actions live in:
 
 ```bash
-~/.xoch/bin/xoch-actions.sh
+~/.xoch/bin/xoch-actions.js
 ```
 
 Prompts prefer this helper for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents should still use judgment for specs, plans, reviews, summaries, and scope decisions.
@@ -285,22 +285,22 @@ All helper filenames use kebab-case. Installed helpers include:
 
 | Helper | Purpose |
 |---|---|
-| `xoch-actions.sh` | Job, arc, pointer, state, snapshot, and phase mechanics. |
-| `generate-job-id.sh` | Normalize or generate job IDs. |
-| `token-estimator.sh` | Estimate context cost before broad reads. |
-| `readme-actions.sh` | Assemble approved root README packets in manifest order. |
-| `archive-actions.sh` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
-| `coverage-actions.sh` | Compare AC IDs across specs, plans, snapshots, and reviews. |
-| `project-commands.sh` | Detect likely test, lint, typecheck, and build commands without running them. |
-| `git-state.sh` | Report branch, upstream, dirty, ahead, and conflict state without mutation. |
-| `docs-drift.sh` | Report changed source paths that may affect durable docs. |
-| `docs-target.sh` | Route paths to the nearest nested README or approved root packet manifest. |
-| `gitignore-actions.sh` | Maintain explicit local-state/shareable-doc ignore rules. |
-| `prompt-check.sh` | Validate helper syntax/naming and render prompts in an isolated install. |
-| `workspace-actions.sh` | Maintain the machine-local project-name to repository-path map. |
-| `dependency-actions.sh` | Resolve shareable dependency declarations against the local workspace map. |
-| `project-scope.sh` | Create, validate, and query optional multi-project job routing. |
-| `context-sync.sh` | Safely mirror canonical Xoch job artifacts to participant repositories. |
+| `xoch-actions.js` | Job, arc, pointer, state, snapshot, and phase mechanics. |
+| `generate-job-id.js` | Normalize or generate job IDs. |
+| `token-estimator.js` | Estimate context cost before broad reads. |
+| `readme-actions.js` | Assemble approved root README packets in manifest order. |
+| `archive-actions.js` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
+| `coverage-actions.js` | Compare AC IDs across specs, plans, snapshots, and reviews. |
+| `project-commands.js` | Detect likely test, lint, typecheck, and build commands without running them. |
+| `git-state.js` | Report branch, upstream, dirty, ahead, and conflict state without mutation. |
+| `docs-drift.js` | Report changed source paths that may affect durable docs. |
+| `docs-target.js` | Route paths to the nearest nested README or approved root packet manifest. |
+| `gitignore-actions.js` | Maintain explicit local-state/shareable-doc ignore rules. |
+| `prompt-check.js` | Validate helper syntax/naming and render prompts in an isolated install. |
+| `workspace-actions.js` | Maintain the machine-local project-name to repository-path map. |
+| `dependency-actions.js` | Resolve shareable dependency declarations against the local workspace map. |
+| `project-scope.js` | Create, validate, and query optional multi-project job routing. |
+| `context-sync.js` | Safely mirror canonical Xoch job artifacts to participant repositories. |
 
 Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
@@ -352,7 +352,7 @@ Ready for next step: `xoch-next`
 
 ## Troubleshooting
 
-**Prompt not found:** Run `./install.sh` and restart the AI tool.
+**Prompt not found:** Run `./install.js` and restart the AI tool.
 
 **No current job:** Run `xoch-open-job`.
 
