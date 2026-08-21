@@ -100,6 +100,16 @@ function checkSyntax(root) {
     try {
       execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
     } catch (e) {
+      // DOCUMENTED COVERAGE EXCEPTION (gate-bdd-system, 2026-08-20): the
+      // `|| 1` fallback fires when e.status is null -- a signal-killed
+      // child rather than a normal non-zero exit. Not dead code: removing
+      // it would make process.exit(null) report success (verified: it
+      // exits 0), silently passing a syntax check that was actually
+      // aborted. Not testable: `node --check` never executes the checked
+      // file, so nothing in that file can trigger the kill; only an
+      // external process signaling this child mid-check could, which
+      // isn't deterministically constructible. See test/prompt-check.test.js
+      // and .xoch/work/jobs/gate-bdd-system/review.md for the investigation.
       process.exit(e.status || 1);
     }
   }

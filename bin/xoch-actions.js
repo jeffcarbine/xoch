@@ -663,7 +663,10 @@ function workflowAction(action, argv) {
   } else if (action === 'complete' || action === 'abandon') {
     if (!workflow) abortRuby('No active workflow');
     if (name && name !== workflow.name) abortRuby(`Workflow name does not match: ${workflow.name}`);
-    if (action === 'complete' && workflow.artifact && /^(finalize|write|record)_/.test(workflow.pending_action || '')) {
+    // workflow is only ever non-null here via resolveCurrentPointer's own
+    // sync (called above), which always fills pending_action with a
+    // non-empty default -- it can never be falsy at this point.
+    if (action === 'complete' && workflow.artifact && /^(finalize|write|record)_/.test(workflow.pending_action)) {
       const jobRoot = path.resolve(pointer.job.directory);
       const artifactPath = path.resolve(jobRoot, workflow.artifact);
       if (!artifactPath.startsWith(jobRoot + path.sep)) abortRuby('Workflow artifact escapes job directory');

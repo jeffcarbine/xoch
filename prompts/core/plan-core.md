@@ -110,6 +110,8 @@ When validation commands are not already established by project context, detect 
 ~/.xoch/bin/project-commands.js detect --json
 ```
 
+This also surfaces coverage-command candidates (`kind: coverage`) when the target project's tooling signals one.
+
 ### Step 5: Analyze Approach
 
 Provide a concise architecture analysis:
@@ -124,12 +126,17 @@ Revise until the approach is clear enough to plan.
 
 ### Step 6: Derive Phases
 
+{{xoch-partial:behavior-tests.md}}
+
+{{xoch-partial:coverage-gate.md}}
+
 Break the work into phases. Each phase should have:
 
 - a clear goal
 - files likely touched
 - acceptance criteria covered
-- test/check expectations
+- the behaviors/tests this phase introduces or turns green, mapped to the AC(s) they cover
+- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-make`
 - dependencies on earlier phases
 - completion criteria
 - evidence that `xoch-next` should capture before advancing
@@ -234,6 +241,12 @@ Use this structure:
 
 **Acceptance criteria covered:**
 - AC-001
+
+**Behavior tests (write first):**
+- [test description] - covers AC-00X, or "None - this phase doesn't add or change testable code behavior"
+
+**Existing coverage backfill:**
+- [file] - [gap to backfill], or "None - file(s) already at full coverage"
 
 **Testing requirements:**
 - [check]

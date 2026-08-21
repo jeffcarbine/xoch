@@ -42,9 +42,7 @@ function resolve(argv) {
       break;
     }
     if (cursor === root) break;
-    const parent = path.dirname(cursor);
-    if (parent === cursor || !parent.startsWith(root)) break;
-    cursor = parent;
+    cursor = path.dirname(cursor);
   }
 
   const manifestPath = path.resolve(root, manifest);
@@ -54,7 +52,7 @@ function resolve(argv) {
     result = {
       path: inputPath,
       scope: 'feature',
-      target: readme.startsWith(rootPrefix) ? readme.slice(rootPrefix.length) : readme,
+      target: readme.slice(rootPrefix.length),
       reason: 'nearest nested README',
     };
   } else {

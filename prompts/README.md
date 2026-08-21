@@ -132,6 +132,8 @@ partials/state-phase-index.md
 partials/project-routing.md
 partials/workflow-boundary.md
 partials/managed-workflow.md
+partials/behavior-tests.md
+partials/coverage-gate.md
 ```
 
 Expected core reference files:
@@ -196,6 +198,8 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 
 Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, map, and glossary a common begin/resume/complete lifecycle.
+
+Use `behavior-tests.md` in `make-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
 ## Multi-Project Jobs
 

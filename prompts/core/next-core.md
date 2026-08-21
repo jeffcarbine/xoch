@@ -76,7 +76,8 @@ For the current phase, assess:
 - planned files touched
 - acceptance criteria covered
 - implementation jobs completed
-- tests/checks run
+- tests/checks run, including red→green evidence for any behavior tests this phase wrote — not just that something ran
+- coverage status for any file this phase modified with executable code (100% is required before the job can close; see `coverage-gate.md`)
 - documentation targets updated or deferred
 - risks, regressions, or missing evidence
 

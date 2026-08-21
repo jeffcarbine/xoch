@@ -151,9 +151,6 @@ function run(command, argv) {
   if (!(primary.name === canonicalPrimary.name && path.resolve(primary.path) === path.resolve(canonicalPrimary.path))) {
     failWith('requested scope primary does not match canonical scope');
   }
-  if (!fs.existsSync(canonicalPrimary.path) || !fs.statSync(canonicalPrimary.path).isDirectory()) {
-    failWith(`canonical primary path does not exist: ${canonicalPrimary.path}`, 1);
-  }
 
   const participants = canonicalProjects.filter((project) => project.role === 'participant');
   for (const participant of participants) {
