@@ -48,9 +48,10 @@ function parsePartial(rawBody, sourceFile) {
     partialPath = firstLine.trim();
     assignments = rest.join('\n');
   } else {
+    // body is non-empty, trimmed, and single-line, so \S+ always matches.
     const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(body);
-    partialPath = match ? match[1] : body;
-    assignments = match && match[2] ? match[2] : '';
+    partialPath = match[1];
+    assignments = match[2] || '';
   }
 
   partialPath = partialPath.trim().replace(/^\.\//, '');
@@ -122,8 +123,10 @@ function renderPromptFile(promptsSourceDir, sourceFile, outputFile) {
   }
 }
 
+// Every caller (renderPrompts' two listings, each install* function's own
+// listing of the already-rendered PROMPTS_DIR) only calls this once its
+// own existence has already been established.
 function listMdFiles(dir) {
-  if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
     .filter((name) => name.endsWith('.md'))
     .map((name) => path.join(dir, name))
@@ -148,6 +151,9 @@ function renderPrompts() {
   fs.rmSync(PROMPTS_DIR, { recursive: true, force: true });
   fs.mkdirSync(PROMPTS_DIR, { recursive: true });
 
+  // README is excluded here, and only here -- every install* function's
+  // own listMdFiles(PROMPTS_DIR) scan already reads this filtered output,
+  // so none of them need their own redundant README check.
   for (const promptFile of listMdFiles(PROMPTS_SOURCE_DIR)) {
     const filename = path.basename(promptFile, '.md');
     if (filename === 'README') continue;
@@ -358,7 +364,6 @@ function installCopilot() {
 
   for (const promptFile of listMdFiles(PROMPTS_DIR)) {
     const filename = path.basename(promptFile, '.md');
-    if (filename === 'README') continue;
     const target = path.join(COPILOT_DIR, `xoch-${filename}.prompt.md`);
 
     if (isFileOrSymlink(target)) fs.unlinkSync(target);
@@ -377,7 +382,6 @@ function installCodex() {
 
   for (const promptFile of listMdFiles(PROMPTS_DIR)) {
     const filename = path.basename(promptFile, '.md');
-    if (filename === 'README') continue;
     const skillDir = path.join(CODEX_DIR, `xoch-${filename}`);
 
     fs.mkdirSync(path.join(skillDir, 'agents'), { recursive: true });
@@ -409,7 +413,6 @@ function installClaude() {
 
   for (const promptFile of listMdFiles(PROMPTS_DIR)) {
     const filename = path.basename(promptFile, '.md');
-    if (filename === 'README') continue;
     const skillDir = path.join(CLAUDE_DIR, `xoch-${filename}`);
 
     fs.mkdirSync(skillDir, { recursive: true });
@@ -432,7 +435,6 @@ function installKiro() {
 
   for (const promptFile of listMdFiles(PROMPTS_DIR)) {
     const filename = path.basename(promptFile, '.md');
-    if (filename === 'README') continue;
     const target = path.join(KIRO_DIR, `xoch-${filename}.md`);
 
     // Kiro only surfaces a steering file as an on-demand slash command with inclusion: manual.

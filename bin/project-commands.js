@@ -21,6 +21,10 @@ function readJsonSafe(filePath) {
   }
 }
 
+function containsText(filePath, needle) {
+  return fs.readFileSync(filePath, 'utf8').toLowerCase().includes(needle);
+}
+
 function detect(argv) {
   const flags = parseFlags(argv, ['json']);
   const root = path.resolve(flags.root || '.');
@@ -49,7 +53,7 @@ function detect(argv) {
     else if (exists('pnpm-lock.yaml')) manager = 'pnpm';
     else if (exists('yarn.lock')) manager = 'yarn';
     managers.push(manager);
-    for (const name of ['test', 'lint', 'typecheck', 'check', 'build', 'format']) {
+    for (const name of ['test', 'lint', 'typecheck', 'check', 'build', 'format', 'coverage']) {
       if (!(name in scripts)) continue;
       const runner = manager === 'npm' ? `npm run ${name}` : manager === 'bun' ? `bun run ${name}` : `${manager} ${name}`;
       add(name, runner, 'package.json');
@@ -59,30 +63,36 @@ function detect(argv) {
   if (exists('pyproject.toml') || exists('pytest.ini')) {
     managers.push('python');
     add('test', 'pytest', 'Python test configuration');
+    add('coverage', 'pytest --cov', 'Python test configuration');
   }
   if (exists('go.mod')) {
     managers.push('go');
     add('test', 'go test ./...', 'go.mod');
     add('build', 'go build ./...', 'go.mod');
+    add('coverage', 'go test -cover ./...', 'go.mod');
   }
   if (exists('Cargo.toml')) {
     managers.push('cargo');
     add('test', 'cargo test', 'Cargo.toml');
     add('check', 'cargo check', 'Cargo.toml');
+    if (exists('tarpaulin.toml')) add('coverage', 'cargo tarpaulin', 'tarpaulin.toml');
   }
   if (exists('pom.xml')) {
     managers.push('maven');
     add('test', 'mvn test', 'pom.xml');
+    if (containsText(path.join(root, 'pom.xml'), 'jacoco')) add('coverage', 'mvn jacoco:report', 'pom.xml (jacoco plugin)');
   }
   if (exists('build.gradle') || exists('build.gradle.kts')) {
     managers.push('gradle');
     add('test', './gradlew test', 'Gradle build');
+    const gradleFile = exists('build.gradle') ? 'build.gradle' : 'build.gradle.kts';
+    if (containsText(path.join(root, gradleFile), 'jacoco')) add('coverage', './gradlew jacocoTestReport', `${gradleFile} (jacoco plugin)`);
   }
   if (exists('composer.json')) {
     managers.push('composer');
     const composer = readJsonSafe(path.join(root, 'composer.json'));
     const scripts = composer.scripts || {};
-    for (const name of ['test', 'analyse', 'analyze', 'lint']) {
+    for (const name of ['test', 'analyse', 'analyze', 'lint', 'coverage']) {
       if (name in scripts) add(name, `composer ${name}`, 'composer.json');
     }
   }

@@ -8,6 +8,10 @@
 # Node modules (if testing)
 node_modules/
 
+# install.js test scratch (in-repo so node's coverage reporter tracks it;
+# cleaned up per-test, this is just a crash-path safety net)
+.install-test-scratch/
+
 # IDE files
 .vscode/
 .idea/

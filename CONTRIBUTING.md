@@ -156,6 +156,24 @@ git diff --check
 
 When installer behavior changes, run a temporary-HOME install smoke test.
 
+### Tests And Coverage
+
+Every `bin/*.js` script, `bin/lib/*.js` module, `config.js`, and `install.js` has a matching `test/*.test.js` file using the shared harness (`test/lib/runner.js`'s `test()`/`run()`, `test/lib/cli.js`'s `scratch()`/`cleanup()`/`runScript()` for isolated-`$HOME` subprocess spawns). Run the full suite:
+
+```bash
+npm test
+```
+
+This runs `node --test --experimental-test-coverage test/*.test.js` and prints a per-file coverage table. Any file a change modifies with executable code must reach 100% line, branch, and function coverage before that change is done — not just the lines touched, the whole file. This is not waivable outside an `xoch-patch` session. If a target file isn't already at 100%, add coverage-backfill test cases for its existing behavior alongside the change.
+
+To run a subset while iterating:
+
+```bash
+node --test --experimental-test-coverage test/some-file.test.js
+```
+
+A shared library module's own file (e.g. `bin/lib/ruby-json.js`) may show partial coverage when its test file runs alone if other files also exercise it indirectly — run it alongside its own dedicated test file (or the full suite) for the true picture.
+
 Check command inventory:
 
 ```bash

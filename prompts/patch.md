@@ -112,6 +112,8 @@ Run focused checks appropriate to the change:
 
 If validation cannot run, record why.
 
+If the patch touches code, prefer reaching 100% coverage on the file(s) it touches, same as the normal lifecycle. `xoch-patch` is the one place in Xoch's lifecycle where a coverage waiver is allowed when urgency genuinely outweighs it — record the waiver explicitly in the patch note, including why coverage wasn't reached.
+
 ### Step 6: Record Patch Note
 
 When useful, write:
@@ -145,6 +147,10 @@ Use this structure:
 
 - [check] - [result]
 
+## Coverage
+
+[100% reached, or "waived: [reason]", or "not applicable - no code touched"]
+
 ## Documentation
 
 [updated, not impacted, waived, or follow-up]
@@ -171,6 +177,7 @@ End with:
 ```text
 Patch complete.
 Validation: [summary]
+Coverage: [status]
 Documentation: [status]
 Follow-up: [summary]
 ```
@@ -185,4 +192,5 @@ Follow-up: [summary]
 - If scope grows, switch to normal job flow.
 - Do not hide skipped validation.
 - Do not use patch as a substitute for unclear requirements.
+- A coverage waiver is only valid here — record it explicitly, including why.
 - Do not move active legacy job folders during the migration.

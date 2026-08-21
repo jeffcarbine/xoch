@@ -26,7 +26,7 @@ function inspect(argv) {
     process.exit(2);
   }
   const gitDirResult = spawnSync('git', ['-C', root, 'rev-parse', '--absolute-git-dir'], { encoding: 'utf8' });
-  const gitDir = (gitDirResult.stdout || '').trim();
+  const gitDir = gitDirResult.stdout.trim();
 
   const absoluteRoot = path.resolve(root);
   const branch = git(absoluteRoot, ['branch', '--show-current']);

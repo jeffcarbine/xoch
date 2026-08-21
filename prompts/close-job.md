@@ -13,7 +13,7 @@ Close a completed Xoch job.
 
 ## Purpose
 
-Verify review and documentation status, record final job history, clear the active job pointer, and mark the job closed.
+Verify review, coverage, and documentation status, record final job history, clear the active job pointer, and mark the job closed.
 
 Target flow:
 
@@ -84,7 +84,15 @@ If review is missing or not passing, ask whether to:
 
 Only continue without a passing review when the engineer explicitly chooses a waiver.
 
-### Step 4: Check Documentation Freshness
+### Step 4: Check Coverage
+
+{{xoch-partial:coverage-gate.md}}
+
+Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use `xoch-review`'s recorded coverage evidence when review already covered it, or check directly with the project's coverage command otherwise.
+
+This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-make` to close the gap, even when review was waived or skipped entirely.
+
+### Step 5: Check Documentation Freshness
 
 Confirm project READMEs, feature READMEs, `.xoch/docs/`, and glossary entries are current enough for this job.
 
@@ -94,7 +102,7 @@ If docs are stale or unknown, ask whether to:
 2. Record an explicit documentation waiver and continue closing
 3. Stop and keep the job active
 
-### Step 5: Check Worktree State
+### Step 6: Check Worktree State
 
 Inspect:
 
@@ -109,7 +117,7 @@ For multi-project jobs, inspect and report worktree state separately in every li
 
 If unrelated worktree changes exist, mention them and avoid including them in the closure summary.
 
-### Step 6: Write Closure Notes
+### Step 7: Write Closure Notes
 
 For target-model jobs, write `closure.md` under the `job_directory` field returned by `job evidence`.
 
@@ -132,6 +140,10 @@ Use this structure:
 ## Validation
 
 [Checks and manual testing]
+
+## Coverage
+
+[100% coverage confirmed on every job-touched file with code, or "not applicable - no code touched", or "documented exception: [file/branch, see review.md]"]
 
 ## Documentation
 
@@ -164,7 +176,7 @@ For legacy migration jobs, write `closure.md` or final notes in the legacy job f
 
 For multi-project jobs, write closure state through the primary job and sync it before clearing pointers in any mirror.
 
-### Step 7: Clear Active Pointer
+### Step 8: Clear Active Pointer
 
 Clear the active pointer only if the helper reports that it points to this job:
 
@@ -183,7 +195,7 @@ Do not clear a pointer for a different active job.
 
 For multi-project jobs, run the same helper checks from every listed repository. Clear only pointers that identify this job; a participant may legitimately have no pointer or another active job.
 
-### Step 8: Leave Job In Place
+### Step 9: Leave Job In Place
 
 Closed jobs stay in their existing folder; marking `status: closed` in `state.md` and clearing the active pointer is sufficient. Do not move or archive job folders.
 
@@ -195,6 +207,7 @@ End with:
 Job closed.
 Job: [job-id]
 Review: [status]
+Coverage: [status]
 Documentation: [status]
 Follow-up: [summary]
 ```
@@ -204,6 +217,7 @@ Follow-up: [summary]
 {{xoch-partial:response-ending.md}}
 
 - Closing requires either passing review or an explicit review waiver.
+- Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`.
 - Stale documentation requires either refresh or an explicit documentation waiver.
 - Do not hide skipped validation.
 - Do not clear the wrong active job pointer.

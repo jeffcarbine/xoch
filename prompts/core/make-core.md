@@ -127,7 +127,38 @@ Use token estimates for large reads when helpful:
 ~/.xoch/bin/token-estimator.js --batch [files...]
 ```
 
-### Step 6: Implement
+### Step 6: Ask How To Handle Tests
+
+Before writing tests, stop and ask:
+
+{{xoch-partial:action-choice.md agent_action="writes the tests" engineer_action="writes the tests"}}
+
+Do not begin writing tests until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-make`.
+
+Interpret the choices as:
+
+- `[A]` Agent writes the tests: draft the test(s) in Step 7.
+- `[E]` Engineer writes the tests: do not draft tests; wait for the engineer to provide them, then continue to Step 7 to confirm they fail for the right reason.
+- `[C]` Collaborate: draft tests interactively, incorporating engineer input as you go.
+
+When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step and Step 7, and continue to Step 8.
+
+### Step 7: Write Behavior Tests First
+
+{{xoch-partial:behavior-tests.md}}
+
+When this phase adds or changes testable code behavior:
+
+1. Write the test(s) for that behavior before editing implementation code, per the ownership chosen in Step 6.
+2. Run them and confirm they fail for the right reason — the behavior doesn't exist yet, not a broken test or a syntax error.
+3. Record the failure as evidence.
+4. Stop and ask: {{xoch-partial:accept-or-modify.md artifact="tests"}}. Do not begin Step 8 until the engineer chooses `[A]`. On `[M]`, revise the tests per the engineer's modifications and re-confirm they still fail for the right reason before asking again.
+
+When this phase backfills coverage for pre-existing, already-correct code (per the plan's coverage-gate work), write and run those tests too. They are expected to pass immediately, not fail — that's expected, and different from the write-first flow above. The accept/modify gate above still applies before continuing to Step 8.
+
+When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step (see Step 6).
+
+### Step 8: Implement
 
 When editing:
 
@@ -139,12 +170,13 @@ When editing:
 - update docs only when this phase's work changes documented behavior
 - avoid adding QA or PR process ceremony
 - never move or copy implementation source between participating repositories
+- implement until this phase's behavior tests pass (green), then continue to Step 9
 
 If the job is target-model, append useful implementation notes to `notes_dir` (from Step 1's `job evidence` call), or the current phase file (`current_phase_body`) when it exists.
 
 For legacy migration jobs, add notes to the existing legacy job folder when useful.
 
-### Step 7: Validate
+### Step 9: Validate
 
 Run focused validation that matches the phase. Examples:
 
@@ -153,10 +185,12 @@ Run focused validation that matches the phase. Examples:
 - prompt inventory scans when command files change
 - targeted documentation scans when terminology changes
 - project test suites when code behavior changes
+- this phase's behavior tests now pass (green), and any coverage-backfill tests still pass
+- coverage on any file this phase modified with executable code, when the project has coverage tooling
 
 If validation cannot be run, record why.
 
-### Step 8: Record Evidence
+### Step 10: Record Evidence
 
 Before ending, summarize:
 
@@ -164,6 +198,8 @@ Before ending, summarize:
 - acceptance criteria touched
 - tests/checks run
 - tests/checks not run
+- red→green status for each behavior test written this phase
+- coverage status for any file this phase modified with executable code
 - additional changes, manual checks, skipped checks, or decisions from follow-up back-and-forth
 - risks or follow-up notes
 - whether docs were updated or intentionally deferred

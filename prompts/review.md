@@ -112,7 +112,15 @@ When project validation commands are not already known, inspect advisory candida
 ~/.xoch/bin/project-commands.js detect --json
 ```
 
-### Step 5: Documentation Freshness
+### Step 5: Full-Suite And Coverage Validation
+
+{{xoch-partial:coverage-gate.md}}
+
+Re-run the project's full test suite (using the test command detected or already known from Step 4) and record whether it passes. A failure unrelated to this job's work may be explicitly waived by the engineer; record the waiver and what makes it unrelated. A failure caused by or related to this job's work blocks `pass`/`pass_with_waivers` until fixed.
+
+Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency — if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-make` to close any gap that doesn't qualify.
+
+### Step 6: Documentation Freshness
 
 Use `~/.xoch/bin/docs-drift.js check --json` when a baseline exists. Route reported paths with `~/.xoch/bin/docs-target.js resolve --path "[path]" --json`. Drift is a review signal, not an automatic documentation failure.
 
@@ -133,18 +141,18 @@ xoch-doc
 
 If the engineer chooses not to update docs, record a documentation waiver.
 
-### Step 6: Decide Review Status
+### Step 7: Decide Review Status
 
 Use one of these statuses:
 
-- `pass` - acceptance is covered and no blocking risks remain
-- `pass_with_waivers` - remaining gaps are explicitly waived by the engineer
+- `pass` - acceptance is covered, the full suite passes (or its failures are explicitly waived as unrelated to this job), coverage is complete on every job-touched file (100%, or fully-recorded documented exceptions per `coverage-gate.md`), and no blocking risks remain
+- `pass_with_waivers` - remaining gaps other than code coverage (which cannot be waived here, only handled via a documented exception) are explicitly waived by the engineer
 - `needs_work` - issues should be fixed before close-job
 - `blocked` - review cannot complete without missing information or environment access
 
 `xoch-close-job` may proceed with `pass` or `pass_with_waivers`. It should ask before proceeding if review is missing or not passing.
 
-### Step 7: Write Review Result
+### Step 8: Write Review Result
 
 For target-model jobs, write `review.md` under the `job_directory` field returned by `job evidence`.
 
@@ -169,6 +177,11 @@ Use this structure:
 ## Validation Evidence
 
 - `[project]` [check] - [result]
+
+## Full-Suite And Coverage
+
+- Full suite: [pass | fail, waived as unrelated: reason | fail, blocking]
+- Coverage: `[file]` - [percentage/status; must be 100% for every job-touched file with code, or a documented exception per `coverage-gate.md` with the file/branch, investigation findings, and source/test comment locations]
 
 ## Documentation Freshness
 

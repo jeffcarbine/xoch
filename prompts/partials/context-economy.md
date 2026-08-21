@@ -16,6 +16,8 @@ Prefer the smallest useful read:
 - read snippets around relevant symbols before reading whole files
 - if a useful read would exceed budget, ask the engineer whether to narrow, proceed anyway, or rely on existing context
 
+When building understanding of existing, unfamiliar code before working on it, prefer this order: nearby README/doc context first, then its tests (when present and current), then raw source — stop as soon as you understand enough to proceed. This is a preference, not a gate: fall back straight to source when no README exists, or when tests are missing, sparse, or don't cover the area in question. It does not apply when reviewing an actual diff or change — reviewing still requires reading the real change regardless of what tests describe.
+
 Always show the estimator's output in your response before the read proceeds — this is not conditional on budget size or read strategy.
 
 When recording token usage, distinguish files actually read from files only inspected by search, diff, or prior conversation context.
