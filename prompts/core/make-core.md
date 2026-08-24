@@ -121,11 +121,7 @@ For agent-owned or collaborative work:
 
 4. Note any risky operations that need engineer approval.
 
-Use token estimates for large reads when helpful:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
+{{xoch-partial:budget-check.md skill="make"}}
 
 ### Step 6: Ask How To Handle Tests
 

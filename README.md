@@ -92,7 +92,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-pause` | Pause the active job. |
 | `xoch-resume` | Resume paused or archived work. |
 | `xoch-sidebar` | Explore a related question without advancing job state. |
-| `xoch-glossary` | Add or update project terminology. |
+| `xoch-help` | List every Xoch command with its description. |
 | `xoch-meow` | Verify installation. |
 
 ---
@@ -134,9 +134,6 @@ your-project/
       SETUP.md
       TESTING.md
       CONVENTIONS.md
-    glossaries/
-      README.md
-      quick-reference.md
 ```
 
 Prompt source files can also use reusable partials:
@@ -196,7 +193,7 @@ Resolve the active root directly with `~/.xoch/bin/xoch-actions.js config root`,
 
 Do not edit the pointer manually. `state.md` keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
 
-Discovery, sidebar, trace, documentation, map, and glossary work use managed workflow actions. A new command cannot silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
+Discovery, sidebar, trace, documentation, and map work use managed workflow actions. A new command cannot silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
 
 ### Multi-Project Jobs
 
@@ -253,9 +250,8 @@ Choose what your team wants to share:
 # Local-only Xoch state
 /.xoch/work/
 
-# Share project docs and glossaries
+# Share project docs
 !.xoch/docs/
-!.xoch/glossaries/
 ```
 
 For solo work, ignoring all of `.xoch/` is also valid.
@@ -288,7 +284,9 @@ All helper filenames use kebab-case. Installed helpers include:
 |---|---|
 | `xoch-actions.js` | Job, arc, pointer, state, snapshot, and phase mechanics. |
 | `generate-job-id.js` | Normalize or generate job IDs. |
-| `token-estimator.js` | Estimate context cost before broad reads. |
+| `token-estimator.js` | Estimate context cost before broad reads; check/record reads against per-skill budgets. |
+| `context-tracker.js` | Track whether a previously-read file has changed, to avoid needless rereads. |
+| `help-actions.js` | List every command with its description, read from each prompt's own frontmatter. |
 | `readme-actions.js` | Assemble approved root README packets in manifest order. |
 | `archive-actions.js` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
 | `coverage-actions.js` | Compare AC IDs across specs, plans, snapshots, and reviews. |
@@ -303,9 +301,9 @@ All helper filenames use kebab-case. Installed helpers include:
 | `project-scope.js` | Create, validate, and query optional multi-project job routing. |
 | `context-sync.js` | Safely mirror canonical Xoch job artifacts to participant repositories. |
 
-Default budgets are intentionally modest: spec work uses about 5,000 tokens, plan work uses about 7,000 tokens, and glossary work uses about 5,000 tokens unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
+Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (default: spec 5,000 tokens, plan 7,000 tokens, 5,000 for anything else unlisted), seeded on install and editable with `node config.js budgets` or `node config.js set tokenBudgets.<skill> <value>`. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
-Before full-file reads beyond active Xoch pointer/state files, Xoch should run the estimator against the candidate files and report the estimate when it changes the read strategy, crosses half the relevant budget, or requires engineer approval.
+Before full-file reads beyond active Xoch pointer/state files, Xoch should run `token-estimator.js budget check --skill <skill> --files [files...]` against the candidate files and report the estimate. A FAIL result is a hard stop: reading past budget is not a judgment call the agent makes on its own -- it requires an explicit waiver from the engineer.
 
 For repeated phase work, `state.md` should act as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.md`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them by section or only when state/prior context is insufficient.
 

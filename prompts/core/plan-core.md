@@ -96,13 +96,7 @@ Identify files needed to understand the implementation approach:
 - installer/configuration files
 - test or validation examples
 
-Use:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
-
-If the read is large, summarize why it is worth the context and ask the engineer before proceeding unless they have already approved exceeding budget.
+{{xoch-partial:budget-check.md skill="plan"}}
 
 When validation commands are not already established by project context, detect advisory candidates with:
 
@@ -180,7 +174,7 @@ Use this structure:
 
 ## Token Usage (Plan Phase)
 
-Budget: 7,000 tokens
+Budget: [current value reported by `token-estimator.js budget check --skill plan`]
 [Files read and estimates]
 
 ---

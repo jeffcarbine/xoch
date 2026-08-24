@@ -92,11 +92,7 @@ How should we investigate? [A]gent researches, [E]ngineer provides context, or [
 
 {{xoch-partial:context-economy.md}}
 
-For broad local reads, estimate candidates first:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
+{{xoch-partial:budget-check.md skill="discovery"}}
 
 When local images or screenshots are provided, inspect them directly and record what is visible versus inferred. When external URLs are provided, read the relevant sections and retain direct links. Use targeted web research when the engineer requests it or when current external facts are necessary to answer the approved question.
 

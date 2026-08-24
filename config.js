@@ -13,6 +13,12 @@ const { readJson, updateJson } = require('./bin/lib/json-store');
 const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
 
+// Kept in sync by hand with bin/token-estimator.js's (and install.js's)
+// copy of this table -- the installed runtime can't require this
+// root-level file, so it's duplicated rather than shared.
+const DEFAULT_SKILL_BUDGETS = { spec: 5000, plan: 7000 };
+const FALLBACK_SKILL_BUDGET = 5000;
+
 const GREEN = '\x1b[0;32m';
 const YELLOW = '\x1b[1;33m';
 const RED = '\x1b[0;31m';
@@ -20,6 +26,29 @@ const NC = '\x1b[0m';
 
 function isValidStorageMode(value) {
   return VALID_STORAGE_MODES.includes(value);
+}
+
+function isValidBudgetValue(value) {
+  return /^\d+$/.test(value) && Number(value) > 0;
+}
+
+function readTokenBudgets() {
+  const data = readJson(CONFIG_PATH);
+  return { ...DEFAULT_SKILL_BUDGETS, ...(data.tokenBudgets || {}) };
+}
+
+function resolvedBudget(skill) {
+  const budgets = readTokenBudgets();
+  return Object.prototype.hasOwnProperty.call(budgets, skill) ? budgets[skill] : FALLBACK_SKILL_BUDGET;
+}
+
+function writeTokenBudget(skill, value) {
+  updateJson(CONFIG_PATH, (data) => {
+    data.version = data.version || 1;
+    data.tokenBudgets = data.tokenBudgets || {};
+    data.tokenBudgets[skill] = Number(value);
+    return data;
+  });
 }
 
 function readStorageMode() {
@@ -34,6 +63,7 @@ function printConfig() {
   data.version = data.version || 1;
   data.storage = data.storage || {};
   data.storage.mode = mode;
+  data.tokenBudgets = readTokenBudgets();
   console.log(JSON.stringify(data, null, 2));
 }
 
@@ -54,25 +84,41 @@ function printMigrationWarning() {
 }
 
 function cmdGet(key) {
-  if (key !== 'storage.mode') {
-    process.stderr.write(`${RED}Error: unknown config key: ${key}${NC}\n`);
-    process.exit(1);
+  if (key === 'storage.mode') {
+    console.log(readStorageMode());
+    return;
   }
-  console.log(readStorageMode());
+  if (key.startsWith('tokenBudgets.')) {
+    console.log(resolvedBudget(key.slice('tokenBudgets.'.length)));
+    return;
+  }
+  process.stderr.write(`${RED}Error: unknown config key: ${key}${NC}\n`);
+  process.exit(1);
 }
 
 function cmdSet(key, value) {
-  if (key !== 'storage.mode') {
-    process.stderr.write(`${RED}Error: unknown config key: ${key}${NC}\n`);
-    process.exit(1);
+  if (key === 'storage.mode') {
+    if (!isValidStorageMode(value)) {
+      process.stderr.write(`${RED}Error: invalid storage.mode value '${value}'. Expected one of: ${VALID_STORAGE_MODES.join(' ')}${NC}\n`);
+      process.exit(1);
+    }
+    writeStorageMode(value);
+    console.log(`${GREEN}✓${NC} storage.mode set to ${value}`);
+    printMigrationWarning();
+    return;
   }
-  if (!isValidStorageMode(value)) {
-    process.stderr.write(`${RED}Error: invalid storage.mode value '${value}'. Expected one of: ${VALID_STORAGE_MODES.join(' ')}${NC}\n`);
-    process.exit(1);
+  if (key.startsWith('tokenBudgets.')) {
+    if (!isValidBudgetValue(value)) {
+      process.stderr.write(`${RED}Error: invalid budget value '${value}'. Expected a positive whole number.${NC}\n`);
+      process.exit(1);
+    }
+    const skill = key.slice('tokenBudgets.'.length);
+    writeTokenBudget(skill, value);
+    console.log(`${GREEN}✓${NC} tokenBudgets.${skill} set to ${value}`);
+    return;
   }
-  writeStorageMode(value);
-  console.log(`${GREEN}✓${NC} storage.mode set to ${value}`);
-  printMigrationWarning();
+  process.stderr.write(`${RED}Error: unknown config key: ${key}${NC}\n`);
+  process.exit(1);
 }
 
 function cmdShow() {
@@ -151,12 +197,49 @@ function runInteractive() {
   printMigrationWarning();
 }
 
+function runBudgetsInteractive() {
+  console.log('Xoch Token Budgets');
+  console.log('===================');
+  console.log('');
+  console.log('Current budgets:');
+  for (const [skill, value] of Object.entries(readTokenBudgets())) {
+    console.log(`  ${skill}: ${value}`);
+  }
+  console.log('');
+
+  for (;;) {
+    if (process.stdin.isTTY) process.stdout.write('Enter a skill name to update (or press Enter to finish): ');
+    const skill = readLine();
+    if (skill === null) process.exit(1);
+    if (skill === '') {
+      console.log('Done.');
+      return;
+    }
+
+    const current = resolvedBudget(skill);
+    if (process.stdin.isTTY) process.stdout.write(`New budget for "${skill}" (currently ${current}): `);
+    const value = readLine();
+    if (value === null) process.exit(1);
+    if (!isValidBudgetValue(value)) {
+      process.stderr.write(`${RED}Error: invalid budget value '${value}'. Expected a positive whole number.${NC}\n`);
+      process.exit(1);
+    }
+
+    writeTokenBudget(skill, value);
+    console.log(`${GREEN}✓${NC} tokenBudgets.${skill} set to ${value}`);
+    console.log('');
+  }
+}
+
 function usage() {
   console.log(`Usage:
   node config.js                          Interactive mode
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
-  node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)`);
+  node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
+  node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
+  node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
+  node config.js budgets                      Interactively review/update token budgets`);
 }
 
 function main() {
@@ -184,6 +267,9 @@ function main() {
       }
       cmdSet(arg2, arg3);
       break;
+    case 'budgets':
+      runBudgetsInteractive();
+      break;
     case '-h':
     case '--help':
       usage();
@@ -201,8 +287,14 @@ if (require.main === module) {
 module.exports = {
   CONFIG_PATH,
   VALID_STORAGE_MODES,
+  DEFAULT_SKILL_BUDGETS,
+  FALLBACK_SKILL_BUDGET,
   isValidStorageMode,
+  isValidBudgetValue,
   readStorageMode,
+  readTokenBudgets,
+  resolvedBudget,
+  writeTokenBudget,
   printConfig,
   writeStorageMode,
   printMigrationWarning,
@@ -211,6 +303,7 @@ module.exports = {
   cmdShow,
   readLine,
   runInteractive,
+  runBudgetsInteractive,
   usage,
   main,
 };

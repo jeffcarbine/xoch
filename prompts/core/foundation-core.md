@@ -73,17 +73,7 @@ Standalone jobs need no additional scope file. A job spanning repositories store
 
 One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and the active pointer are always project-specific and are never synchronized. Use `project-scope.js` for routing and `context-sync.js` after canonical job-context writes.
 
-## Context Economy
-
-Before full-file reads beyond active pointer/state files, run:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
-
-Always show the output in your response before the read proceeds.
-
-Prefer search, diffs, file outlines, and targeted snippets before whole-file reads. Do not reread files merely to reacquire background already present in the conversation.
+{{xoch-partial:context-economy.md}}
 
 ## Deterministic Helpers
 

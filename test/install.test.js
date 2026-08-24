@@ -651,4 +651,66 @@ test('a non-prompt-related file in the Copilot directory is left alone', () => {
   }
 });
 
+test('a fresh install seeds ~/.xoch/config.json with default token budgets', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx);
+    const result = runInstall(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 2 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(ctx), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reinstalling preserves an engineer-set token budget override', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx);
+    fs.mkdirSync(xochDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify({ version: 1, tokenBudgets: { spec: 9999 } }));
+    const result = runInstall(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 1 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(ctx), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 9999);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reinstalling with all default budgets already present reports nothing new was seeded', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx);
+    fs.mkdirSync(xochDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify({ version: 1, tokenBudgets: { spec: 5000, plan: 7000 } }));
+    const result = runInstall(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Token budgets already present/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('seeding config.json tolerates a corrupt existing file by starting fresh', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx);
+    fs.mkdirSync(xochDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), 'not valid json{{{');
+    const result = runInstall(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(ctx), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 run();

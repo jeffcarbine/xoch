@@ -61,11 +61,7 @@ Make clear that sidebar does not advance phase state.
 
 Ask what the engineer wants to explore, then answer normally.
 
-For code or documentation reads, use token estimation when the read is broad:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
+{{xoch-partial:budget-check.md skill="sidebar"}}
 
 ### Step 5: Return Guidance
 

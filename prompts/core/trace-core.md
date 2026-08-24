@@ -61,11 +61,7 @@ State:
 - files, logs, or docs to inspect
 - commands that may reproduce or narrow the issue
 
-Use token estimates for broad reads:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
+{{xoch-partial:budget-check.md skill="trace"}}
 
 ### Step 3: Inspect Evidence
 

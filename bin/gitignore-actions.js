@@ -37,7 +37,7 @@ function ensure(argv) {
   });
 
   if (mode === 'shared-docs' && broadIndexes.length && !repair) {
-    console.error('A broad .xoch ignore rule hides docs and glossaries. Rerun with --repair to replace it safely.');
+    console.error('A broad .xoch ignore rule hides docs. Rerun with --repair to replace it safely.');
     process.exit(1);
   }
 
@@ -48,10 +48,9 @@ function ensure(argv) {
   const block = mode === 'local-all'
     ? ['# Xoch local state and documentation', '/.xoch/']
     : [
-      '# Xoch local workflow state; share project docs and glossaries',
+      '# Xoch local workflow state; share project docs',
       '/.xoch/*',
       '!/.xoch/docs/',
-      '!/.xoch/glossaries/',
     ];
 
   const missing = block.filter((line) => !lines.includes(line));
