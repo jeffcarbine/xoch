@@ -16,6 +16,13 @@ const XOCH_RUNTIME_DIR = path.join(os.homedir(), '.xoch');
 const PROMPTS_DIR = path.join(XOCH_RUNTIME_DIR, 'prompts');
 const CORE_PROMPTS_DIR = path.join(PROMPTS_DIR, 'core');
 const BIN_DIR = path.join(XOCH_RUNTIME_DIR, 'bin');
+const CONFIG_PATH = path.join(XOCH_RUNTIME_DIR, 'config.json');
+
+// Kept in sync by hand with bin/token-estimator.js's DEFAULT_SKILL_BUDGETS --
+// the installed runtime can't require this root-level file, so the table is
+// duplicated rather than shared across the install boundary.
+const DEFAULT_SKILL_BUDGETS = { spec: 5000, plan: 7000 };
+
 const COPILOT_DIR = path.join(os.homedir(), 'Library', 'Application Support', 'Code', 'User', 'prompts');
 const CODEX_DIR = path.join(os.homedir(), '.codex', 'skills');
 const CLAUDE_DIR = path.join(os.homedir(), '.claude', 'skills');
@@ -221,6 +228,40 @@ function installHelpers() {
 
   if (helperCount === 0) {
     console.log(`  ${YELLOW}No helper scripts found${NC}`);
+  }
+  console.log('');
+}
+
+// Ensures ~/.xoch/config.json exists and its tokenBudgets object has an
+// entry for every skill in DEFAULT_SKILL_BUDGETS, without ever overwriting
+// a value the engineer already set (by hand or via `node config.js`).
+function seedConfig() {
+  let data = {};
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    } catch {
+      data = {};
+    }
+  }
+  data.version = data.version || 1;
+  data.tokenBudgets = data.tokenBudgets || {};
+
+  let added = 0;
+  for (const [skill, value] of Object.entries(DEFAULT_SKILL_BUDGETS)) {
+    if (!(skill in data.tokenBudgets)) {
+      data.tokenBudgets[skill] = value;
+      added += 1;
+    }
+  }
+
+  fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+  fs.writeFileSync(CONFIG_PATH, `${JSON.stringify(data, null, 2)}\n`);
+
+  if (added > 0) {
+    console.log(`${GREEN}✓${NC} Seeded ${added} default token budget(s) in ${CONFIG_PATH}`);
+  } else {
+    console.log(`${GREEN}✓${NC} Token budgets already present in ${CONFIG_PATH}`);
   }
   console.log('');
 }
@@ -461,6 +502,7 @@ function main() {
 
   console.log('');
   installHelpers();
+  seedConfig();
   renderPrompts();
   cleanupCopilot();
   cleanupCodex();
@@ -507,6 +549,7 @@ module.exports = {
   renderPromptFile,
   renderPrompts,
   installHelpers,
+  seedConfig,
   listMdFiles,
   hasUnresolvedPartial,
   injectFrontmatterLine,

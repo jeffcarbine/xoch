@@ -153,6 +153,163 @@ test('set storage.mode writes the config and prints the migration warning', () =
   }
 });
 
+test('get tokenBudgets.spec prints the built-in default when unset', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['get', 'tokenBudgets.spec'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.stdout.trim(), '5000');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('get tokenBudgets.<unrecognized skill> falls back to the generic default', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['get', 'tokenBudgets.some-unknown-skill'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.stdout.trim(), '5000');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set tokenBudgets.spec writes the override and get reflects it', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'tokenBudgets.spec', '6000'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /tokenBudgets\.spec set to 6000/);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.tokenBudgets.spec, 6000);
+
+    const getResult = runScript(SCRIPT, ['get', 'tokenBudgets.spec'], ctx);
+    assert.strictEqual(getResult.stdout.trim(), '6000');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set tokenBudgets.<skill> rejects a non-numeric value', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'tokenBudgets.spec', 'abc'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid budget value 'abc'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set tokenBudgets.<skill> rejects zero', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'tokenBudgets.spec', '0'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid budget value '0'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set tokenBudgets.<skill> rejects a negative value', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'tokenBudgets.spec', '-5'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid budget value '-5'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('show includes the resolved token budgets', () => {
+  const ctx = scratch();
+  try {
+    runScript(SCRIPT, ['set', 'tokenBudgets.spec', '6000'], ctx);
+    const result = runScript(SCRIPT, ['show'], ctx);
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.tokenBudgets.spec, 6000);
+    assert.strictEqual(data.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: setting one skill then a blank line finishes', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, 'spec\n6000\n\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /spec: 5000/);
+    assert.match(result.stdout, /tokenBudgets\.spec set to 6000/);
+    assert.match(result.stdout, /Done\./);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.tokenBudgets.spec, 6000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: an immediate blank line finishes without changes', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, '\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Done\./);
+    assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: no stdin input at all exits 1', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, null);
+    assert.strictEqual(result.status, 1);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: EOF after a skill name but before a value exits 1', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, 'spec\n');
+    assert.strictEqual(result.status, 1);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: an invalid value for a skill exits 1 without writing', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, 'spec\nabc\n');
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid budget value 'abc'/);
+    assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('budgets: updating a skill twice in one session applies both edits', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin(['budgets'], ctx, 'spec\n6000\nplan\n8000\n\n');
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.tokenBudgets.spec, 6000);
+    assert.strictEqual(data.tokenBudgets.plan, 8000);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('interactive mode with no stdin input exits 1', () => {
   const ctx = scratch();
   try {
@@ -285,6 +442,43 @@ test('a real TTY gets the inline selection prompt', () => {
     cleanup(ctx);
   }
   assert.match(wrote, /Selection \[1\/2\/3\]: /);
+});
+
+test('budgets on a real TTY prints the inline skill/value prompts', () => {
+  const ctx = scratch();
+  const originalIsTTY = process.stdin.isTTY;
+  const originalReadSync = fs.readSync;
+  const originalHome = process.env.HOME;
+  let wrote = '';
+  const originalWrite = process.stdout.write;
+  try {
+    process.env.HOME = ctx.home;
+    delete require.cache[require.resolve('../config.js')];
+    const config = require('../config.js');
+    process.stdin.isTTY = true;
+    const answer = Buffer.from('spec\n6000\n\n', 'utf8');
+    let offset = 0;
+    fs.readSync = (fd, buf) => {
+      if (fd !== 0) return originalReadSync.apply(fs, arguments);
+      if (offset >= answer.length) return 0;
+      buf[0] = answer[offset];
+      offset += 1;
+      return 1;
+    };
+    process.stdout.write = (chunk, ...rest) => {
+      wrote += chunk;
+      return true;
+    };
+    config.runBudgetsInteractive();
+  } finally {
+    process.stdout.write = originalWrite;
+    fs.readSync = originalReadSync;
+    process.stdin.isTTY = originalIsTTY;
+    process.env.HOME = originalHome;
+    cleanup(ctx);
+  }
+  assert.match(wrote, /Enter a skill name to update/);
+  assert.match(wrote, /New budget for "spec" \(currently 5000\): /);
 });
 
 test('readLine retries after a transient EAGAIN from the stdin read', () => {
