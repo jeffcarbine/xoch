@@ -82,7 +82,6 @@ Revision commands preserve prior history and record why foundational job artifac
 | `pause` | Pause the active job. |
 | `resume` | Resume paused or archived work. |
 | `sidebar` | Explore a related question without advancing job state. |
-| `glossary` | Add or update project terminology. |
 | `meow` | Verify Xoch installation. |
 
 ---
@@ -98,7 +97,6 @@ close-arc.md
 close-job.md
 doc.md
 discovery.md
-glossary.md
 make.md
 map.md
 meow.md
@@ -145,7 +143,6 @@ Expected core reference files:
 core/foundation-core.md
 core/discovery-core.md
 core/doc-core.md
-core/glossary-core.md
 core/make-core.md
 core/next-core.md
 core/plan-core.md
@@ -176,7 +173,7 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `glossary.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
@@ -201,7 +198,7 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 
-Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, map, and glossary a common begin/resume/complete lifecycle.
+Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
 
 Use `behavior-tests.md` in `make-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 

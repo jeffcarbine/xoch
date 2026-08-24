@@ -15,7 +15,7 @@ Use this token-light wrapper for normal `xoch-doc` work.
 
 ### Drift Check First
 
-If the engineer's message states a specific documentation goal (create, refresh, repair, packets, glossary, or similar), skip this check and go straight to the core process below.
+If the engineer's message states a specific documentation goal (create, refresh, repair, packets, or similar), skip this check and go straight to the core process below.
 
 Otherwise — a bare invocation, typically the mandatory post-review gate — check drift before doing anything else:
 
@@ -40,7 +40,7 @@ Do not read the core prompt unless it is needed.
 
 {{xoch-partial:estimator-reminder.md}}
 
-For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation (or maintain `.xoch/docs/` packets or glossary terms), load only the context needed, and update or confirm docs against current source and job evidence.
+For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation (or maintain `.xoch/docs/` packets), load only the context needed, and update or confirm docs against current source and job evidence.
 
 When documentation work is complete, put status, targets, and caveats first. Make the final line the next Xoch step — typically `xoch-pr` or `xoch-close-job`, whichever the engineer needs next, such as:
 

@@ -43,17 +43,6 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 ## Process
 
-### Step 0: Load Glossaries
-
-Check for project glossaries:
-
-```text
-.xoch/glossaries/README.md
-.xoch/glossaries/quick-reference.md
-```
-
-If present, read the glossary index and quick reference before requirements clarification. Use glossary-approved terminology in questions, acceptance criteria, and final spec text.
-
 {{xoch-partial:context-economy.md}}
 
 ### Step 1: Identify Current Job

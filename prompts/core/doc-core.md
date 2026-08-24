@@ -22,7 +22,6 @@ Keep README and Xoch documentation current-state oriented. `xoch-doc` may create
 - root `README.md`
 - feature READMEs
 - `.xoch/docs/` packets
-- `.xoch/glossaries/`
 - job documentation targets from the `state` file returned by `job evidence`
 
 It should not turn documentation into an append-only changelog.
@@ -81,7 +80,6 @@ Ask or infer whether the engineer wants to:
 - validate docs before `xoch-review` or `xoch-close-job`
 - repair stale or inaccurate docs
 - create or refresh `.xoch/docs/` packets and merge them into the root README
-- update glossary terminology
 
 If the goal is unclear, ask for the documentation target.
 
@@ -94,7 +92,6 @@ Read only what is needed:
 - relevant README files
 - job state/spec/plan/review when active
 - docs packets related to the target
-- glossary index and quick reference when present
 - source files needed to verify current behavior
 
 Use token estimates for large reads:
@@ -132,7 +129,6 @@ Prefer:
 - concise current-state descriptions
 - stable usage examples
 - links or references to nearby docs
-- glossary-approved terms
 - clear "not impacted" notes when docs do not need changes
 
 Avoid:
@@ -192,7 +188,6 @@ Recommend:
 - `xoch-close-job` when docs are ready for closure and no PR draft is needed
 - `xoch-review` when docs were requested ahead of an upcoming review
 - `xoch-make` when stale docs reveal implementation gaps
-- `xoch-glossary` when terminology needs formal definition
 - `xoch-map` when docs need local dependency/project mapping
 
 After documentation writes, status notes, accepted baselines, and multi-project synchronization are complete, finish the managed workflow before final output or an explicitly chained command:
@@ -220,6 +215,5 @@ Targets: [paths]
 - For root README packet work, propose the packet set and get engineer approval before broad writes.
 - Packet names are examples, not a required schema; choose names that fit the project.
 - Use nested `README.md` files for feature-local documentation.
-- Use glossary terminology when available.
 - Do not invent source behavior that was not verified.
 - Do not move active legacy job folders during the migration.
