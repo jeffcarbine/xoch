@@ -21,11 +21,12 @@ function cleanup(ctx) {
   fs.rmSync(ctx.home, { recursive: true, force: true });
 }
 
-function runScript(scriptPath, args, ctx) {
+function runScript(scriptPath, args, ctx, input) {
   const result = spawnSync(process.execPath, [scriptPath, ...args], {
     cwd: ctx.cwd,
     env: { ...process.env, HOME: ctx.home },
     encoding: 'utf8',
+    input,
   });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }

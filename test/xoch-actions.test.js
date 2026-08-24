@@ -9,8 +9,8 @@ const { scratch, cleanup, runScript } = require('./lib/cli.js');
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'xoch-actions.js');
 
-function run(args, ctx) {
-  return runScript(SCRIPT, args, ctx);
+function run(args, ctx, input) {
+  return runScript(SCRIPT, args, ctx, input);
 }
 
 // Direct in-process call to an exported function, isolated in its own
@@ -1908,6 +1908,186 @@ test('an indented sub-list under a non-skipped key passes through phase advance 
     run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
     const content = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(content, /documentation_targets:\n\s+- scope: docs\n\s+path: README\.md/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write: creates file and parent dirs, content is exact', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    const result = run(['file', 'write', '--job', 'j1', '--path', 'notes/deep/note.md'], ctx, 'hello\nworld\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /File written:/);
+    const content = fs.readFileSync(path.join(jobDirOf(ctx, 'j1'), 'notes', 'deep', 'note.md'), 'utf8');
+    assert.strictEqual(content, 'hello\nworld\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write --append: appends to existing file, creates it if missing', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    const target = path.join(jobDirOf(ctx, 'j1'), 'notes.md');
+
+    const created = run(['file', 'write', '--job', 'j1', '--path', 'notes.md', '--append'], ctx, 'first\n');
+    assert.match(created.stdout, /File written:/);
+    assert.strictEqual(fs.readFileSync(target, 'utf8'), 'first\n');
+
+    const appended = run(['file', 'write', '--job', 'j1', '--path', 'notes.md', '--append'], ctx, 'second\n');
+    assert.match(appended.stdout, /File appended:/);
+    assert.strictEqual(fs.readFileSync(target, 'utf8'), 'first\nsecond\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write: rejects path traversal (relative and absolute)', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    const relResult = run(['file', 'write', '--job', 'j1', '--path', '../escape.md'], ctx, 'x');
+    assert.strictEqual(relResult.status, 1);
+    assert.match(relResult.stderr, /job-relative/);
+    const absResult = run(['file', 'write', '--job', 'j1', '--path', '/etc/escape.md'], ctx, 'x');
+    assert.strictEqual(absResult.status, 1);
+    assert.match(absResult.stderr, /job-relative/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write: missing --job, missing --path, and unknown job all error cleanly', () => {
+  const ctx = scratch();
+  try {
+    const noJob = run(['file', 'write', '--path', 'spec.md'], ctx, 'x');
+    assert.strictEqual(noJob.status, 1);
+    assert.match(noJob.stderr, /--job is required/);
+
+    const noPath = run(['file', 'write', '--job', 'j1'], ctx, 'x');
+    assert.strictEqual(noPath.status, 1);
+    assert.match(noPath.stderr, /--path is required/);
+
+    const unknownJob = run(['file', 'write', '--job', 'does-not-exist', '--path', 'spec.md'], ctx, 'x');
+    assert.strictEqual(unknownJob.status, 1);
+    assert.match(unknownJob.stderr, /job not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file read: exact round trip, missing file errors cleanly', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    run(['file', 'write', '--job', 'j1', '--path', 'spec.md'], ctx, '# Spec\n\ncontent here\n');
+    const readResult = run(['file', 'read', '--job', 'j1', '--path', 'spec.md'], ctx);
+    assert.strictEqual(readResult.status, 0);
+    assert.strictEqual(readResult.stdout, '# Spec\n\ncontent here\n');
+
+    const missingResult = run(['file', 'read', '--job', 'j1', '--path', 'plan.md'], ctx);
+    assert.strictEqual(missingResult.status, 1);
+    assert.match(missingResult.stderr, /file not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit: replaces a unique match', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    run(['file', 'write', '--job', 'j1', '--path', 'plan.md'], ctx, '# Plan\n\nStatus: Draft\n');
+    const result = run(
+      ['file', 'edit', '--job', 'j1', '--path', 'plan.md'],
+      ctx,
+      'Status: Draft\n-----XOCH-EDIT-SEPARATOR-----\nStatus: Accepted\n',
+    );
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /File edited:.*1 replacement/);
+    const content = fs.readFileSync(path.join(jobDirOf(ctx, 'j1'), 'plan.md'), 'utf8');
+    assert.strictEqual(content, '# Plan\n\nStatus: Accepted\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit: errors when old text is missing, ambiguous, or the file is missing', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+
+    const missingFile = run(
+      ['file', 'edit', '--job', 'j1', '--path', 'plan.md'],
+      ctx,
+      'a\n-----XOCH-EDIT-SEPARATOR-----\nb\n',
+    );
+    assert.strictEqual(missingFile.status, 1);
+    assert.match(missingFile.stderr, /file not found/);
+
+    run(['file', 'write', '--job', 'j1', '--path', 'plan.md'], ctx, 'AC-001\nAC-001\n');
+
+    const noSeparator = run(['file', 'edit', '--job', 'j1', '--path', 'plan.md'], ctx, 'AC-001\nAC-002\n');
+    assert.strictEqual(noSeparator.status, 1);
+    assert.match(noSeparator.stderr, /XOCH-EDIT-SEPARATOR/);
+
+    const noMatch = run(
+      ['file', 'edit', '--job', 'j1', '--path', 'plan.md'],
+      ctx,
+      'AC-999\n-----XOCH-EDIT-SEPARATOR-----\nAC-000\n',
+    );
+    assert.strictEqual(noMatch.status, 1);
+    assert.match(noMatch.stderr, /old text not found/);
+
+    const ambiguous = run(
+      ['file', 'edit', '--job', 'j1', '--path', 'plan.md'],
+      ctx,
+      'AC-001\n-----XOCH-EDIT-SEPARATOR-----\nAC-002\n',
+    );
+    assert.strictEqual(ambiguous.status, 1);
+    assert.match(ambiguous.stderr, /ambiguous/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit --replace-all: replaces every occurrence', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    run(['file', 'write', '--job', 'j1', '--path', 'plan.md'], ctx, 'AC-001\nAC-001\nAC-001\n');
+    const result = run(
+      ['file', 'edit', '--job', 'j1', '--path', 'plan.md', '--replace-all'],
+      ctx,
+      'AC-001\n-----XOCH-EDIT-SEPARATOR-----\nAC-002\n',
+    );
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /File edited:.*3 replacements/);
+    const content = fs.readFileSync(path.join(jobDirOf(ctx, 'j1'), 'plan.md'), 'utf8');
+    assert.strictEqual(content, 'AC-002\nAC-002\nAC-002\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write/read round trip under centralized storage mode', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'centralized' } }));
+    const centralJobDir = path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd), 'work', 'jobs', 'j1');
+    fs.mkdirSync(centralJobDir, { recursive: true });
+    fs.writeFileSync(path.join(centralJobDir, 'state.md'), 'job_id: j1\n');
+
+    run(['file', 'write', '--job', 'j1', '--path', 'spec.md'], ctx, 'centralized content\n');
+    assert.strictEqual(fs.readFileSync(path.join(centralJobDir, 'spec.md'), 'utf8'), 'centralized content\n');
+    assert.strictEqual(fs.existsSync(jobDirOf(ctx, 'j1')), false);
+
+    const readResult = run(['file', 'read', '--job', 'j1', '--path', 'spec.md'], ctx);
+    assert.strictEqual(readResult.stdout, 'centralized content\n');
   } finally {
     cleanup(ctx);
   }

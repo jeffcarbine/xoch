@@ -242,7 +242,13 @@ Do not write `spec.md` or mark spec state complete until the engineer chooses `[
 
 ### Step 8: Write Accepted Spec
 
-Write `spec.md` under the job directory (`~/.xoch/bin/xoch-actions.js job evidence --job "[job-id]" --json`'s `job_directory` field).
+Write `spec.md` with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path spec.md <<'XOCHEOF'
+[spec.md content]
+XOCHEOF
+```
 
 Use this structure:
 
@@ -344,6 +350,8 @@ Job: [job-id]
 ## Rules
 
 {{xoch-partial:response-ending.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Specs describe change, not implementation details.
 - Do not draft a spec without engineer-provided source requirements.

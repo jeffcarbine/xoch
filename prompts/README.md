@@ -134,6 +134,7 @@ partials/workflow-boundary.md
 partials/managed-workflow.md
 partials/behavior-tests.md
 partials/coverage-gate.md
+partials/xoch-file-helper-rule.md
 ```
 
 Expected core reference files:
@@ -200,6 +201,8 @@ Use `project-routing.md` in commands that read or write active job artifacts. It
 Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, map, and glossary a common begin/resume/complete lifecycle.
 
 Use `behavior-tests.md` in `make-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
+
+Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `make-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch-actions.js file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 
 ## Multi-Project Jobs
 

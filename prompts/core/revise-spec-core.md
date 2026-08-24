@@ -82,7 +82,13 @@ If the arc association changes, recommend `xoch-revise-arc` as well.
 
 ### Step 4: Write Revision Note
 
-Create `spec-[date].md` under `revisions_dir` (from Step 1's `job evidence` call).
+Write `spec-[date].md` with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "revisions/spec-[date].md" <<'XOCHEOF'
+[revision note content]
+XOCHEOF
+```
 
 Use this structure:
 
@@ -177,6 +183,8 @@ Revision: [revision path]
 ## Rules
 
 {{xoch-partial:response-ending.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Specs define what success means.
 - Do not silently change acceptance criteria.

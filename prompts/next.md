@@ -36,8 +36,10 @@ If there are no more phases, replace `next phase` with `review`.
 After the engineer answers `[Y]`, if phase changes are not committed and pushed, ask:
 
 ```text
-Changes haven't been committed and pushed to git yet. Would you like me to [C]ommit and push them for you, or [N]o?
+Git changes detected. What would you like me to do? [C]ommit and push the changes, [G]enerate a commit message for you, or [N]othing?
 ```
+
+`[G]` drafts and prints a commit message only — it never runs `git commit`, `git add`, or `git push`.
 
 When the phase is advanced, put snapshots, updates, notes, validation, and commit/push status first. Make the final line the next Xoch step, such as:
 

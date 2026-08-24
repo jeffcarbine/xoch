@@ -132,7 +132,7 @@ git log --oneline @{u}..HEAD
 If there are uncommitted changes, staged changes, or local commits that have not been pushed, say:
 
 ```text
-Changes haven't been committed and pushed to git yet. Would you like me to [C]ommit and push them for you, or [N]o?
+Git changes detected. What would you like me to do? [C]ommit and push the changes, [G]enerate a commit message for you, or [N]othing?
 ```
 
 For a multi-project phase, report commit/push state per touched project but ask this choice once. If the engineer chooses `[C]`, create and push one focused commit in each repository that has phase changes; never combine repository histories or claim one push covers another.
@@ -149,6 +149,12 @@ If the engineer chooses `[C]`:
 3. Push the current branch to its configured upstream.
 4. Report the exact commit message and pushed branch to the engineer.
 5. Continue with snapshot and advancement.
+
+If the engineer chooses `[G]`:
+
+1. Draft a commit message using the same shape as `[C]` (`[job-id] phase [N]: [description of changes]`).
+2. Print the drafted message and stop. Do not run `git commit`, `git add`, or `git push` — the engineer commits manually.
+3. Continue with snapshot and advancement.
 
 If the engineer chooses `[N]`, do not commit or push. Continue with snapshot and advancement, and record in the snapshot that commit/push was deferred.
 

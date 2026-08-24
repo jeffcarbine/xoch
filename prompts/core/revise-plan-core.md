@@ -100,7 +100,13 @@ Classify phases as:
 
 ### Step 5: Write Revision Note
 
-Create `plan-[date].md` under `revisions_dir` (from Step 1's `job evidence` call).
+Write `plan-[date].md` with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "revisions/plan-[date].md" <<'XOCHEOF'
+[revision note content]
+XOCHEOF
+```
 
 Use this structure:
 
@@ -227,6 +233,8 @@ Current phase: [N] - [title]
 ## Rules
 
 {{xoch-partial:response-ending.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Plans describe how; specs describe what.
 - Do not change acceptance criteria in `revise-plan`.
