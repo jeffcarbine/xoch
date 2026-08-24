@@ -92,6 +92,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-pause` | Pause the active job. |
 | `xoch-resume` | Resume paused or archived work. |
 | `xoch-sidebar` | Explore a related question without advancing job state. |
+| `xoch-help` | List every Xoch command with its description. |
 | `xoch-meow` | Verify installation. |
 
 ---
@@ -285,6 +286,7 @@ All helper filenames use kebab-case. Installed helpers include:
 | `generate-job-id.js` | Normalize or generate job IDs. |
 | `token-estimator.js` | Estimate context cost before broad reads; check/record reads against per-skill budgets. |
 | `context-tracker.js` | Track whether a previously-read file has changed, to avoid needless rereads. |
+| `help-actions.js` | List every command with its description, read from each prompt's own frontmatter. |
 | `readme-actions.js` | Assemble approved root README packets in manifest order. |
 | `archive-actions.js` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
 | `coverage-actions.js` | Compare AC IDs across specs, plans, snapshots, and reviews. |
