@@ -288,7 +288,8 @@ All helper filenames use kebab-case. Installed helpers include:
 |---|---|
 | `xoch-actions.js` | Job, arc, pointer, state, snapshot, and phase mechanics. |
 | `generate-job-id.js` | Normalize or generate job IDs. |
-| `token-estimator.js` | Estimate context cost before broad reads. |
+| `token-estimator.js` | Estimate context cost before broad reads; check/record reads against per-skill budgets. |
+| `context-tracker.js` | Track whether a previously-read file has changed, to avoid needless rereads. |
 | `readme-actions.js` | Assemble approved root README packets in manifest order. |
 | `archive-actions.js` | Dry-run, archive, and restore Xoch jobs or arcs safely. |
 | `coverage-actions.js` | Compare AC IDs across specs, plans, snapshots, and reviews. |
