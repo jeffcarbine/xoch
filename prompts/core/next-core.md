@@ -140,10 +140,24 @@ For a multi-project phase, report commit/push state per touched project but ask 
 If the engineer chooses `[C]`:
 
 1. Create a focused commit for the current phase changes.
-2. Use this commit message shape when Xoch writes the message:
+2. Distill the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in `phases.md`, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
+
+   Shape:
 
    ```text
-   [job-id] phase [N]: [description of changes]
+   [imperative, present-tense summary of what changed]
+
+   [optional body: what and why, distilled from spec/plan/phase text -- not a diff recap]
+   ```
+
+   Example:
+
+   ```text
+   Add rate limiting to the webhook ingestion endpoint
+
+   Bursts of retried webhooks from upstream were occasionally
+   overwhelming the queue consumer. Cap accepted requests per source
+   IP over a rolling window and return 429 past that limit.
    ```
 
 3. Push the current branch to its configured upstream.
@@ -152,7 +166,7 @@ If the engineer chooses `[C]`:
 
 If the engineer chooses `[G]`:
 
-1. Draft a commit message using the same shape as `[C]` (`[job-id] phase [N]: [description of changes]`).
+1. Draft a commit message the same way as `[C]`: distilled from the phase's own docs, with no job ID, phase number, or arc reference anywhere in it.
 2. Print the drafted message and stop. Do not run `git commit`, `git add`, or `git push` — the engineer commits manually.
 3. Continue with snapshot and advancement.
 
