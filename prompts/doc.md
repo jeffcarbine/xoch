@@ -37,8 +37,6 @@ When a job is active:
 
 For target-model jobs, documentation targets may appear in the `state`, `spec`, and `review` files it returns.
 
-Legacy migration jobs may still use `.xoch/context/`. Continue them in place and do not move them automatically.
-
 {{xoch-partial:project-routing.md}}
 
 ## Documentation Packets

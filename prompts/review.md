@@ -133,13 +133,7 @@ For each documentation target, mark:
 - Waived
 - Unknown
 
-If docs are stale and should be fixed before closure, route to:
-
-```text
-xoch-doc
-```
-
-If the engineer chooses not to update docs, record a documentation waiver.
+This assessment is informational for the review record. It does not decide whether `xoch-doc` runs next — a passing review always routes to `xoch-doc` (Step 8), where staleness is actually addressed or explicitly waived, regardless of what this step finds.
 
 ### Step 7: Decide Review Status
 
@@ -150,7 +144,7 @@ Use one of these statuses:
 - `needs_work` - issues should be fixed before close-job
 - `blocked` - review cannot complete without missing information or environment access
 
-`xoch-close-job` may proceed with `pass` or `pass_with_waivers`. It should ask before proceeding if review is missing or not passing.
+On `pass` or `pass_with_waivers`, the recommended next command is always `xoch-doc` — not `xoch-close-job` or `xoch-pr` directly, even though `xoch-close-job` may eventually proceed once `xoch-doc` has run. `xoch-close-job` should ask before proceeding if review is missing or not passing.
 
 ### Step 8: Write Review Result
 
@@ -193,7 +187,7 @@ Use this structure:
 
 ## Recommendation
 
-{{xoch-partial:next-step.md command="[xoch-close-job | xoch-make | xoch-doc | xoch-revise-plan]"}}
+{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-make when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
 ```
 
 Update `state.md`:
@@ -224,6 +218,6 @@ Review status: [status]
 - Do not invent validation that was not run or reported.
 - Waivers must be explicit and recorded.
 - Review does not create QA or PR handoff jobs.
-- Prefer fixing stale docs before close unless the engineer waives the update.
+- A passing review always routes to `xoch-doc` next, never directly to `xoch-close-job` or `xoch-pr` — documentation staleness is addressed or waived there, not skipped here.
 - Review every touched project in a multi-project job; one project's passing checks do not cover another.
 - Do not move active legacy job folders during the migration.
