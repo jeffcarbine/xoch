@@ -33,8 +33,10 @@ If you already know the standard `xoch-doc` workflow from this conversation, con
 If any required workflow detail, packet convention, status vocabulary, or routing behavior is missing, read and follow:
 
 ```text
-~/.xoch/prompts/core/doc-core.md
+~/.xoch/prompts/core/doc-check-core.md
 ```
+
+That file decides whether a change needs documentation and where; it loads `doc-write-core.md` itself only once writing is actually needed. This wrapper never references the write core directly.
 
 Do not read the core prompt unless it is needed.
 

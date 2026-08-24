@@ -34,15 +34,19 @@ function resolve(argv) {
   const directory = isDir ? target : path.dirname(target);
 
   let readme = null;
+  let sibling = false;
   let cursor = directory;
+  let firstIteration = true;
   for (;;) {
     const candidate = path.join(cursor, 'README.md');
     if (fs.existsSync(candidate) && fs.statSync(candidate).isFile() && cursor !== root) {
       readme = candidate;
+      sibling = firstIteration;
       break;
     }
     if (cursor === root) break;
     cursor = path.dirname(cursor);
+    firstIteration = false;
   }
 
   const manifestPath = path.resolve(root, manifest);
@@ -54,6 +58,7 @@ function resolve(argv) {
       scope: 'feature',
       target: readme.slice(rootPrefix.length),
       reason: 'nearest nested README',
+      sibling,
     };
   } else {
     const manifestExists = fs.existsSync(manifestPath) && fs.statSync(manifestPath).isFile();
@@ -62,6 +67,7 @@ function resolve(argv) {
       scope: 'root',
       target: manifestExists ? (manifestPath.startsWith(rootPrefix) ? manifestPath.slice(rootPrefix.length) : manifestPath) : 'README.md',
       reason: manifestExists ? 'route through approved root packet manifest' : 'no nested README or packet manifest found',
+      sibling: false,
     };
   }
 
@@ -71,6 +77,7 @@ function resolve(argv) {
     console.log(`Scope: ${result.scope}`);
     console.log(`Target: ${result.target}`);
     console.log(`Reason: ${result.reason}`);
+    console.log(`Sibling: ${result.sibling}`);
   }
 }
 

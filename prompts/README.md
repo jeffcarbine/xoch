@@ -142,7 +142,8 @@ Expected core reference files:
 ```text
 core/foundation-core.md
 core/discovery-core.md
-core/doc-core.md
+core/doc-check-core.md
+core/doc-write-core.md
 core/make-core.md
 core/next-core.md
 core/plan-core.md

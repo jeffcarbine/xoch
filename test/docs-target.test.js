@@ -64,6 +64,7 @@ test('a nested file finds the nearest nested README, not a root-level one', () =
     assert.strictEqual(data.scope, 'feature');
     assert.strictEqual(data.target, 'nested/README.md');
     assert.strictEqual(data.reason, 'nearest nested README');
+    assert.strictEqual(data.sibling, false);
   } finally {
     cleanup(ctx);
   }
@@ -78,6 +79,37 @@ test('a directory path (not a file) is also resolved correctly', () => {
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.scope, 'feature');
     assert.strictEqual(data.target, 'nested/README.md');
+    assert.strictEqual(data.sibling, true);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a README directly beside the changed file is reported as a sibling', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(ctx.cwd, 'feature'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.cwd, 'feature', 'README.md'), 'feature readme');
+    fs.writeFileSync(path.join(ctx.cwd, 'feature', 'file.js'), '');
+    const result = runScript(SCRIPT, ['resolve', '--root', ctx.cwd, '--path', 'feature/file.js', '--json'], ctx);
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.target, 'feature/README.md');
+    assert.strictEqual(data.sibling, true);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a root-level file with no nested README and no manifest falling back to bare README.md is not a sibling', () => {
+  const ctx = scratch();
+  try {
+    fs.writeFileSync(path.join(ctx.cwd, 'top.js'), '');
+    const result = runScript(SCRIPT, ['resolve', '--root', ctx.cwd, '--path', 'top.js', '--json'], ctx);
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.scope, 'root');
+    assert.strictEqual(data.sibling, false);
   } finally {
     cleanup(ctx);
   }
@@ -94,6 +126,7 @@ test('a root-level file with no nested README and an existing manifest routes th
     assert.strictEqual(data.scope, 'root');
     assert.strictEqual(data.target, '.xoch/docs/readme-packets.json');
     assert.strictEqual(data.reason, 'route through approved root packet manifest');
+    assert.strictEqual(data.sibling, false);
   } finally {
     cleanup(ctx);
   }
