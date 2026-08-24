@@ -24,7 +24,9 @@ Otherwise — a bare invocation, typically the mandatory post-review gate — ch
 ```
 
 - No baseline exists yet (`Drift baseline not found`), or drift signals are present: continue to the core process below.
-- A baseline exists and shows zero drift signals: skip the core process entirely. When a job is active, record a quick documentation status of "not impacted" (append a one-line note to `notes_dir` per {{xoch-partial:xoch-file-helper-rule.md}}, or update `review`/`closure` directly when they already exist); when no job is active, just report there's no drift and stop. This short path does not need to begin the managed workflow — it completes in one step. Route onward per the engineer's stated goal or the caller's recommendation (typically `xoch-pr` or `xoch-close-job`) using the same `## Output` shape as a full pass.
+- A baseline exists and shows zero drift signals: skip the core process entirely. When a job is active, record a quick documentation status of "not impacted" — append a one-line note to `notes_dir` via `xoch-actions.js file write --append` (see the file helper rule below), or update `review`/`closure` directly when they already exist. When no job is active, just report there's no drift and stop. This short path does not need to begin the managed workflow — it completes in one step. Route onward per the engineer's stated goal or the caller's recommendation (typically `xoch-pr` or `xoch-close-job`) using the same `## Output` shape as a full pass.
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 If you already know the standard `xoch-doc` workflow from this conversation, continue from that context and do not read the core prompt.
 
