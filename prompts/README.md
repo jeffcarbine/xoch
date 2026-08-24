@@ -39,7 +39,7 @@ open-job -> spec -> plan -> make -> next -> review -> close-job
 
 Use `make` and `next` repeatedly until all phases are complete.
 
-`review` is the expected gate before `close-job`. `close-job` can continue with explicit engineer waivers for review or documentation gaps, but those waivers must be recorded.
+`review` is the expected gate before `close-job`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close-job`. `close-job` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close-job` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
 
 ---
 
@@ -73,6 +73,7 @@ Revision commands preserve prior history and record why foundational job artifac
 | Command | Purpose |
 |---|---|
 | `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
+| `pr` | Generate an evidence-backed pull request title and body for the active job. |
 | `map` | Maintain the local workspace map and resolve project dependencies. |
 | `roadmap` | Show active workflow, current progress, and upcoming phase contents without changing state. |
 | `discovery` | Resolve material product, domain, API, design, or implementation unknowns. |
@@ -105,6 +106,7 @@ next.md
 patch.md
 pause.md
 plan.md
+pr.md
 resume.md
 review.md
 roadmap.md
@@ -142,6 +144,7 @@ Expected core reference files:
 ```text
 core/foundation-core.md
 core/discovery-core.md
+core/doc-core.md
 core/glossary-core.md
 core/make-core.md
 core/next-core.md
@@ -173,7 +176,7 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `glossary.md`, `trace.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `glossary.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 

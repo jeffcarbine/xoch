@@ -94,13 +94,11 @@ This cannot be waived by engineer preference or urgency, and a review waiver fro
 
 ### Step 5: Check Documentation Freshness
 
-Confirm project READMEs, feature READMEs, `.xoch/docs/`, and glossary entries are current enough for this job.
+`xoch-doc` is a required gate after a passing `xoch-review`, not an optional detour. Confirm it has already run for this job's current state — check `state.md`/`review.md` for a recorded documentation status (current, updated, not impacted, stale, waived, or unknown).
 
-If docs are stale or unknown, ask whether to:
+If `xoch-doc` has not run yet for this job's final state, route to `xoch-doc` now rather than offering to skip it. A documentation waiver can still exist, but only as something `xoch-doc` itself records — not as a shortcut offered here.
 
-1. Run `xoch-doc`
-2. Record an explicit documentation waiver and continue closing
-3. Stop and keep the job active
+If `xoch-doc` has already run and recorded a status, use that status; only ask the engineer for a decision if the recorded status is stale or unknown and needs a fresh call on whether to refresh or waive it.
 
 ### Step 6: Check Worktree State
 
@@ -218,7 +216,7 @@ Follow-up: [summary]
 
 - Closing requires either passing review or an explicit review waiver.
 - Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`.
-- Stale documentation requires either refresh or an explicit documentation waiver.
+- `xoch-doc` must have run for this job before closing; do not offer to skip invoking it. A documentation waiver may exist, but only as something `xoch-doc` recorded.
 - Do not hide skipped validation.
 - Do not clear the wrong active job pointer.
 - Synchronize final multi-project closure context before clearing the canonical scope's pointer.

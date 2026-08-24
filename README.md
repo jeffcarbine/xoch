@@ -69,7 +69,7 @@ Use `xoch-make` and `xoch-next` repeatedly until all phases are complete.
 
 `xoch-next` is the phase checkpoint. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation.
 
-After the final phase, `xoch-review` checks acceptance coverage, quality, risk, test evidence, and documentation freshness. `xoch-close-job` expects a passing review, but the engineer may explicitly waive review or documentation gaps for lightweight work; waivers are recorded in job state and closure notes.
+After the final phase, `xoch-review` checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close-job`. `xoch-close-job` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close-job` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
 
 ---
 
@@ -83,6 +83,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-revise-spec` | Revise a job's foundational requirements. |
 | `xoch-revise-plan` | Revise a job's implementation plan or remaining phases. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
+| `xoch-pr` | Generate an evidence-backed pull request title and body for the active job. |
 | `xoch-map` | Maintain the local workspace map and resolve project dependencies. |
 | `xoch-roadmap` | Show current progress and the contents of remaining phases. |
 | `xoch-discovery` | Resolve material unknowns before specification or implementation. |
