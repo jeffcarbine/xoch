@@ -114,7 +114,15 @@ Do not overstate certainty.
 
 ### Step 6: Write Trace Note
 
-When a job exists, write to `[notes-dir]/trace-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
+When a job exists, write to `[notes-dir]/trace-[date].md` (`notes_dir` from the Work Model's `job evidence` call) with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "notes/trace-[date].md" <<'XOCHEOF'
+[trace note content]
+XOCHEOF
+```
+
+For an ad hoc trace with no active job, write the note directly instead.
 
 Before writing the final trace note, update the boundary, then complete it after the note exists:
 
@@ -181,6 +189,8 @@ Root cause: [summary]
 {{xoch-partial:response-ending.md}}
 
 {{xoch-partial:engineer-git-rule.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Investigation comes before implementation.
 - Do not change code unless the engineer explicitly turns the trace into patch or make work.

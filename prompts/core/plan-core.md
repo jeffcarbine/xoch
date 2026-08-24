@@ -159,7 +159,13 @@ Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state 
 
 ### Step 8: Write Accepted Plan
 
-Write `plan.md` under the `job_directory` from Step 1's `job evidence` call.
+Write `plan.md` with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path plan.md <<'XOCHEOF'
+[plan.md content]
+XOCHEOF
+```
 
 Use this structure:
 
@@ -218,7 +224,13 @@ Budget: 7,000 tokens
 
 ### Step 9: Write Accepted Phases
 
-Write `phases.md` under the same `job_directory`.
+Write `phases.md` with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path phases.md <<'XOCHEOF'
+[phases.md content]
+XOCHEOF
+```
 
 Use this structure:
 
@@ -317,6 +329,8 @@ Current phase: Phase 1 - [title]
 ## Rules
 
 {{xoch-partial:response-ending.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Engineer direction wins when explicit.
 - Present the draft plan and get `[A]` acceptance before writing plan artifacts.

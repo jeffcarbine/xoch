@@ -137,6 +137,25 @@ function writeAtomicJson(filePath, data) {
   fs.renameSync(temp, filePath);
 }
 
+function writeAtomicText(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const temp = `${filePath}.tmp.${process.pid}`;
+  fs.writeFileSync(temp, content);
+  fs.renameSync(temp, filePath);
+}
+
+// Resolves a --job/--path pair to an absolute path inside that job's
+// directory, rejecting traversal the same way workflow artifacts are
+// guarded, and requiring the job to already exist.
+function resolveJobFile(jobId, relPath) {
+  if (!jobId) die('--job is required');
+  if (!relPath) die('--path is required');
+  if (isTraversalArtifact(relPath)) die('File path must be job-relative');
+  const jobDir = path.join(xochRoot(), 'work', 'jobs', jobId);
+  if (!fs.existsSync(path.join(jobDir, 'state.md'))) die(`job not found: ${jobId}`);
+  return path.join(jobDir, relPath);
+}
+
 // Resolves the active job pointer, migrating a target-model current.md
 // pointer to current.json (deleting the .md afterward) or falling back
 // to reading the legacy .xoch/context/current.md pointer read-only, in
@@ -887,6 +906,56 @@ function phaseAdvance(argv) {
   console.log(`Phase advanced for job ${jobId}: ${phase} -> ${nextPhase || 'review'}`);
 }
 
+// Separator line used by `file edit`'s stdin format: old text, then a
+// line matching this exactly, then new text.
+const EDIT_SEPARATOR = '-----XOCH-EDIT-SEPARATOR-----';
+
+function fileWrite(argv) {
+  const flags = parseFlags(argv, ['append']);
+  const target = resolveJobFile(flags.job, flags.path);
+  const content = fs.readFileSync(0, 'utf8');
+
+  if (flags.append && fs.existsSync(target)) {
+    writeAtomicText(target, fs.readFileSync(target, 'utf8') + content);
+    console.log(`File appended: ${target}`);
+  } else {
+    writeAtomicText(target, content);
+    console.log(`File written: ${target}`);
+  }
+}
+
+function fileRead(argv) {
+  const flags = parseFlags(argv, []);
+  const target = resolveJobFile(flags.job, flags.path);
+  if (!fs.existsSync(target)) die(`file not found: ${target}`);
+  process.stdout.write(fs.readFileSync(target, 'utf8'));
+}
+
+function fileEdit(argv) {
+  const flags = parseFlags(argv, ['replace-all']);
+  const target = resolveJobFile(flags.job, flags.path);
+  if (!fs.existsSync(target)) die(`file not found: ${target}`);
+
+  const stdin = fs.readFileSync(0, 'utf8');
+  const marker = `\n${EDIT_SEPARATOR}\n`;
+  const sepIndex = stdin.indexOf(marker);
+  if (sepIndex === -1) die(`file edit stdin must contain old text, a line with exactly "${EDIT_SEPARATOR}", then new text`);
+  // The marker consumes the newline terminating old text's last line; put
+  // it back, since that newline is part of the file content being matched,
+  // not part of the separator itself.
+  const oldText = `${stdin.slice(0, sepIndex)}\n`;
+  const newText = stdin.slice(sepIndex + marker.length);
+
+  const content = fs.readFileSync(target, 'utf8');
+  const occurrences = content.split(oldText).length - 1;
+  if (occurrences === 0) die('old text not found in file');
+  if (occurrences > 1 && !flags['replace-all']) die(`old text is ambiguous (${occurrences} matches); pass --replace-all to replace all occurrences`);
+
+  const updated = flags['replace-all'] ? content.split(oldText).join(newText) : content.replace(oldText, newText);
+  writeAtomicText(target, updated);
+  console.log(`File edited: ${target} (${occurrences} replacement${occurrences === 1 ? '' : 's'})`);
+}
+
 function usage() {
   process.stdout.write(`Usage:
   xoch-actions.js job current [--json]
@@ -904,6 +973,9 @@ function usage() {
   xoch-actions.js config root
   xoch-actions.js job evidence --job ID [--json]
   xoch-actions.js arc evidence --arc ID [--json]
+  xoch-actions.js file write --job ID --path PATH [--append]
+  xoch-actions.js file read --job ID --path PATH
+  xoch-actions.js file edit --job ID --path PATH [--replace-all]
 `);
 }
 
@@ -969,6 +1041,15 @@ function main(argv) {
     case 'phase:advance':
       phaseAdvance(rest);
       break;
+    case 'file:write':
+      fileWrite(rest);
+      break;
+    case 'file:read':
+      fileRead(rest);
+      break;
+    case 'file:edit':
+      fileEdit(rest);
+      break;
     default:
       die(`unknown action: ${group} ${action || ''}`);
   }
@@ -1003,5 +1084,10 @@ module.exports = {
   resolveCurrentPointer,
   snapshotCreate,
   phaseAdvance,
+  writeAtomicText,
+  resolveJobFile,
+  fileWrite,
+  fileRead,
+  fileEdit,
   main,
 };

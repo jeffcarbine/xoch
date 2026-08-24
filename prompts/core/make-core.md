@@ -172,7 +172,15 @@ When editing:
 - never move or copy implementation source between participating repositories
 - implement until this phase's behavior tests pass (green), then continue to Step 9
 
-If the job is target-model, append useful implementation notes to `notes_dir` (from Step 1's `job evidence` call), or the current phase file (`current_phase_body`) when it exists.
+If the job is target-model, append useful implementation notes with:
+
+```bash
+node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "notes/make-[date].md" --append <<'XOCHEOF'
+[implementation notes]
+XOCHEOF
+```
+
+or, when a current phase file already exists (`current_phase_body` from Step 1's `job evidence` call), append to it instead by passing `--path "phases/phase-[N].md"`.
 
 For legacy migration jobs, add notes to the existing legacy job folder when useful.
 
@@ -246,6 +254,8 @@ Current phase: [N] - [title]
 {{xoch-partial:response-ending.md}}
 
 {{xoch-partial:engineer-git-rule.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
 
 - Do not start implementation without enough phase context.
 - Do not start or complete the next phase during the current `xoch-make` run.
