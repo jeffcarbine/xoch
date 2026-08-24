@@ -94,11 +94,7 @@ Read only what is needed:
 - docs packets related to the target
 - source files needed to verify current behavior
 
-Use token estimates for large reads:
-
-```bash
-~/.xoch/bin/token-estimator.js --batch [files...]
-```
+{{xoch-partial:budget-check.md skill="doc"}}
 
 ### Step 3: Validate Current State
 

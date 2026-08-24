@@ -299,9 +299,9 @@ All helper filenames use kebab-case. Installed helpers include:
 | `project-scope.js` | Create, validate, and query optional multi-project job routing. |
 | `context-sync.js` | Safely mirror canonical Xoch job artifacts to participant repositories. |
 
-Default budgets are intentionally modest: spec work uses about 5,000 tokens and plan work uses about 7,000 tokens, unless the engineer approves more. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
+Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (default: spec 5,000 tokens, plan 7,000 tokens, 5,000 for anything else unlisted), seeded on install and editable with `node config.js budgets` or `node config.js set tokenBudgets.<skill> <value>`. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
-Before full-file reads beyond active Xoch pointer/state files, Xoch should run the estimator against the candidate files and report the estimate when it changes the read strategy, crosses half the relevant budget, or requires engineer approval.
+Before full-file reads beyond active Xoch pointer/state files, Xoch should run `token-estimator.js budget check --skill <skill> --files [files...]` against the candidate files and report the estimate. A FAIL result is a hard stop: reading past budget is not a judgment call the agent makes on its own -- it requires an explicit waiver from the engineer.
 
 For repeated phase work, `state.md` should act as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.md`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them by section or only when state/prior context is insufficient.
 

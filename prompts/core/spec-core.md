@@ -307,7 +307,7 @@ Use this structure:
 
 ## Token Usage (Spec Phase)
 
-Budget: 5,000 tokens
+Budget: [current value reported by `token-estimator.js budget check --skill spec`]
 [Files read and estimates]
 ```
 
