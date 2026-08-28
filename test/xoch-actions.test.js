@@ -1794,7 +1794,7 @@ test('advancing to a next phase updates phases.md status, current-phase marker, 
     assert.match(phasesText, /## Phase 2: Second Phase\n\n\*\*Status\*\*: In Progress/);
 
     const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /phase_index:\n\s+- phase: 1, title: First Phase, status: complete\n\s+- phase: 2, title: Second Phase, status: in_progress\n\s+- phase: 3, title: Third Phase, status: not_started/);
+    assert.match(stateText, /phase_index:\n\s+- phase: 1, title: First Phase, status: complete, type: implementation\n\s+- phase: 2, title: Second Phase, status: in_progress, type: implementation\n\s+- phase: 3, title: Third Phase, status: not_started, type: implementation/);
     assert.strictEqual(fieldValue(dir, 'phase_count'), '3');
   } finally {
     cleanup(ctx);
@@ -1881,6 +1881,81 @@ Just a description, no status field.
     run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
     const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(stateText, /- phase: 1, title: No Status Here, status: unknown/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance with --next-type checkpoint persists current_phase_type to state.md', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
+    run(
+      ['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G', '--next-type', 'checkpoint'],
+      ctx
+    );
+    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'checkpoint');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance without --next-type defaults current_phase_type to implementation', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
+    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
+    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'implementation');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('advancing with an empty --next-phase resets current_phase_type to null', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '3' });
+    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
+    run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx);
+    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'null');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test("a phase's Type field in phases.md is parsed into its phase_index entry", () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
+    fs.writeFileSync(
+      path.join(dir, 'phases.md'),
+      `## Current Phase: 1
+
+---
+
+## Phase 1: First Phase
+
+**Type**: Checkpoint
+
+**Status**: Not Started
+`
+    );
+    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
+    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
+    assert.match(stateText, /- phase: 1, title: First Phase, status: complete, type: checkpoint/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a phase with no Type field defaults to implementation in its phase_index entry', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
+    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
+    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
+    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
+    assert.match(stateText, /- phase: 1, title: First Phase, status: complete, type: implementation/);
   } finally {
     cleanup(ctx);
   }

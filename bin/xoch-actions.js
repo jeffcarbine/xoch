@@ -803,6 +803,7 @@ function phaseAdvance(argv) {
   const nextPhase = flags['next-phase'] || '';
   const nextTitle = flags['next-title'] || '';
   const nextGoal = flags['next-goal'] || '';
+  const nextType = flags['next-type'] || '';
   const nextFiles = flags['next-files'] || '';
   const nextAc = flags['next-ac'] || '';
   const nextValidation = flags['next-validation'] || '';
@@ -834,7 +835,14 @@ function phaseAdvance(argv) {
       const [, number, title, body] = match;
       const statusMatch = body.match(/\*\*Status\*\*:\s*([^\n]+)/);
       const status = statusMatch ? statusMatch[1] : 'unknown';
-      phaseEntries.push([number, title.trim(), status.trim().toLowerCase().replace(/\s+/g, '_')]);
+      const typeMatch = body.match(/\*\*Type\*\*:\s*([^\n]+)/);
+      const type = typeMatch ? typeMatch[1] : 'implementation';
+      phaseEntries.push([
+        number,
+        title.trim(),
+        status.trim().toLowerCase().replace(/\s+/g, '_'),
+        type.trim().toLowerCase().replace(/\s+/g, '_'),
+      ]);
       match = scanPattern.exec(text);
     }
   }
@@ -846,6 +854,7 @@ function phaseAdvance(argv) {
       phase_count: String(phaseEntries.length),
       current_phase_title: 'null',
       current_phase_goal: 'null',
+      current_phase_type: 'null',
       current_phase_files: '[]',
       current_phase_acceptance_criteria: '[]',
       current_phase_validation: '[]',
@@ -858,6 +867,7 @@ function phaseAdvance(argv) {
       phase_count: String(phaseEntries.length),
       current_phase_title: nextTitle,
       current_phase_goal: nextGoal,
+      current_phase_type: nextType || 'implementation',
       next_command: 'xoch-make',
       last_updated: todayStr,
     };
@@ -897,8 +907,8 @@ function phaseAdvance(argv) {
 
   if (phaseEntries.length) {
     out.push('phase_index:');
-    for (const [number, title, status] of phaseEntries) {
-      out.push(`  - phase: ${number}, title: ${title}, status: ${status}`);
+    for (const [number, title, status, type] of phaseEntries) {
+      out.push(`  - phase: ${number}, title: ${title}, status: ${status}, type: ${type}`);
     }
   }
 
