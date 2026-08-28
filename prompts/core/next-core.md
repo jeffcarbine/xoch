@@ -83,6 +83,8 @@ For the current phase, assess:
 
 If requirements changed, recommend `xoch-revise-spec` or `xoch-revise-plan` instead of advancing blindly.
 
+For a completed checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the standard files/tests/coverage checklist above: what the engineer exercised live, what was found, and what was corrected.
+
 ### Step 4: Provide Phase Review
 
 Report:
@@ -182,7 +184,7 @@ For target-model jobs, prefer deterministic helpers for file/path mechanics:
 
 ```bash
 ~/.xoch/bin/xoch-actions.js snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or xoch-review]"
-~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-type "[implementation or checkpoint, from phase N+1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
 ```
 
 If there are no more phases, omit the `--next-*` arguments so the helper routes state to `xoch-review`.
@@ -241,6 +243,7 @@ status: phase_ready
 current_phase: [N+1]
 current_phase_title: [next phase title]
 current_phase_goal: [one-sentence next phase goal]
+current_phase_type: [implementation or checkpoint]
 current_phase_files:
   - [path]
 current_phase_acceptance_criteria:
@@ -251,9 +254,11 @@ phase_index:
   - phase: [N]
     title: [completed title]
     status: complete
+    type: [implementation or checkpoint]
   - phase: [N+1]
     title: [next title]
     status: not_started
+    type: [implementation or checkpoint]
 next_command: xoch-make
 last_updated: [today]
 ```
@@ -265,6 +270,7 @@ status: implementation_complete
 current_phase: null
 current_phase_title: null
 current_phase_goal: null
+current_phase_type: null
 current_phase_files: []
 current_phase_acceptance_criteria: []
 current_phase_validation: []

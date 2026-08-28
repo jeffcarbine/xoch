@@ -137,6 +137,8 @@ Break the work into phases. Each phase should have:
 
 Prefer phases that can be reviewed independently.
 
+When several phases must land together before the engineer can tell whether they actually work — a coherent, testable slice of the job — consider inserting a **checkpoint** immediately after that slice: a phase of `**Type**: Checkpoint` with no implementation of its own. At a checkpoint, the engineer exercises everything built so far in real conditions and collaborates directly with the agent on any corrections, without a formal revise cycle. Checkpoints are declared only here, at plan time; they are not inserted ad hoc mid-job. Most jobs need none. When in doubt, ask the engineer where a checkpoint would help most before finalizing the phase breakdown.
+
 In a multi-project job, every phase task and file path must name one project from `projects.json`. A phase may span projects when the work is one coherent contract change, but its per-project validation and commit evidence must remain distinct.
 
 ### Step 7: Present Draft Plan
@@ -239,6 +241,8 @@ Use this structure:
 
 [Description]
 
+**Type**: Implementation
+
 **Projects:**
 - [project name]
 
@@ -263,6 +267,28 @@ Use this structure:
 **Status**: Not Started
 ```
 
+Omit `**Type**:` (or leave it `Implementation`) for a normal phase. A checkpoint phase carries no
+implementation of its own, so its entry drops the Files/Behavior-tests/Coverage-backfill fields:
+
+```markdown
+## Phase [N]: Checkpoint - [what it verifies]
+
+[What the engineer should exercise live, and why this is the right point to pause]
+
+**Type**: Checkpoint
+
+**Acceptance criteria covered:**
+- AC-001
+
+**Verification focus:**
+- [what to test live, tied to the phases it follows]
+
+**Completion evidence:**
+- [checkpoint-[N].md snapshot: what was tested, what was found, what was corrected]
+
+**Status**: Not Started
+```
+
 Optionally create individual phase files under:
 
 ```text
@@ -282,6 +308,7 @@ current_phase: 1
 phase_count: [number of phases]
 current_phase_title: [phase 1 title]
 current_phase_goal: [one-sentence phase goal]
+current_phase_type: [implementation or checkpoint, from phase 1's Type field]
 current_phase_files:
   - [path]
 current_phase_acceptance_criteria:

@@ -49,6 +49,8 @@ If there is no active job, ask the engineer to run `xoch-open-job` or provide th
 
 {{xoch-partial:phase-boundary.md}}
 
+If the current phase's `current_phase_type` (from Step 1's state read) is `checkpoint`, stop here and follow `## Checkpoint Flow` below instead of Steps 2-9.
+
 ### Step 2: Validate Readiness
 
 Before implementation, confirm:
@@ -233,6 +235,16 @@ Keep `last_validation` compact; detailed validation history belongs in phase sna
 For legacy migration jobs, record the same information in the legacy job notes or tracker when appropriate.
 
 For a multi-project job, write notes and state through the primary job and sync participant context after the final evidence update. A participant sync failure leaves phase work incomplete for handoff purposes even when source edits succeeded.
+
+## Checkpoint Flow
+
+Follow this instead of Steps 2-9 when the current phase's `current_phase_type` is `checkpoint`.
+
+1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from `phases.md` and prior snapshots, not from memory alone.
+2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
+3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise-spec` or `xoch-revise-plan` for it, and do not reopen or amend the snapshots of phases already completed.
+4. Once the engineer confirms things look right — with or without corrections along the way — write `checkpoint-[N].md` under `snapshots_dir`, recording what was tested, what was found, and what was corrected.
+5. Continue to `xoch-next` as normal; a checkpoint phase advances the same way an implementation phase does.
 
 ## Output
 
