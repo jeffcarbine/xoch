@@ -49,7 +49,7 @@ If there is no active job, ask the engineer to run `xoch-open-job` or provide th
 
 {{xoch-partial:phase-boundary.md}}
 
-If the current phase's `current_phase_type` (from Step 1's state read) is `checkpoint`, stop here and follow `## Checkpoint Flow` below instead of Steps 2-9.
+If the current phase's `current_phase_type` (from Step 1's state read) is `checkpoint`, stop here and follow `## Checkpoint Flow` below instead of Steps 2-8.
 
 ### Step 2: Validate Readiness
 
@@ -97,9 +97,11 @@ Do not begin implementation until the engineer chooses one of these paths, unles
 
 Interpret the choices as:
 
-- `[A]` Agent makes: inspect the needed files, implement the phase, validate, and record evidence.
-- `[E]` Engineer makes: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect.
-- `[C]` Collaborate: work interactively, making only the changes the engineer confirms.
+- `[A]` Agent makes: inspect the needed files, implement the phase, validate, and record evidence. When this phase writes tests, the agent drafts them too (Step 6).
+- `[E]` Engineer makes: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect. When this phase writes tests, wait for the engineer to provide them before Step 6's fail-confirmation.
+- `[C]` Collaborate: work interactively, making only the changes the engineer confirms. When this phase writes tests, decide who writes which test as part of that same collaboration rather than fixing it in advance.
+
+This single choice also settles test ownership for the phase — there is no separate ask before Step 6.
 
 Record the chosen path in job state or phase notes when useful.
 
@@ -125,38 +127,22 @@ For agent-owned or collaborative work:
 
 {{xoch-partial:budget-check.md skill="make"}}
 
-### Step 6: Ask How To Handle Tests
-
-Before writing tests, stop and ask:
-
-{{xoch-partial:action-choice.md agent_action="writes the tests" engineer_action="writes the tests"}}
-
-Do not begin writing tests until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-make`.
-
-Interpret the choices as:
-
-- `[A]` Agent writes the tests: draft the test(s) in Step 7.
-- `[E]` Engineer writes the tests: do not draft tests; wait for the engineer to provide them, then continue to Step 7 to confirm they fail for the right reason.
-- `[C]` Collaborate: draft tests interactively, incorporating engineer input as you go.
-
-When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step and Step 7, and continue to Step 8.
-
-### Step 7: Write Behavior Tests First
+### Step 6: Write Behavior Tests First
 
 {{xoch-partial:behavior-tests.md}}
 
 When this phase adds or changes testable code behavior:
 
-1. Write the test(s) for that behavior before editing implementation code, per the ownership chosen in Step 6.
+1. Write the test(s) for that behavior before editing implementation code, per the ownership chosen in Step 4: `[A]` the agent drafts them, `[E]` wait for the engineer to provide them, `[C]` decide together as you go.
 2. Run them and confirm they fail for the right reason — the behavior doesn't exist yet, not a broken test or a syntax error.
 3. Record the failure as evidence.
-4. Stop and ask: {{xoch-partial:accept-or-modify.md artifact="tests"}}. Do not begin Step 8 until the engineer chooses `[A]`. On `[M]`, revise the tests per the engineer's modifications and re-confirm they still fail for the right reason before asking again.
+4. Stop and ask: {{xoch-partial:accept-or-modify.md artifact="tests"}}. This gate is mandatory and applies no matter who wrote the tests — even engineer-authored tests need an explicit `[A]` before continuing. Do not begin Step 7 until the engineer chooses `[A]`. On `[M]`, revise the tests per the engineer's modifications and re-confirm they still fail for the right reason before asking again.
 
-When this phase backfills coverage for pre-existing, already-correct code (per the plan's coverage-gate work), write and run those tests too. They are expected to pass immediately, not fail — that's expected, and different from the write-first flow above. The accept/modify gate above still applies before continuing to Step 8.
+When this phase backfills coverage for pre-existing, already-correct code (per the plan's coverage-gate work), write and run those tests too. They are expected to pass immediately, not fail — that's expected, and different from the write-first flow above. The accept/modify gate above still applies before continuing to Step 7.
 
-When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step (see Step 6).
+When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step and continue to Step 7.
 
-### Step 8: Implement
+### Step 7: Implement
 
 When editing:
 
@@ -168,7 +154,7 @@ When editing:
 - update docs only when this phase's work changes documented behavior
 - avoid adding QA or PR process ceremony
 - never move or copy implementation source between participating repositories
-- implement until this phase's behavior tests pass (green), then continue to Step 9
+- implement until this phase's behavior tests pass (green), then continue to Step 8
 
 If the job is target-model, append useful implementation notes with:
 
@@ -182,7 +168,7 @@ or, when a current phase file already exists (`current_phase_body` from Step 1's
 
 For legacy migration jobs, add notes to the existing legacy job folder when useful.
 
-### Step 9: Validate
+### Step 8: Validate
 
 Run focused validation that matches the phase. Examples:
 
@@ -196,7 +182,7 @@ Run focused validation that matches the phase. Examples:
 
 If validation cannot be run, record why.
 
-### Step 10: Record Evidence
+### Step 9: Record Evidence
 
 Before ending, summarize:
 
@@ -238,7 +224,7 @@ For a multi-project job, write notes and state through the primary job and sync 
 
 ## Checkpoint Flow
 
-Follow this instead of Steps 2-9 when the current phase's `current_phase_type` is `checkpoint`.
+Follow this instead of Steps 2-8 when the current phase's `current_phase_type` is `checkpoint`.
 
 1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from `phases.md` and prior snapshots, not from memory alone.
 2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
