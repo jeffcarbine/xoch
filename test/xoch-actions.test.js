@@ -1863,6 +1863,30 @@ test('advancing with an empty --next-phase marks the job implementation-complete
   }
 });
 
+test('advancing with an empty --next-phase clears pre-existing list blocks instead of leaving their old entries orphaned', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: '3' });
+    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
+    const original = fs.readFileSync(path.join(dir, 'state.md'), 'utf8').replace(/\n$/, '');
+    fs.writeFileSync(
+      path.join(dir, 'state.md'),
+      `${original}\ncurrent_phase_files:\n  - old-file.js\ncurrent_phase_acceptance_criteria:\n  - AC-OLD\ncurrent_phase_validation:\n  - old validation\n`
+    );
+
+    const result = run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx);
+    assert.strictEqual(result.status, 0);
+
+    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
+    assert.ok(!stateText.includes('old-file.js'));
+    assert.ok(!stateText.includes('AC-OLD'));
+    assert.ok(!stateText.includes('old validation'));
+    assert.match(stateText, /current_phase_files: \[\]\ncurrent_phase_acceptance_criteria: \[\]\ncurrent_phase_validation: \[\]/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('a phase entry with no explicit Status line defaults to "unknown"', () => {
   const ctx = scratch();
   try {

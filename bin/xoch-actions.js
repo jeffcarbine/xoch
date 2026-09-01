@@ -880,12 +880,13 @@ function phaseAdvance(argv) {
     const line = lines[i];
     const keyMatch = line.match(/^([A-Za-z0-9_]+):/);
     const key = keyMatch ? keyMatch[1] : null;
-    if (key && Object.prototype.hasOwnProperty.call(updates, key)) {
-      out.push(`${key}: ${updates[key]}`);
-      i += 1;
-    } else if (key && skipBlocks.includes(key)) {
+    if (key && skipBlocks.includes(key)) {
+      if (Object.prototype.hasOwnProperty.call(updates, key)) out.push(`${key}: ${updates[key]}`);
       i += 1;
       while (i < lines.length && /^\s+- /.test(lines[i])) i += 1;
+    } else if (key && Object.prototype.hasOwnProperty.call(updates, key)) {
+      out.push(`${key}: ${updates[key]}`);
+      i += 1;
     } else {
       out.push(line);
       i += 1;
