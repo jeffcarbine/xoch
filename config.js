@@ -12,6 +12,7 @@ const { readJson, updateJson } = require('./bin/lib/json-store');
 
 const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
+const VALID_COMMENT_MODES = ['always', 'follow-convention'];
 
 // Kept in sync by hand with bin/token-estimator.js's (and install.js's)
 // copy of this table -- the installed runtime can't require this
@@ -26,6 +27,10 @@ const NC = '\x1b[0m';
 
 function isValidStorageMode(value) {
   return VALID_STORAGE_MODES.includes(value);
+}
+
+function isValidCommentMode(value) {
+  return VALID_COMMENT_MODES.includes(value);
 }
 
 function isValidBudgetValue(value) {
@@ -57,6 +62,12 @@ function readStorageMode() {
   return isValidStorageMode(mode) ? mode : 'in-repo';
 }
 
+function readCommentMode() {
+  const data = readJson(CONFIG_PATH);
+  const mode = data.documentation && data.documentation.commentMode;
+  return isValidCommentMode(mode) ? mode : 'always';
+}
+
 function printConfig() {
   const data = readJson(CONFIG_PATH);
   const mode = readStorageMode();
@@ -64,6 +75,8 @@ function printConfig() {
   data.storage = data.storage || {};
   data.storage.mode = mode;
   data.tokenBudgets = readTokenBudgets();
+  data.documentation = data.documentation || {};
+  data.documentation.commentMode = readCommentMode();
   console.log(JSON.stringify(data, null, 2));
 }
 
@@ -72,6 +85,15 @@ function writeStorageMode(value) {
     data.version = data.version || 1;
     data.storage = data.storage || {};
     data.storage.mode = value;
+    return data;
+  });
+}
+
+function writeCommentMode(value) {
+  updateJson(CONFIG_PATH, (data) => {
+    data.version = data.version || 1;
+    data.documentation = data.documentation || {};
+    data.documentation.commentMode = value;
     return data;
   });
 }
@@ -86,6 +108,10 @@ function printMigrationWarning() {
 function cmdGet(key) {
   if (key === 'storage.mode') {
     console.log(readStorageMode());
+    return;
+  }
+  if (key === 'documentation.commentMode') {
+    console.log(readCommentMode());
     return;
   }
   if (key.startsWith('tokenBudgets.')) {
@@ -105,6 +131,15 @@ function cmdSet(key, value) {
     writeStorageMode(value);
     console.log(`${GREEN}✓${NC} storage.mode set to ${value}`);
     printMigrationWarning();
+    return;
+  }
+  if (key === 'documentation.commentMode') {
+    if (!isValidCommentMode(value)) {
+      process.stderr.write(`${RED}Error: invalid documentation.commentMode value '${value}'. Expected one of: ${VALID_COMMENT_MODES.join(' ')}${NC}\n`);
+      process.exit(1);
+    }
+    writeCommentMode(value);
+    console.log(`${GREEN}✓${NC} documentation.commentMode set to ${value}`);
     return;
   }
   if (key.startsWith('tokenBudgets.')) {
@@ -237,6 +272,8 @@ function usage() {
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
   node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
+  node config.js get documentation.commentMode       Print documentation.commentMode
+  node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
   node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
   node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
   node config.js budgets                      Interactively review/update token budgets`);
@@ -287,16 +324,20 @@ if (require.main === module) {
 module.exports = {
   CONFIG_PATH,
   VALID_STORAGE_MODES,
+  VALID_COMMENT_MODES,
   DEFAULT_SKILL_BUDGETS,
   FALLBACK_SKILL_BUDGET,
   isValidStorageMode,
+  isValidCommentMode,
   isValidBudgetValue,
   readStorageMode,
+  readCommentMode,
   readTokenBudgets,
   resolvedBudget,
   writeTokenBudget,
   printConfig,
   writeStorageMode,
+  writeCommentMode,
   printMigrationWarning,
   cmdGet,
   cmdSet,

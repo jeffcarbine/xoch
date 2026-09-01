@@ -64,7 +64,47 @@ test('show prints the resolved config with defaults applied when no file exists'
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.version, 1);
     assert.strictEqual(data.storage.mode, 'in-repo');
+    assert.strictEqual(data.documentation.commentMode, 'always');
     assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('get documentation.commentMode prints the default when unset', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['get', 'documentation.commentMode'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.stdout.trim(), 'always');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set rejects an invalid documentation.commentMode value', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'documentation.commentMode', 'bogus'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid documentation\.commentMode value 'bogus'/);
+    assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set documentation.commentMode writes the config and round-trips on read', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'documentation.commentMode', 'follow-convention'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /documentation\.commentMode set to follow-convention/);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.documentation.commentMode, 'follow-convention');
+
+    const getResult = runScript(SCRIPT, ['get', 'documentation.commentMode'], ctx);
+    assert.strictEqual(getResult.stdout.trim(), 'follow-convention');
   } finally {
     cleanup(ctx);
   }
