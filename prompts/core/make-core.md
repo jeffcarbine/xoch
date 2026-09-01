@@ -154,7 +154,10 @@ When editing:
 - update docs only when this phase's work changes documented behavior
 - avoid adding QA or PR process ceremony
 - never move or copy implementation source between participating repositories
+- add proper inline documentation on new code -- JSDoc for JavaScript/TypeScript, docstrings for Python, or the equivalent convention for the language being written
 - implement until this phase's behavior tests pass (green), then continue to Step 8
+
+Check `documentation.commentMode` in `~/.xoch/config.json` (default `always` when the file or field is missing) before applying the inline-documentation bullet above. `always` applies it unconditionally; `follow-convention` means matching whatever the target project's file or module already does instead -- including adding no comments, when that's the established convention.
 
 If the job is target-model, append useful implementation notes with:
 
