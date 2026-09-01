@@ -979,7 +979,7 @@ function usage() {
   xoch-actions.js workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
   xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
   xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
-  xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+  xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
   xoch-actions.js config root
   xoch-actions.js job evidence --job ID [--json]
   xoch-actions.js arc evidence --arc ID [--json]

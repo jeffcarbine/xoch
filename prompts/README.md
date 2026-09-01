@@ -39,6 +39,8 @@ open-job -> spec -> plan -> make -> next -> review -> close-job
 
 Use `make` and `next` repeatedly until all phases are complete.
 
+`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `make` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise-spec`/`revise-plan` ceremony and no amending already-completed phase snapshots. `phase advance --next-type` (in `xoch-actions.js`) is what carries the type from `phases.md` into job state.
+
 `review` is the expected gate before `close-job`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close-job`. `close-job` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close-job` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
 
 ---
@@ -125,6 +127,7 @@ partials/action-choice.md
 partials/accept-or-modify.md
 partials/engineer-git-rule.md
 partials/next-step.md
+partials/next-choice.md
 partials/response-ending.md
 partials/phase-boundary.md
 partials/context-economy.md
@@ -187,6 +190,12 @@ Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as sp
 
 ```text
 Do you want to [A]ccept the spec, or do you have any [M]odifications?
+```
+
+Use `next-choice.md` instead of `next-step.md` when the next command is genuinely ambiguous between two options and shouldn't be asserted as a single definitive routing line. Rendered prompts read as a two-option text-game choice, e.g.:
+
+```text
+Ready to wrap up. [P]ull request, or [C]lose the job without one?
 ```
 
 Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.
