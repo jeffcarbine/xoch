@@ -1811,7 +1811,7 @@ test('phase advance without a phases.md just updates state.md fields', () => {
     assert.strictEqual(fieldValue(dir, 'current_phase'), '2');
     assert.strictEqual(fieldValue(dir, 'current_phase_title'), 'Phase Two');
     assert.strictEqual(fieldValue(dir, 'status'), 'phase_ready');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-make');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
     assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
   } finally {
     cleanup(ctx);
@@ -1894,7 +1894,7 @@ test('advancing with an empty --next-phase marks the job implementation-complete
     assert.match(result.stdout, /Phase advanced for job j1: 3 -> review/);
     assert.strictEqual(fieldValue(dir, 'status'), 'implementation_complete');
     assert.strictEqual(fieldValue(dir, 'current_phase'), 'null');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-review');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
     assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
     const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(stateText, /current_phase_files: \[\]/);
@@ -2125,15 +2125,15 @@ test('job step-advance moves implement -> advance without touching next_command'
   }
 });
 
-test('job step-advance moves final_review to none and hands off next_command to xoch-close', () => {
+test('job step-advance refuses to move past final_review -- that outcome is judgment-dependent, not mechanical', () => {
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'j1', { current_step: 'final_review', next_command: 'xoch-build' });
     const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Step advanced for job j1: final_review -> none/);
-    assert.strictEqual(fieldValue(dir, 'current_step'), 'null');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-close');
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /no deterministic follow-up for 'final_review'/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
   } finally {
     cleanup(ctx);
   }
@@ -2146,7 +2146,7 @@ test('job step-advance refuses to move past plan or advance -- those cross a pha
       const dir = seedJob(ctx, `j-${step}`, { current_step: step });
       const result = run(['job', 'step-advance', '--job', `j-${step}`], ctx);
       assert.strictEqual(result.status, 1);
-      assert.match(result.stderr, /use 'phase advance' to cross a phase boundary/);
+      assert.match(result.stderr, /no deterministic follow-up for '.+'/);
       assert.strictEqual(fieldValue(dir, 'current_step'), step);
     }
   } finally {

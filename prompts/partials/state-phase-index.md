@@ -1,6 +1,6 @@
 ## State Phase Index
 
-Use `state.md` as the lightweight working index for repeated commands. It should carry enough current-phase information for `xoch-make`, `xoch-next`, `xoch-resume`, and similar commands to orient without rereading full `spec.md`, `plan.md`, or `phases.md`:
+Use `state.md` as the lightweight working index for repeated commands. It should carry enough current-phase information for `xoch-build`, `xoch-open`, and similar commands to orient without rereading full `spec.md`, `plan.md`, or `phases.md`:
 
 ```yaml
 phase_count: [number]

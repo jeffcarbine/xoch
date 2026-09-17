@@ -858,7 +858,7 @@ function phaseAdvance(argv) {
       current_phase_files: '[]',
       current_phase_acceptance_criteria: '[]',
       current_phase_validation: '[]',
-      next_command: 'xoch-review',
+      next_command: 'xoch-build',
       current_step: 'final_review',
       last_updated: todayStr,
     }
@@ -869,7 +869,7 @@ function phaseAdvance(argv) {
       current_phase_title: nextTitle,
       current_phase_goal: nextGoal,
       current_phase_type: nextType || 'implementation',
-      next_command: 'xoch-make',
+      next_command: 'xoch-build',
       current_step: 'implement',
       last_updated: todayStr,
     };
@@ -920,14 +920,21 @@ function phaseAdvance(argv) {
 }
 
 // Step-only transitions for a bundled multi-step command (xoch-open,
-// xoch-build): no phase-index bookkeeping involved, so no --next-* content
-// is needed. The caller (a bundled skill) invokes this with no step name of
-// its own choosing and reports whatever current_step comes back -- it never
-// decides or writes the step name itself. Transitions that actually cross a
-// phase boundary (entering phase 1, moving to the next phase, or falling
-// through to final_review once every phase is done) stay phaseAdvance's job,
-// since only it has the phase-content flags and phases.md/phase_index
-// bookkeeping those transitions need; phaseAdvance sets current_step too.
+// xoch-build): no phase-index bookkeeping involved and no outcome-dependent
+// judgment involved, so no --next-* content is needed. The caller (a bundled
+// skill) invokes this with no step name of its own choosing and reports
+// whatever current_step comes back -- it never decides or writes the step
+// name itself. Two kinds of transition are deliberately excluded from this
+// table, since a fixed lookup would get them wrong:
+//   - Crossing a phase boundary (entering phase 1, moving to the next phase,
+//     or falling through to final_review once every phase is done) needs
+//     phase-content flags and phases.md/phase_index bookkeeping that only
+//     phaseAdvance has; it sets current_step too.
+//   - Leaving final_review is outcome-dependent, not mechanical: a passing
+//     review routes to xoch-doc, a failing one routes back into
+//     implementation, and review-core.md's own state.md write already
+//     carries that judgment -- it sets current_step directly as part of the
+//     same update, rather than asking this helper to guess it.
 const STEP_TRANSITIONS = {
   title: 'spec',
   spec: 'plan',
@@ -945,17 +952,13 @@ function stepAdvance(argv) {
   const currentStep = nullable(state.current_step);
   if (!currentStep) die(`job ${jobId} has no current_step set`);
 
-  let updates;
-  if (currentStep === 'final_review') {
-    updates = { current_step: 'null', next_command: 'xoch-close', last_updated: today() };
-  } else if (Object.prototype.hasOwnProperty.call(STEP_TRANSITIONS, currentStep)) {
-    updates = { current_step: STEP_TRANSITIONS[currentStep], last_updated: today() };
-  } else {
-    die(`step-advance cannot move past '${currentStep}' -- use 'phase advance' to cross a phase boundary`);
+  if (!Object.prototype.hasOwnProperty.call(STEP_TRANSITIONS, currentStep)) {
+    die(`step-advance has no deterministic follow-up for '${currentStep}' -- phase-crossing transitions go through 'phase advance', and leaving final_review is written directly to state.md by review's own outcome`);
   }
 
+  const updates = { current_step: STEP_TRANSITIONS[currentStep], last_updated: today() };
   updateStateFields(statePath, updates);
-  console.log(`Step advanced for job ${jobId}: ${currentStep} -> ${updates.current_step === 'null' ? 'none' : updates.current_step}`);
+  console.log(`Step advanced for job ${jobId}: ${currentStep} -> ${updates.current_step}`);
 }
 
 // Separator line used by `file edit`'s stdin format: old text, then a

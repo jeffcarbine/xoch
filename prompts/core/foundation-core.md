@@ -12,8 +12,10 @@ This is the recovery reference for agents that do not already know Xoch's job mo
 Xoch tracks focused software work as jobs. The normal flow is:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
+
+`xoch-build` covers implementation, phase review/advance, and the final job-level review as three internal steps (`implement`, `advance`, `final_review`) rather than three separate commands -- see Step Tracking below.
 
 When a material unknown blocks honest specification, use the optional loop:
 
@@ -44,7 +46,7 @@ Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's
 - `plan.md`: accepted implementation approach, risks, files, and acceptance coverage.
 - `phases.md`: authoritative phase list.
 - `phases/phase-[N].md`: optional detailed phase body.
-- `snapshots/phase-[N].md`: completion evidence captured by `xoch-next`.
+- `snapshots/phase-[N].md`: completion evidence captured by `xoch-build`'s `advance` step.
 - `notes/`: implementation, trace, or sidebar notes.
 - `notes/discovery-*.md`: accepted findings for unknowns that affect requirements or decisions.
 - `revisions/`: spec, plan, or arc revision history.
@@ -65,10 +67,11 @@ Step vocabulary:
 - `xoch-build`: `implement` -> `advance` -> (loops to `implement` for the next phase, or falls through to `final_review` once every phase is done)
 - `xoch-close`: `job` or `arc`, chosen by argument or context, not advanced through
 
-A bundled skill never decides or writes a step name itself. It invokes the deterministic helper for the transition and reports whatever step came back:
+A bundled skill never decides or writes a step name itself for a mechanical transition. It invokes the right deterministic helper and reports whatever step came back:
 
-- `~/.xoch/bin/xoch-actions.js job step-advance --job ID` for a step-only transition (no phase-index bookkeeping): `title`->`spec`, `spec`->`plan`, `implement`->`advance`, and `final_review`->none (which also hands `next_command` to `xoch-close`).
+- `~/.xoch/bin/xoch-actions.js job step-advance --job ID` for a step-only transition with no phase-index bookkeeping and no outcome to judge: `title`->`spec`, `spec`->`plan`, `implement`->`advance`.
 - `~/.xoch/bin/xoch-actions.js phase advance --job ID --phase N [--next-phase N] ...` for any transition that crosses a phase boundary (entering phase 1 from `plan`, moving `advance`->`implement` into the next phase, or `advance`->`final_review` once `current_phase` reaches `phase_count`) -- it also sets `current_step` as part of updating phase state. `job step-advance` refuses to move past `plan` or `advance` for this reason; use `phase advance` there instead.
+- Leaving `final_review` is not mechanical -- it depends on the review's outcome (pass routes to `xoch-doc`, a failing review routes back into implementation), so `job step-advance` refuses it too. `review-core.md`'s own `state.md` write sets `current_step` directly as part of recording that judgment.
 
 ## Arcs
 

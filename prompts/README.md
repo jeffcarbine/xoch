@@ -144,17 +144,19 @@ Expected core reference files:
 
 ```text
 core/foundation-core.md
+core/advance-core.md
 core/discovery-core.md
 core/doc-check-core.md
 core/doc-write-core.md
-core/make-core.md
-core/next-core.md
+core/implement-core.md
 core/plan-core.md
+core/review-core.md
 core/revise-arc-core.md
 core/revise-plan-core.md
 core/revise-spec-core.md
 core/spec-core.md
 core/trace-core.md
+core/workflow-boundary-core.md
 ```
 
 ---
@@ -177,13 +179,13 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `make.md`, `next.md`, `discovery.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `build.md`, `discovery.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing. A bundled multi-step wrapper like `build.md` picks which core file to read based on `current_step` rather than always reading the same one.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
 ```text
 How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
-Ready for next step: `xoch-next`
+Ready for next step: `xoch-build`
 ```
 
 Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as specs or plans before writing them. Rendered prompts should ask:
@@ -208,11 +210,11 @@ Use `state-phase-index.md` in commands that repeatedly orient around the active 
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 
-Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json`, blocks silent workflow replacement, and permits explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
+Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json` and, only when a workflow is actually active, reads `workflow-boundary-core.md` for the full protocol -- blocking silent workflow replacement and permitting explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
 
-Use `behavior-tests.md` in `make-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
+Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
-Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `make-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch-actions.js file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
+Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch-actions.js file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 
 ## Multi-Project Jobs
 

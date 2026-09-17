@@ -1,24 +1,24 @@
 ---
-name: xoch-make-core
-description: Full reference workflow for xoch-make
+name: xoch-implement-core
+description: Full reference workflow for xoch-build's implement step
 ---
 
-# Xoch - Make Core
+# Xoch - Implement Core
 
-This is the full reference workflow for `xoch-make`. It is rendered to `~/.xoch/prompts/core/make-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-build`'s `implement` step. It is rendered to `~/.xoch/prompts/core/implement-core.md` and is not installed as a command.
 
 Implement, guide, or collaborate on the current phase of the active job.
 
-`make` is Xoch's implementation command. It replaces the old `start` command and uses phase language instead of milestone language.
+`implement` is Xoch's implementation step, reached when `xoch-build` finds `current_step: implement`. It replaces the old standalone `xoch-make` command and uses phase language instead of milestone language.
 
 ## Purpose
 
-Load the active job, understand the current phase, choose an ownership mode with the engineer, perform the work when appropriate, record useful evidence, and route to `xoch-next`.
+Load the active job, understand the current phase, choose an ownership mode with the engineer, perform the work when appropriate, record useful evidence, and continue into the `advance` step.
 
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -43,7 +43,7 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 {{xoch-partial:current-phase-context.md}}
 
-If there is no active job, ask the engineer to run `xoch-open-job` or provide the job ID.
+If there is no active job, ask the engineer to run `xoch-open` or provide the job ID.
 
 {{xoch-partial:state-phase-index.md}}
 
@@ -93,7 +93,7 @@ After the briefing, stop and ask:
 
 {{xoch-partial:action-choice.md agent_action="makes" engineer_action="makes"}}
 
-Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-make`.
+Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-build`.
 
 Interpret the choices as:
 
@@ -105,7 +105,7 @@ This single choice also settles test ownership for the phase — there is no sep
 
 Record the chosen path in job state or phase notes when useful.
 
-After the initial ownership choice, treat all follow-up back-and-forth in the same phase conversation as part of phase implementation evidence. If the agent or engineer makes additional edits, runs manual checks, skips checks, changes validation expectations, or makes decisions after the first build pass, record those details in the final phase summary and in job state, notes, or the current phase file when useful. This lets `xoch-next` review the phase without asking a separate catch-up question.
+After the initial ownership choice, treat all follow-up back-and-forth in the same phase conversation as part of phase implementation evidence. If the agent or engineer makes additional edits, runs manual checks, skips checks, changes validation expectations, or makes decisions after the first build pass, record those details in the final phase summary and in job state, notes, or the current phase file when useful. This lets the `advance` step review the phase without asking a separate catch-up question.
 
 ### Step 5: Prepare Implementation
 
@@ -215,9 +215,10 @@ current_phase_validation:
 last_make_summary: [short summary]
 last_validation:
   - [latest check and result]
-next_command: xoch-next
 last_updated: [today]
 ```
+
+`next_command` is left untouched here -- it stays `xoch-build` throughout the `implement`/`advance` cycle within a phase; only crossing a phase boundary changes it, and that's `phase advance`'s job.
 
 Keep `last_validation` compact; detailed validation history belongs in phase snapshots or notes.
 
@@ -233,18 +234,19 @@ Follow this instead of Steps 2-8 when the current phase's `current_phase_type` i
 2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
 3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise-spec` or `xoch-revise-plan` for it, and do not reopen or amend the snapshots of phases already completed.
 4. Once the engineer confirms things look right — with or without corrections along the way — write `checkpoint-[N].md` under `snapshots_dir`, recording what was tested, what was found, and what was corrected.
-5. Continue to `xoch-next` as normal; a checkpoint phase advances the same way an implementation phase does.
+5. Continue into the `advance` step per the Output section below; a checkpoint phase advances the same way an implementation phase does.
 
 ## Output
 
-End with:
+Report:
 
 ```text
 Phase work complete or ready for review.
 Job: [job-id]
 Current phase: [N] - [title]
-{{xoch-partial:next-step.md command="xoch-next"}}
 ```
+
+Then run `~/.xoch/bin/xoch-actions.js job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-build` owns both steps.
 
 ## Rules
 
@@ -255,7 +257,7 @@ Current phase: [N] - [title]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Do not start implementation without enough phase context.
-- Do not start or complete the next phase during the current `xoch-make` run.
+- Do not start or complete the next *phase* during the current `xoch-build` run. Moving from the `implement` step to the `advance` step within the same phase is expected and required, not a new phase.
 - Do not silently change spec scope; use `xoch-revise-spec`.
 - Do not silently reshape remaining phases; use `xoch-revise-plan`.
 - Keep phase work focused.

@@ -1,15 +1,15 @@
 ---
-name: xoch-review
-description: Review completed Xoch work against acceptance, quality, tests, and documentation freshness
+name: xoch-review-core
+description: Full reference workflow for xoch-build's final_review step
 ---
 
-# Xoch - Review
+# Xoch - Review Core
 
-{{xoch-partial:workflow-boundary.md}}
+This is the full reference workflow for `xoch-build`'s `final_review` step. It is rendered to `~/.xoch/prompts/core/review-core.md` and is not installed as a command.
 
 Review completed implementation before job closure.
 
-`review` is Xoch's lightweight quality gate. It borrows the useful rigor of an audit without adding RepFlow-specific QA or PR ceremony.
+This is Xoch's lightweight quality gate, reached once every phase is done. It borrows the useful rigor of an audit without adding RepFlow-specific QA or PR ceremony.
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Verify that completed work satisfies the spec, matches the plan, has adequate va
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.js job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
+Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
@@ -67,7 +67,7 @@ Confirm one of these is true:
 - the engineer explicitly asks for an early review
 - the job is small enough that phase tracking was intentionally skipped
 
-If implementation is plainly incomplete, say so and route to `xoch-make` or `xoch-next`.
+If implementation is plainly incomplete, say so and route back into `xoch-build`'s `implement`/`advance` flow rather than continuing this step.
 
 ### Step 3: Acceptance Coverage
 
@@ -118,7 +118,7 @@ When project validation commands are not already known, inspect advisory candida
 
 Re-run the project's full test suite (using the test command detected or already known from Step 4) and record whether it passes. A failure unrelated to this job's work may be explicitly waived by the engineer; record the waiver and what makes it unrelated. A failure caused by or related to this job's work blocks `pass`/`pass_with_waivers` until fixed.
 
-Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency — if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-make` to close any gap that doesn't qualify.
+Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-build`'s `implement` step to close any gap that doesn't qualify.
 
 ### Step 6: Documentation Freshness
 
@@ -133,7 +133,7 @@ For each documentation target, mark:
 - Waived
 - Unknown
 
-This assessment is informational for the review record. It does not decide whether `xoch-doc` runs next — a passing review always routes to `xoch-doc` (Step 8), where staleness is actually addressed or explicitly waived, regardless of what this step finds.
+This assessment is informational for the review record. It does not decide whether `xoch-doc` runs next -- a passing review always routes to `xoch-doc` (Step 8), where staleness is actually addressed or explicitly waived, regardless of what this step finds.
 
 ### Step 7: Decide Review Status
 
@@ -141,10 +141,10 @@ Use one of these statuses:
 
 - `pass` - acceptance is covered, the full suite passes (or its failures are explicitly waived as unrelated to this job), coverage is complete on every job-touched file (100%, or fully-recorded documented exceptions per `coverage-gate.md`), and no blocking risks remain
 - `pass_with_waivers` - remaining gaps other than code coverage (which cannot be waived here, only handled via a documented exception) are explicitly waived by the engineer
-- `needs_work` - issues should be fixed before close-job
+- `needs_work` - issues should be fixed before `xoch-close`
 - `blocked` - review cannot complete without missing information or environment access
 
-On `pass` or `pass_with_waivers`, the recommended next command is always `xoch-doc` — not `xoch-close-job` or `xoch-pr` directly, even though `xoch-close-job` may eventually proceed once `xoch-doc` has run. `xoch-close-job` should ask before proceeding if review is missing or not passing.
+On `pass` or `pass_with_waivers`, the recommended next command is always `xoch-doc` -- not `xoch-close` or `xoch-pr` directly, even though `xoch-close` may eventually proceed once `xoch-doc` has run. `xoch-close` should ask before proceeding if review is missing or not passing.
 
 ### Step 8: Write Review Result
 
@@ -187,16 +187,19 @@ Use this structure:
 
 ## Recommendation
 
-{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-make when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
+{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-build when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
 ```
 
-Update `state.md`:
+Update `state.md`, setting `current_step` from the same outcome rather than leaving it at `final_review`:
 
 ```yaml
 review_status: [status]
 next_command: [recommended next command]
+current_step: [null when pass or pass_with_waivers -- next_command is xoch-doc; implement when needs_work -- next_command is xoch-build; final_review when blocked -- still stuck here]
 last_updated: [today]
 ```
+
+`current_step` is written directly here, not through `job step-advance` -- this outcome is a judgment call, not a mechanical lookup.
 
 For legacy migration jobs, write `review.md` in the legacy job folder.
 
@@ -218,6 +221,6 @@ Review status: [status]
 - Do not invent validation that was not run or reported.
 - Waivers must be explicit and recorded.
 - Review does not create QA or PR handoff jobs.
-- A passing review always routes to `xoch-doc` next, never directly to `xoch-close-job` or `xoch-pr` — documentation staleness is addressed or waived there, not skipped here.
+- A passing review always routes to `xoch-doc` next, never directly to `xoch-close` or `xoch-pr` -- documentation staleness is addressed or waived there, not skipped here.
 - Review every touched project in a multi-project job; one project's passing checks do not cover another.
 - Do not move active legacy job folders during the migration.

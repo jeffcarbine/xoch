@@ -1,15 +1,15 @@
 ---
-name: xoch-next-core
-description: Full reference workflow for xoch-next
+name: xoch-advance-core
+description: Full reference workflow for xoch-build's advance step
 ---
 
-# Xoch - Next Core
+# Xoch - Advance Core
 
-This is the full reference workflow for `xoch-next`. It is rendered to `~/.xoch/prompts/core/next-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-build`'s `advance` step. It is rendered to `~/.xoch/prompts/core/advance-core.md` and is not installed as a command.
 
 Review the current phase, capture a snapshot, and advance when the engineer confirms the phase is complete.
 
-`next` replaces the old `advance` command and uses phase language instead of milestone language.
+`advance` is Xoch's phase-review-and-advance step, reached when `xoch-build` finds `current_step: advance` -- normally right after its own `implement` step, in the same response. It replaces the old standalone `xoch-next` command and uses phase language instead of milestone language.
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Compare the current phase plan against the working tree, gather implementation a
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -43,7 +43,7 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 {{xoch-partial:current-phase-context.md}}
 
-Also check notes or evidence from recent `xoch-make` work, under `notes_dir`.
+Also check notes or evidence from the recent `implement`-step work, under `notes_dir`.
 
 If the current phase is unclear, ask the engineer which phase should be reviewed.
 
@@ -100,7 +100,7 @@ Keep the review firm but not theatrical. The engineer has final say.
 
 If the engineer has already mentioned manual testing, generated files, configuration changes, external setup, documentation decisions, or known skipped checks, include that context in the review and later snapshot.
 
-Do not ask a separate catch-up question for manual, external, or skipped-check details. `xoch-make` is responsible for recording follow-up phase evidence during the implementation conversation. If evidence is missing or contradictory, mention the gap in the review and let the `[Y]`/`[N]` advancement choice handle it.
+Do not ask a separate catch-up question for manual, external, or skipped-check details. The `implement` step is responsible for recording follow-up phase evidence during the implementation conversation. If evidence is missing or contradictory, mention the gap in the review and let the `[Y]`/`[N]` advancement choice handle it.
 
 ### Step 5: Confirm Advancement
 
@@ -183,11 +183,11 @@ When confirmed, write a phase snapshot.
 For target-model jobs, prefer deterministic helpers for file/path mechanics:
 
 ```bash
-~/.xoch/bin/xoch-actions.js snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or xoch-review]"
+~/.xoch/bin/xoch-actions.js snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or final review]"
 ~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-type "[implementation or checkpoint, from phase N+1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
 ```
 
-If there are no more phases, omit the `--next-*` arguments so the helper routes state to `xoch-review`.
+If there are no more phases, omit the `--next-*` arguments so the helper routes state to `final_review`.
 
 After helper use, replace placeholder snapshot content with the actual summary/evidence. If helpers are unavailable, create or update `phase-[N].md` under `snapshots_dir` (from Step 1's `job evidence` call).
 
@@ -221,7 +221,7 @@ Use this structure:
 
 ## Next
 
-[next phase or xoch-review]
+[next phase or final review]
 ```
 
 Also update the current phase section in `phases.md`:
@@ -259,7 +259,8 @@ phase_index:
     title: [next title]
     status: not_started
     type: [implementation or checkpoint]
-next_command: xoch-make
+next_command: xoch-build
+current_step: implement
 last_updated: [today]
 ```
 
@@ -274,9 +275,12 @@ current_phase_type: null
 current_phase_files: []
 current_phase_acceptance_criteria: []
 current_phase_validation: []
-next_command: xoch-review
+next_command: xoch-build
+current_step: final_review
 last_updated: [today]
 ```
+
+Both blocks above are what `phase advance` already writes when run per Step 7 -- this documents its effect, it is not a separate hand-edit.
 
 For legacy migration jobs, write a comparable `milestone-[N].md` or phase snapshot in the legacy job folder and update the legacy tracker in place.
 
@@ -289,17 +293,19 @@ If more phases remain:
 ```text
 Phase [N] complete.
 Next phase: [N+1] - [title]
-{{xoch-partial:next-step.md command="xoch-make"}}
+{{xoch-partial:next-step.md command="xoch-build"}}
 ```
 
-Stop here. Do not begin the next `xoch-make` phase work in this response.
+Stop here. Do not begin the next phase's `implement` step in this response -- a fresh `xoch-build` invocation is required, per the phase boundary.
 
 If implementation is complete:
 
 ```text
 All phases complete.
-{{xoch-partial:next-step.md command="xoch-review"}}
+{{xoch-partial:next-step.md command="xoch-build"}}
 ```
+
+Stop here too -- entering `final_review` is a new step, not a continuation of the phase that just finished, so it also waits for a fresh `xoch-build` invocation.
 
 ## Rules
 
