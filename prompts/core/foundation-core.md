@@ -53,6 +53,23 @@ Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's
 
 Use `state.md` first on repeated commands. It should include current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Read full `spec.md`, `plan.md`, or `phases.md` only when state/prior context is insufficient or exact text is required.
 
+## Step Tracking
+
+A bundled multi-step command (`xoch-open`, `xoch-build`) can span several internal steps across one or more invocations without a fresh command each time. `state.md`'s `next_command` and `current_step` track exactly where a job is; `current.json` projects both, so `job current --json` -- the call every command already makes for the workflow boundary -- is enough to know the current step without a separate `state.md` read.
+
+These two fields are distinct from the managed side-workflow fields above (`active_workflow`, `workflow_stage`, ...): a side workflow is a temporary diversion from the main flow that returns to it when done (`xoch-discovery`, `xoch-pause`); `next_command`/`current_step` describe position in the main flow itself.
+
+Step vocabulary:
+
+- `xoch-open`: `title` -> `spec` -> `plan`
+- `xoch-build`: `implement` -> `advance` -> (loops to `implement` for the next phase, or falls through to `final_review` once every phase is done)
+- `xoch-close`: `job` or `arc`, chosen by argument or context, not advanced through
+
+A bundled skill never decides or writes a step name itself. It invokes the deterministic helper for the transition and reports whatever step came back:
+
+- `~/.xoch/bin/xoch-actions.js job step-advance --job ID` for a step-only transition (no phase-index bookkeeping): `title`->`spec`, `spec`->`plan`, `implement`->`advance`, and `final_review`->none (which also hands `next_command` to `xoch-close`).
+- `~/.xoch/bin/xoch-actions.js phase advance --job ID --phase N [--next-phase N] ...` for any transition that crosses a phase boundary (entering phase 1 from `plan`, moving `advance`->`implement` into the next phase, or `advance`->`final_review` once `current_phase` reaches `phase_count`) -- it also sets `current_step` as part of updating phase state. `job step-advance` refuses to move past `plan` or `advance` for this reason; use `phase advance` there instead.
+
 ## Arcs
 
 Arcs group related jobs by job ID reference:
@@ -93,6 +110,7 @@ Prefer installed helpers for static file and state actions:
 ~/.xoch/bin/xoch-actions.js workflow abandon ...
 ~/.xoch/bin/xoch-actions.js snapshot create ...
 ~/.xoch/bin/xoch-actions.js phase advance ...
+~/.xoch/bin/xoch-actions.js job step-advance --job ID
 ~/.xoch/bin/readme-actions.js assemble ...
 ~/.xoch/bin/archive-actions.js archive ...
 ~/.xoch/bin/coverage-actions.js compare ...

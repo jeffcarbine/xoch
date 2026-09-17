@@ -181,8 +181,15 @@ function resolveCurrentPointer() {
     const state = scalarState(path.join(data.job.directory, 'state.md'));
     if (Object.keys(state).length) {
       const projectedWorkflow = workflowFromState(state, data.workflow);
-      if (JSON.stringify(projectedWorkflow) !== JSON.stringify(data.workflow)) {
+      const projectedNextCommand = nullable(state.next_command);
+      const projectedCurrentStep = nullable(state.current_step);
+      const changed = JSON.stringify(projectedWorkflow) !== JSON.stringify(data.workflow)
+        || projectedNextCommand !== nullable(data.next_command)
+        || projectedCurrentStep !== nullable(data.current_step);
+      if (changed) {
         data.workflow = projectedWorkflow;
+        data.next_command = projectedNextCommand;
+        data.current_step = projectedCurrentStep;
         data.updated_at = utcIso8601();
         writeAtomicJson(jsonPath, data);
       }
@@ -203,6 +210,8 @@ function resolveCurrentPointer() {
         directory: fields.job_directory || path.join(root, 'work', 'jobs', jobId),
       },
       workflow,
+      next_command: nullable(state.next_command),
+      current_step: nullable(state.current_step),
       updated_at: utcIso8601(),
     };
     writeAtomicJson(jsonPath, data);
@@ -241,6 +250,8 @@ function jobCurrent(argv) {
     console.log(`job_directory: ${data.job.directory}`);
     console.log(`active_workflow: ${(data.workflow && data.workflow.name) || 'none'}`);
     console.log(`workflow_stage: ${(data.workflow && data.workflow.stage) || 'none'}`);
+    console.log(`next_command: ${data.next_command || 'none'}`);
+    console.log(`current_step: ${data.current_step || 'none'}`);
     console.log(`pointer: ${pointer}`);
   }
 }
@@ -313,14 +324,27 @@ function printEvidence(result, mode) {
   }
 }
 
-function writeCurrent(jobId, title, arc, started) {
+// Rebuilds current.json from a job's state.md -- the single place that
+// derives the pointer's workflow/next_command/current_step projection, used
+// both when a job is freshly opened and when it's explicitly made current
+// again (job set-current). resolveCurrentPointer() separately keeps an
+// already-written pointer in sync on every read, so callers don't need to
+// invoke this again just because state.md changed underneath it.
+function syncCurrentPointer(jobId) {
   const root = xochRoot();
   const jobDir = path.join(root, 'work', 'jobs', jobId);
-  const pointerPath = path.join(root, 'work', 'current.json');
-  writeAtomicJson(pointerPath, {
+  const statePath = path.join(jobDir, 'state.md');
+  const state = scalarState(statePath);
+  const title = state.title || jobId;
+  const arc = state.arc || 'standalone';
+  const started = state.started || today();
+
+  writeAtomicJson(path.join(root, 'work', 'current.json'), {
     version: 1,
     job: { id: jobId, title, arc, directory: jobDir },
-    workflow: null,
+    workflow: workflowFromState(state),
+    next_command: nullable(state.next_command),
+    current_step: nullable(state.current_step),
     started_at: started,
     updated_at: utcIso8601(),
   });
@@ -372,11 +396,12 @@ workflow_started_at: null
 review_status: null
 closure_status: null
 next_command: xoch-spec
+current_step: title
 started: ${started}
 last_updated: ${started}
 `;
   fs.writeFileSync(path.join(jobDir, 'state.md'), stateContent);
-  writeCurrent(id, title, arc, started);
+  syncCurrentPointer(id);
 
   console.log(`Job opened: ${id}`);
   console.log(`Job directory: ${jobDir}`);
@@ -386,35 +411,10 @@ function jobSetCurrent(argv) {
   const flags = parseFlags(argv, []);
   const jobId = flags.job;
   if (!jobId) die('job set-current requires --job');
-  const root = xochRoot();
-  const statePath = path.join(root, 'work', 'jobs', jobId, 'state.md');
+  const statePath = path.join(xochRoot(), 'work', 'jobs', jobId, 'state.md');
   if (!fs.existsSync(statePath)) die(`state not found: ${statePath}`);
 
-  const state = scalarState(statePath);
-  const title = state.title || jobId;
-  const arc = state.arc || 'standalone';
-  const started = state.started || today();
-  const active = nullable(state.active_workflow);
-  const workflow = active ? {
-    name: active,
-    stage: nullable(state.workflow_stage) || 'in_progress',
-    pending_action: nullable(state.pending_action) || 'resume_workflow',
-    artifact: nullable(state.workflow_artifact),
-    return_command: nullable(state.return_command) || nullable(state.next_command) || active,
-    started_at: nullable(state.workflow_started_at),
-    updated_at: utcIso8601(),
-  } : null;
-
-  writeAtomicJson(path.join(root, 'work', 'current.json'), {
-    version: 1,
-    job: { id: jobId, title, arc, directory: path.join(root, 'work', 'jobs', jobId) },
-    workflow,
-    started_at: started,
-    updated_at: utcIso8601(),
-  });
-  const currentMd = path.join(root, 'work', 'current.md');
-  if (fs.existsSync(currentMd)) fs.unlinkSync(currentMd);
-
+  syncCurrentPointer(jobId);
   console.log(`Current job set: ${jobId}`);
 }
 
@@ -859,6 +859,7 @@ function phaseAdvance(argv) {
       current_phase_acceptance_criteria: '[]',
       current_phase_validation: '[]',
       next_command: 'xoch-review',
+      current_step: 'final_review',
       last_updated: todayStr,
     }
     : {
@@ -869,6 +870,7 @@ function phaseAdvance(argv) {
       current_phase_goal: nextGoal,
       current_phase_type: nextType || 'implementation',
       next_command: 'xoch-make',
+      current_step: 'implement',
       last_updated: todayStr,
     };
 
@@ -915,6 +917,45 @@ function phaseAdvance(argv) {
 
   fs.writeFileSync(statePath, `${out.join('\n')}\n`);
   console.log(`Phase advanced for job ${jobId}: ${phase} -> ${nextPhase || 'review'}`);
+}
+
+// Step-only transitions for a bundled multi-step command (xoch-open,
+// xoch-build): no phase-index bookkeeping involved, so no --next-* content
+// is needed. The caller (a bundled skill) invokes this with no step name of
+// its own choosing and reports whatever current_step comes back -- it never
+// decides or writes the step name itself. Transitions that actually cross a
+// phase boundary (entering phase 1, moving to the next phase, or falling
+// through to final_review once every phase is done) stay phaseAdvance's job,
+// since only it has the phase-content flags and phases.md/phase_index
+// bookkeeping those transitions need; phaseAdvance sets current_step too.
+const STEP_TRANSITIONS = {
+  title: 'spec',
+  spec: 'plan',
+  implement: 'advance',
+};
+
+function stepAdvance(argv) {
+  const flags = parseFlags(argv, []);
+  const jobId = flags.job;
+  if (!jobId) die('job step-advance requires --job');
+  const statePath = path.join(xochRoot(), 'work', 'jobs', jobId, 'state.md');
+  if (!fs.existsSync(statePath)) die(`state not found: ${statePath}`);
+
+  const state = scalarState(statePath);
+  const currentStep = nullable(state.current_step);
+  if (!currentStep) die(`job ${jobId} has no current_step set`);
+
+  let updates;
+  if (currentStep === 'final_review') {
+    updates = { current_step: 'null', next_command: 'xoch-close', last_updated: today() };
+  } else if (Object.prototype.hasOwnProperty.call(STEP_TRANSITIONS, currentStep)) {
+    updates = { current_step: STEP_TRANSITIONS[currentStep], last_updated: today() };
+  } else {
+    die(`step-advance cannot move past '${currentStep}' -- use 'phase advance' to cross a phase boundary`);
+  }
+
+  updateStateFields(statePath, updates);
+  console.log(`Step advanced for job ${jobId}: ${currentStep} -> ${updates.current_step === 'null' ? 'none' : updates.current_step}`);
 }
 
 // Separator line used by `file edit`'s stdin format: old text, then a
@@ -981,6 +1022,7 @@ function usage() {
   xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
   xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+  xoch-actions.js job step-advance --job ID
   xoch-actions.js config root
   xoch-actions.js job evidence --job ID [--json]
   xoch-actions.js arc evidence --arc ID [--json]
@@ -1052,6 +1094,9 @@ function main(argv) {
     case 'phase:advance':
       phaseAdvance(rest);
       break;
+    case 'job:step-advance':
+      stepAdvance(rest);
+      break;
     case 'file:write':
       fileWrite(rest);
       break;
@@ -1085,7 +1130,7 @@ module.exports = {
   jobCurrent,
   jobEvidence,
   arcEvidence,
-  writeCurrent,
+  syncCurrentPointer,
   jobOpen,
   jobSetCurrent,
   stateSet,

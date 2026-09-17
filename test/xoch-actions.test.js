@@ -333,6 +333,20 @@ test('job open writes the current pointer and removes a stale current.md', () =>
   }
 });
 
+test('job open sets current_step to title in state.md and projects it into the pointer', () => {
+  const ctx = scratch();
+  try {
+    run(['job', 'open', '--title', 'New Job', '--id', 'newjob'], ctx);
+    const dir = jobDirOf(ctx, 'newjob');
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'title');
+    const pointer = readJsonFile(pointerPath(ctx));
+    assert.strictEqual(pointer.next_command, 'xoch-spec');
+    assert.strictEqual(pointer.current_step, 'title');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 // ---------------------------------------------------------------------
 // job set-current
 // ---------------------------------------------------------------------
@@ -570,6 +584,26 @@ test('job current syncs the pointer workflow to match the job state when they di
   }
 });
 
+test('job current syncs the pointer next_command and current_step to match the job state when they differ', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1', { next_command: 'xoch-build', current_step: 'advance' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-make', current_step: 'implement' });
+
+    const result = run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.next_command, 'xoch-build');
+    assert.strictEqual(data.current_step, 'advance');
+
+    const after = readJsonFile(pointerPath(ctx));
+    assert.strictEqual(after.next_command, 'xoch-build');
+    assert.strictEqual(after.current_step, 'advance');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('job current preserves the existing workflow\'s started_at when the job state omits it, while syncing other fields', () => {
   const ctx = scratch();
   try {
@@ -591,11 +625,15 @@ test('job current preserves the existing workflow\'s started_at when the job sta
   }
 });
 
-test('job current does not rewrite the pointer when the projected workflow is unchanged', () => {
+test('job current does not rewrite the pointer when the projected workflow, next_command, and current_step are all unchanged', () => {
   const ctx = scratch();
   try {
     seedJob(ctx, 'j1');
-    seedPointer(ctx, { id: 'j1' }, null, { updated_at: '2020-01-01T00:00:00Z' });
+    seedPointer(ctx, { id: 'j1' }, null, {
+      next_command: 'xoch-make',
+      current_step: null,
+      updated_at: '2020-01-01T00:00:00Z',
+    });
     run(['job', 'current'], ctx);
     const after = readJsonFile(pointerPath(ctx));
     assert.strictEqual(after.updated_at, '2020-01-01T00:00:00Z');
@@ -1774,6 +1812,7 @@ test('phase advance without a phases.md just updates state.md fields', () => {
     assert.strictEqual(fieldValue(dir, 'current_phase_title'), 'Phase Two');
     assert.strictEqual(fieldValue(dir, 'status'), 'phase_ready');
     assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-make');
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
   } finally {
     cleanup(ctx);
   }
@@ -1856,6 +1895,7 @@ test('advancing with an empty --next-phase marks the job implementation-complete
     assert.strictEqual(fieldValue(dir, 'status'), 'implementation_complete');
     assert.strictEqual(fieldValue(dir, 'current_phase'), 'null');
     assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-review');
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
     const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(stateText, /current_phase_files: \[\]/);
   } finally {
@@ -2007,6 +2047,123 @@ test('an indented sub-list under a non-skipped key passes through phase advance 
     run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
     const content = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(content, /documentation_targets:\n\s+- scope: docs\n\s+path: README\.md/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// job step-advance
+// ---------------------------------------------------------------------
+
+test('job step-advance requires --job', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['job', 'step-advance'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /job step-advance requires --job/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance fails when the job state does not exist', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['job', 'step-advance', '--job', 'missing'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /state not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance fails when the job has no current_step set', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_step: undefined });
+    const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /has no current_step set/);
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-make');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance moves title -> spec -> plan without touching next_command', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_step: 'title', next_command: 'xoch-open' });
+    let result = run(['job', 'step-advance', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job j1: title -> spec/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'spec');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-open');
+
+    result = run(['job', 'step-advance', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job j1: spec -> plan/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'plan');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-open');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance moves implement -> advance without touching next_command', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-build' });
+    const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job j1: implement -> advance/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'advance');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance moves final_review to none and hands off next_command to xoch-close', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_step: 'final_review', next_command: 'xoch-build' });
+    const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job j1: final_review -> none/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'null');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-close');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance refuses to move past plan or advance -- those cross a phase boundary via phase advance', () => {
+  const ctx = scratch();
+  try {
+    for (const step of ['plan', 'advance']) {
+      const dir = seedJob(ctx, `j-${step}`, { current_step: step });
+      const result = run(['job', 'step-advance', '--job', `j-${step}`], ctx);
+      assert.strictEqual(result.status, 1);
+      assert.match(result.stderr, /use 'phase advance' to cross a phase boundary/);
+      assert.strictEqual(fieldValue(dir, 'current_step'), step);
+    }
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance projects the new current_step into current.json via job current', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-build' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-build', current_step: 'implement' });
+    run(['job', 'step-advance', '--job', 'j1'], ctx);
+    const result = run(['job', 'current', '--json'], ctx);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.current_step, 'advance');
+    assert.strictEqual(data.next_command, 'xoch-build');
   } finally {
     cleanup(ctx);
   }
