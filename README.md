@@ -42,6 +42,14 @@ In Claude Code:
 /xoch-meow
 ```
 
+Uninstalling:
+
+```bash
+xoch remove
+```
+
+`npm uninstall -g @jeffcarbine/xoch` alone won't clean up the skill files `xoch init` copied into each AI tool's directory or `~/.xoch`'s runtime state -- run `xoch remove` first (or after, in either order) to remove those too.
+
 ---
 
 ## Core Workflow

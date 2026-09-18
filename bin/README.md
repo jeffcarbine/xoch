@@ -13,6 +13,34 @@ Xoch's own source tree. Command examples below show that `xoch <namespace>` form
 also still supports `-h`/`--help` when run directly (e.g. `node bin/xoch-actions.js --help` from
 a clone of this repo).
 
+## Package Lifecycle
+
+### `init.js`
+
+Renders `prompts/` (resolving `{{xoch-partial:...}}` references) into `~/.xoch/prompts`, seeds
+`~/.xoch/config.json` with default token budgets, and installs the rendered top-level commands
+into every supported AI tool's directory (Copilot, Codex, Claude Code, Kiro), removing any stale
+`xoch-*` entry whose source prompt no longer exists.
+
+```text
+xoch init
+```
+
+### `remove.js`
+
+Reverses `init.js`: removes every installed `xoch-*` entry from all four tool directories and
+deletes `~/.xoch` outright (rendered prompts, `config.json`, and any leftover `~/.xoch/bin` from a
+pre-migration install), without touching unrelated files in any tool's directory. `npm uninstall -g`
+alone can't do this, since it only cleans `node_modules`.
+
+Also home to `verify()` -- the check the `xoch-meow` prompt runs to confirm both the CLI and
+rendered prompts are correctly in place, reporting exactly which is missing when either fails.
+
+```text
+xoch remove
+xoch verify
+```
+
 ## Job, Arc, And Phase Mechanics
 
 ### `xoch-actions.js`
