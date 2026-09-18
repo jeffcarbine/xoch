@@ -81,7 +81,7 @@ Arcs group related jobs by job ID reference:
 .xoch/work/arcs/[arc-id]/
 ```
 
-Do not nest job folders inside arcs. Use `xoch-open-arc` when work has multiple related jobs under a larger goal.
+Do not nest job folders inside arcs. `xoch-open` sets one up when work has multiple related jobs under a larger goal.
 
 ## Multi-Project Jobs
 

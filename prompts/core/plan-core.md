@@ -1,11 +1,11 @@
 ---
 name: xoch-plan-core
-description: Full reference workflow for xoch-plan
+description: Full reference workflow for xoch-open's plan step
 ---
 
 # Xoch - Plan Core
 
-This is the full reference workflow for `xoch-plan`. It is rendered to `~/.xoch/prompts/core/plan-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-open`'s `plan` step. It is rendered to `~/.xoch/prompts/core/plan-core.md` and is not installed as a command.
 
 Create the implementation approach and phase breakdown for the active job.
 
@@ -13,10 +13,12 @@ Create the implementation approach and phase breakdown for the active job.
 
 Turn an accepted job spec into a practical plan with clear phases, file ownership notes, validation expectations, risks, and acceptance-criteria traceability.
 
+The `plan` step normally runs right after `spec`, continuing in the same `xoch-open` invocation.
+
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -69,7 +71,7 @@ Check that `spec.md` contains:
 
 If AC IDs are missing, add them during planning only after confirming they preserve the spec meaning.
 
-If the spec recommends an arc and the job is still standalone, ask whether the engineer wants to run `xoch-open-arc` before creating the job plan. Continue planning only when the engineer confirms this job should proceed independently or as the first job inside an arc.
+If the spec recommends an arc and the job is still standalone, ask whether the engineer wants to set up an arc (`open-core.md` covers arc creation) before creating the job plan. Continue planning only when the engineer confirms this job should proceed independently or as the first job inside an arc.
 
 ### Step 3: Gather Architectural Approach
 
@@ -130,10 +132,10 @@ Break the work into phases. Each phase should have:
 - files likely touched
 - acceptance criteria covered
 - the behaviors/tests this phase introduces or turns green, mapped to the AC(s) they cover
-- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-make`
+- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-build`
 - dependencies on earlier phases
 - completion criteria
-- evidence that `xoch-next` should capture before advancing
+- evidence that the `advance` step should capture before advancing
 
 Prefer phases that can be reviewed independently.
 
@@ -299,31 +301,23 @@ when a phase needs more detail than belongs in `phases.md`.
 
 ### Step 10: Update State
 
-Update `state.md`:
+Update `state.md`'s plan-specific fields directly:
 
 ```yaml
 status: plan_complete
 plan_status: accepted
-current_phase: 1
-phase_count: [number of phases]
-current_phase_title: [phase 1 title]
-current_phase_goal: [one-sentence phase goal]
-current_phase_type: [implementation or checkpoint, from phase 1's Type field]
-current_phase_files:
-  - [path]
-current_phase_acceptance_criteria:
-  - AC-001
-current_phase_validation:
-  - [expected check]
-phase_index:
-  - phase: 1
-    title: [title]
-    status: not_started
 review_status: null
 closure_status: null
-next_command: xoch-make
 last_updated: [today]
 ```
+
+Then enter phase 1 through the deterministic helper rather than hand-writing phase fields -- it parses the `phases.md` just written, builds `phase_index` from every phase in it (not just phase 1), and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `next_command` (`xoch-build`), and `current_step` (`implement`) together:
+
+```bash
+~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type "[implementation or checkpoint, from phase 1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+```
+
+`--phase 0` is the entry idiom: there is no "Phase 0" section in `phases.md`, so nothing gets marked complete -- this call only establishes phase 1 as current.
 
 For legacy migration jobs, write `plan.md` and `milestones.md` in the existing legacy folder until the migration job is closed.
 
@@ -344,8 +338,10 @@ End with:
 ```text
 Implementation plan created.
 Current phase: Phase 1 - [title]
-{{xoch-partial:next-step.md command="xoch-make"}}
+{{xoch-partial:next-step.md command="xoch-build"}}
 ```
+
+Unlike `spec`'s handoff into `plan`, this one really does stop: entering phase 1 is `xoch-build`'s job, not `xoch-open`'s, and it needs a fresh invocation per the phase boundary.
 
 ## Rules
 

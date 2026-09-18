@@ -297,7 +297,7 @@ test('job open writes state.md with defaults and the given overrides', () => {
     assert.strictEqual(fieldValue(dir, 'description'), 'Desc');
     assert.strictEqual(fieldValue(dir, 'status'), 'active');
     assert.strictEqual(fieldValue(dir, 'arc'), 'my-arc');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-spec');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-open');
     const content = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(content, /scope: docs\n\s+path: README\.md/);
   } finally {
@@ -340,7 +340,7 @@ test('job open sets current_step to title in state.md and projects it into the p
     const dir = jobDirOf(ctx, 'newjob');
     assert.strictEqual(fieldValue(dir, 'current_step'), 'title');
     const pointer = readJsonFile(pointerPath(ctx));
-    assert.strictEqual(pointer.next_command, 'xoch-spec');
+    assert.strictEqual(pointer.next_command, 'xoch-open');
     assert.strictEqual(pointer.current_step, 'title');
   } finally {
     cleanup(ctx);
@@ -1074,6 +1074,8 @@ test('arc open derives an id from the title and writes state/jobs/notes', () => 
     assert.ok(fs.existsSync(path.join(dir, 'notes.md')));
     const jobs = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
     assert.match(jobs, /## Active\n\n- None/);
+    const state = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
+    assert.match(state, /next_command: xoch-open\n/);
   } finally {
     cleanup(ctx);
   }

@@ -395,7 +395,7 @@ return_command: null
 workflow_started_at: null
 review_status: null
 closure_status: null
-next_command: xoch-spec
+next_command: xoch-open
 current_step: title
 started: ${started}
 last_updated: ${started}
@@ -501,7 +501,7 @@ risks: []
 unresolved_questions: []
 started: ${started}
 last_updated: ${started}
-next_command: xoch-open-job
+next_command: xoch-open
 `;
   fs.writeFileSync(path.join(arcDir, 'state.md'), stateContent);
 

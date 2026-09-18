@@ -1,11 +1,11 @@
 ---
 name: xoch-spec-core
-description: Full reference workflow for xoch-spec
+description: Full reference workflow for xoch-open's spec step
 ---
 
 # Xoch - Spec Core
 
-This is the full reference workflow for `xoch-spec`. It is rendered to `~/.xoch/prompts/core/spec-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-open`'s `spec` step. It is rendered to `~/.xoch/prompts/core/spec-core.md` and is not installed as a command.
 
 Capture what should change before implementation planning begins.
 
@@ -13,12 +13,12 @@ Capture what should change before implementation planning begins.
 
 Turn a job idea, issue, bug, or copied requirements into a clear job specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
 
-`xoch-spec` normally runs after `xoch-open-job`.
+The `spec` step normally runs right after `title`, continuing in the same `xoch-open` invocation.
 
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -100,7 +100,8 @@ return_command: null
 workflow_started_at: null
 review_status: null
 closure_status: null
-next_command: xoch-spec
+next_command: xoch-open
+current_step: spec
 started: [today]
 last_updated: [today]
 ```
@@ -111,7 +112,7 @@ For legacy jobs, update the legacy context files in place.
 
 Do not draft a spec from only a job ID, job title, branch name, file name, or project context. Those can orient the conversation, but they are not source requirements.
 
-If the engineer invoked `xoch-spec` without providing a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions, stop and ask them to provide that source. Do not infer or invent requirements from the job name.
+If the `spec` step is reached without a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions, stop and ask the engineer to provide that source. Do not infer or invent requirements from the job name.
 
 Ask for or extract:
 
@@ -197,12 +198,12 @@ This work appears suitable for a single job because [reason].
 If the work appears arc-sized:
 
 1. Explain the signals that make it larger than one job.
-2. Recommend `xoch-open-arc` before continuing job-level planning.
+2. Recommend setting up an arc before continuing job-level planning -- `open-core.md` covers arc creation.
 3. Ask the engineer whether to:
-   - run `xoch-open-arc` now
+   - set up the arc now (read `open-core.md`'s arc-handling section and follow it, then return to this spec)
    - continue this job spec anyway
    - narrow this job spec to the first job in the arc
-4. If the engineer chooses `xoch-open-arc`, stop after summarizing the recommended arc purpose and candidate jobs.
+4. If the engineer chooses to set up the arc, stop after summarizing the recommended arc purpose and candidate jobs.
 
 When continuing a job spec that belongs to or may belong to an arc, include:
 
@@ -318,7 +319,6 @@ Update `state.md`:
 ```yaml
 status: spec_complete
 spec_status: accepted
-next_command: xoch-plan
 last_updated: [today]
 ```
 
@@ -328,13 +328,14 @@ For a multi-project job, write the accepted spec and state to the primary job, t
 
 ## Output
 
-End with:
+Report:
 
 ```text
 Specification captured.
 Job: [job-id]
-{{xoch-partial:next-step.md command="xoch-plan"}}
 ```
+
+Then run `~/.xoch/bin/xoch-actions.js job step-advance --job "[job-id]"` to move `current_step` from `spec` to `plan`, and continue directly into the `plan` step (`plan-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-open` owns both steps.
 
 ## Rules
 
@@ -351,6 +352,6 @@ Job: [job-id]
 - If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Acceptance criteria must be binary and testable.
 - Use AC IDs for traceability.
-- Always make an explicit job-versus-arc recommendation before routing to `xoch-plan`.
+- Always make an explicit job-versus-arc recommendation before continuing to the `plan` step.
 - Do not silently contradict a provided source requirement.
 - Do not move active legacy job folders during the migration.
