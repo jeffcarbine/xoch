@@ -38,6 +38,25 @@ const YELLOW = '\x1b[1;33m';
 const RED = '\x1b[0;31m';
 const NC = '\x1b[0m';
 
+// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): failRender() and
+// every call site that reaches it (parsePartial's malformed-partial
+// branches, renderPromptFile's read/write-failure branches) are
+// unreachable when this file runs from its real, installed location --
+// they only fire against malformed or broken prompt content, and this
+// repo's actual prompts/ directory is well-formed by construction (CI
+// and `npm test` would already be failing otherwise). The only way to
+// exercise them is to relocate this script's __dirname so a synthetic
+// fixture prompts/ directory can be substituted for the real one --
+// exactly what test/init.test.js's scratch-copied bin/init.js does,
+// reaching 100% coverage on that copy. Node's coverage instrumentation
+// tracks the scratch copy and this real file as separate entries by
+// absolute path, so that 100% doesn't roll up here; the code itself is
+// still fully behavior-tested. See test/init.test.js and
+// test/xoch-dispatch.test.js's "real (non-scratch) coverage" tests,
+// which close every other real-file gap that doesn't require malformed
+// input (happy-path install/cleanup for all four tools, idempotent
+// re-run, orphan cleanup, config seed/preserve/corrupt-recovery, and
+// direct non-dispatcher invocation).
 function failRender(message) {
   process.stderr.write(`${message}\n`);
   process.exit(1);
@@ -180,6 +199,9 @@ function renderPrompts() {
     }
   }
 
+  // Same documented coverage exception as failRender() above: only
+  // reachable when rendering leaves a stray marker, which real,
+  // well-formed prompts/ content never does.
   if (hasUnresolvedPartial(PROMPTS_DIR)) {
     console.error(`${RED}Error: unresolved prompt partial found in rendered prompts${NC}`);
     process.exit(1);
@@ -450,6 +472,10 @@ function main() {
   console.log('====================');
   console.log('');
 
+  // Same documented coverage exception as failRender() above: only
+  // reachable when this file's own package (real or scratch-copied)
+  // lacks a prompts/ directory, which this repo's real, installed copy
+  // never does.
   if (!fs.existsSync(PROMPTS_SOURCE_DIR)) {
     console.error(`${RED}Error: prompts/ directory not found${NC}`);
     process.exit(1);

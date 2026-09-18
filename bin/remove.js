@@ -22,6 +22,20 @@ const NC = '\x1b[0m';
 
 // Matches init.js's own isFileOrSymlink/isDirNoFollow -- duplicated rather
 // than exported since each bin/*.js script stays self-contained.
+//
+// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): the catch
+// branch below is a TOCTOU guard -- it only fires when `p` (just listed
+// by the caller's own fs.readdirSync) is deleted by something else
+// between that listing and this lstat call. Not dead code: removing it
+// would let a genuine race throw an uncaught exception instead of
+// harmlessly skipping the vanished entry. Not deterministically
+// testable: triggering it requires an external process to delete the
+// exact path in the microtask gap between readdirSync and lstatSync,
+// which can't be constructed without mocking fs (a pattern this
+// codebase deliberately avoids -- see test/lib/cli.js's real-subprocess
+// philosophy). Unlike isDirNoFollow() below, whose catch branch is
+// already covered deterministically (it also fires whenever the target
+// directory simply doesn't exist yet, not only on a race).
 function isFileOrSymlink(p) {
   try {
     const lst = fs.lstatSync(p);
@@ -139,6 +153,14 @@ function verify() {
   if (versionOk) {
     console.log(`  ${GREEN}✓${NC} CLI installed (xoch v${pkg.version})`);
   } else {
+    // DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): `pkg` is
+    // required from this repo's own real package.json at module-load
+    // time (line ~11), which npm guarantees has a non-empty "version"
+    // string -- this branch can only fire against a malformed
+    // package.json, which would require relocating this script (as
+    // test/prompt-check.test.js's buildFixtureRoot() does for
+    // bin/xoch.js's own equivalent top-level `require('../package.json')`)
+    // rather than exercising the real, installed file.
     console.log(`  ${RED}✗${NC} CLI version could not be determined`);
   }
 

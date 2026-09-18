@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { test, run: runTests } = require('./lib/runner.js');
 const { scratch, cleanup, runScript } = require('./lib/cli.js');
@@ -225,6 +226,143 @@ test('every standalone-script namespace reaches its module without a dispatcher 
     } finally {
       cleanup(ctx);
     }
+  }
+});
+
+// ---------------------------------------------------------------------
+// xoch init -- real (non-scratch) coverage. bin/init.js resolves its
+// prompts/ source from its own __dirname, not cwd, so running it through
+// the real dispatcher here always renders/installs THIS repo's actual
+// prompts/ -- unlike test/init.test.js's scratch-copied bin/init.js,
+// which relocates the script to control a synthetic prompts/ fixture for
+// malformed-input edge cases that can't occur against real, well-formed
+// content. These tests close the real file's happy-path, idempotent-
+// rerun, and orphan-cleanup coverage, which only a genuine install run
+// against this repo's real prompts/ can reach.
+// ---------------------------------------------------------------------
+
+function xochDir(ctx) {
+  return path.join(ctx.home, '.xoch');
+}
+
+function copilotDir(ctx) {
+  return path.join(ctx.home, 'Library', 'Application Support', 'Code', 'User', 'prompts');
+}
+
+function codexDir(ctx) {
+  return path.join(ctx.home, '.codex', 'skills');
+}
+
+function claudeDir(ctx) {
+  return path.join(ctx.home, '.claude', 'skills');
+}
+
+function kiroDir(ctx) {
+  return path.join(ctx.home, '.kiro', 'steering');
+}
+
+test('a real xoch init renders and installs this repo\'s actual prompts to all four targets', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Initialization complete!/);
+    assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'meow.md')));
+    assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'core')));
+    assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'xoch-meow.md')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a second real xoch init run is idempotent, replaces existing Copilot symlinks, and reports no orphans', () => {
+  const ctx = scratch();
+  try {
+    run(['init'], ctx);
+    const second = run(['init'], ctx);
+    assert.strictEqual(second.status, 0);
+    assert.ok(!second.stdout.includes('Removed orphaned'));
+    assert.match(second.stdout, /Token budgets already present/);
+    assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a real xoch init cleans up a stray orphaned entry in all four tool directories', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(copilotDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(copilotDir(ctx), 'xoch-nonexistent.prompt.md'), 'stray');
+    fs.mkdirSync(path.join(codexDir(ctx), 'xoch-nonexistent', 'agents'), { recursive: true });
+    fs.mkdirSync(path.join(claudeDir(ctx), 'xoch-nonexistent'), { recursive: true });
+    fs.mkdirSync(kiroDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(kiroDir(ctx), 'xoch-nonexistent.md'), 'stray');
+
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Removed orphaned: xoch-nonexistent/);
+    assert.ok(!fs.existsSync(path.join(copilotDir(ctx), 'xoch-nonexistent.prompt.md')));
+    assert.ok(!fs.existsSync(path.join(codexDir(ctx), 'xoch-nonexistent')));
+    assert.ok(!fs.existsSync(path.join(claudeDir(ctx), 'xoch-nonexistent')));
+    assert.ok(!fs.existsSync(path.join(kiroDir(ctx), 'xoch-nonexistent.md')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('bin/init.js run directly (not through the dispatcher) still completes a real install', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(path.join(__dirname, '..', 'bin', 'init.js'), [], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Initialization complete!/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a real xoch init seeds config.json fresh, preserves an existing override, and recovers from a corrupt existing file', () => {
+  const fresh = scratch();
+  try {
+    const result = run(['init'], fresh);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 2 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(fresh), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(fresh);
+  }
+
+  const override = scratch();
+  try {
+    fs.mkdirSync(xochDir(override), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(override), 'config.json'), JSON.stringify({ version: 1, tokenBudgets: { spec: 9999 } }));
+    const result = run(['init'], override);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 1 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(override), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 9999);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(override);
+  }
+
+  const corrupt = scratch();
+  try {
+    fs.mkdirSync(xochDir(corrupt), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(corrupt), 'config.json'), 'not valid json{{{');
+    const result = run(['init'], corrupt);
+    assert.strictEqual(result.status, 0);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(corrupt), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(corrupt);
   }
 });
 
