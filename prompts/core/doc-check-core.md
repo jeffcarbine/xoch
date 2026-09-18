@@ -9,11 +9,11 @@ This is the full reference workflow for `xoch-doc`'s decision phase. It is rende
 
 Decide whether a drifted change needs README-level documentation, and where. When writing is actually needed, read and follow `~/.xoch/prompts/core/doc-write-core.md` for the write itself, then return here to record status and route.
 
-`doc` is Xoch's documentation command. It replaces the old split between app initialization, feature initialization, and validation prompts. It is also a required stop after a passing `xoch-review`, not only an on-demand command.
+`doc` is Xoch's documentation command. It replaces the old split between app initialization, feature initialization, and validation prompts. It is also a required stop after `xoch-build`'s `final_review` step passes, not only an on-demand command.
 
 ## Purpose
 
-Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before `xoch-review` or `xoch-close-job`, or maintain lightweight `.xoch/docs/` packets that compose into the root README.
+Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before `xoch-build`'s `final_review` step or `xoch-close`, or maintain lightweight `.xoch/docs/` packets that compose into the root README.
 
 ## Scope
 
@@ -44,7 +44,7 @@ Ask or infer whether the engineer wants to:
 
 - create missing project or feature docs
 - refresh docs after implementation
-- validate docs before `xoch-review` or `xoch-close-job`
+- validate docs before `xoch-build`'s `final_review` step or `xoch-close`
 - repair stale or inaccurate docs
 - create or refresh `.xoch/docs/` packets and merge them into the root README
 
@@ -138,9 +138,9 @@ For legacy migration jobs, record equivalent notes in the legacy job folder when
 Recommend:
 
 - `xoch-pr` when a pull request draft is needed next
-- `xoch-close-job` when docs are ready for closure and no PR draft is needed
-- `xoch-review` when docs were requested ahead of an upcoming review
-- `xoch-make` when stale docs reveal implementation gaps
+- `xoch-close` when docs are ready for closure and no PR draft is needed
+- `xoch-build` (its `final_review` step) when docs were requested ahead of an upcoming review
+- `xoch-build` when stale docs reveal implementation gaps
 - `xoch-map` when docs need local dependency/project mapping
 
 After documentation writes, status notes, accepted baselines, and multi-project synchronization are complete, finish the managed workflow before final output or an explicitly chained command:

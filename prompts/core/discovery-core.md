@@ -62,7 +62,7 @@ Turn a broad uncertainty into a short list of answerable discovery questions.
 When a target-model job is active and `xoch-discovery` is not already the active workflow, begin it before further research. Preserve the command that should resume afterward:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-spec | xoch-revise-spec | prior next command]"
+~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-open | xoch-revise-spec | prior next command]"
 ```
 
 ### Step 2: Inventory Available Sources
@@ -192,7 +192,7 @@ Use this structure:
 
 ## Next Step
 
-[xoch-spec | xoch-revise-spec | more discovery | blocked]
+[xoch-open | xoch-revise-spec | more discovery | blocked]
 ```
 
 For legacy jobs, write the note in the legacy job folder. For multi-project jobs, write through the primary job and synchronize accepted findings.
@@ -204,7 +204,7 @@ discovery_status: [status]
 last_discovery: notes/discovery-[topic]-[date].md
 unresolved_questions:
   - [question]
-next_command: [xoch-spec | xoch-revise-spec | xoch-discovery]
+next_command: [xoch-open | xoch-revise-spec | xoch-discovery]
 last_updated: [today]
 ```
 
@@ -218,7 +218,7 @@ After the accepted note and state update exist, complete the workflow before exe
 
 Recommend:
 
-- `xoch-spec` when discovery supplies missing pre-spec information
+- `xoch-open` when discovery supplies missing pre-spec information
 - `xoch-revise-spec` when an accepted spec must change
 - another `xoch-discovery` pass when a narrower unknown remains
 - `xoch-map` when local project or dependency resolution is the remaining need

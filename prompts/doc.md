@@ -11,7 +11,7 @@ description: Create, refresh, repair, or validate Xoch project and feature docum
 
 Use this token-light wrapper for normal `xoch-doc` work.
 
-`xoch-doc` is a required stop after a passing `xoch-review`, not only an on-demand command.
+`xoch-doc` is a required stop after `xoch-build`'s `final_review` step passes, not only an on-demand command.
 
 ### Drift Check First
 
@@ -50,4 +50,4 @@ When documentation work is complete, put status, targets, and caveats first. Unl
 {{xoch-partial:next-choice.md prompt="Ready to wrap up." option_a="[P]ull request" option_b="[C]lose the job without one"}}
 ```
 
-`[P]` routes to `xoch-pr`; `[C]` routes to `xoch-close-job`. When the engineer's message already states which they want, skip the choice and route directly with `{{xoch-partial:next-step.md command="..."}}` instead.
+`[P]` routes to `xoch-pr`; `[C]` routes to `xoch-close`. When the engineer's message already states which they want, skip the choice and route directly with `{{xoch-partial:next-step.md command="..."}}` instead.

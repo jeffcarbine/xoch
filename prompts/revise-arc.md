@@ -24,5 +24,5 @@ For a fresh invocation, identify the arc, clarify what changed, assess affected 
 When the arc revision is complete, put revision details, updated paths, membership changes, caveats, and follow-up first. Make the final line the next Xoch step, such as:
 
 ```text
-Ready for next step: `xoch-open-job`
+Ready for next step: `xoch-open`
 ```

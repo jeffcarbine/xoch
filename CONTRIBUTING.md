@@ -9,7 +9,7 @@ Thank you for improving Xoch. Xoch is a prompt-first workflow package, so most c
 Use Xoch to work on Xoch:
 
 ```text
-xoch-open-job -> xoch-spec -> xoch-plan -> xoch-make -> xoch-next -> xoch-review -> xoch-close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`./config.js set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `~/.xoch/bin/xoch-actions.js config root`.

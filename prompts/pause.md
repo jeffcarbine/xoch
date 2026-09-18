@@ -60,7 +60,7 @@ If confirmed:
 
    ```bash
    ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field status --value paused
-   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field next_command --value xoch-resume
+   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field next_command --value xoch-open
    ~/.xoch/bin/xoch-actions.js pointer clear --job "[job-id]"
    ```
 
@@ -74,7 +74,7 @@ End with:
 
 ```text
 Job paused.
-{{xoch-partial:next-step.md command="xoch-resume [job-id]"}}
+{{xoch-partial:next-step.md command="xoch-open [job-id]"}}
 ```
 
 ## Rules

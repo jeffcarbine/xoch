@@ -147,7 +147,7 @@ When a multi-project job is active, pass `--scope [primary job]/projects.json` s
 Recommend:
 
 - `xoch-doc` when docs need updates from the map
-- `xoch-open-job` when resolved repositories should participate in one multi-project job
+- `xoch-open` when resolved repositories should participate in one multi-project job
 - `xoch-revise-plan` when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
 
@@ -177,4 +177,4 @@ Missing dependencies: [count]
 - Do not scan unrelated directories.
 - Do not record secrets.
 - Prefer structured data for dependencies when practical.
-- Do not create a multi-project job without engineer confirmation; route that work to `xoch-open-job`.
+- Do not create a multi-project job without engineer confirmation; route that work to `xoch-open`.

@@ -24,5 +24,5 @@ For a fresh invocation, identify the active job, confirm the spec remains valid,
 When the plan revision is complete, put revision details, updated paths, current phase, caveats, and validation first. Make the final line the next Xoch step, such as:
 
 ```text
-Ready for next step: `xoch-make`
+Ready for next step: `xoch-build`
 ```

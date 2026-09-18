@@ -1,5 +1,7 @@
 # Xoch RepFlow Evolution Reference
 
+> **Update:** the seven-command core flow and the `xoch-open-arc`/`xoch-close-arc`/`xoch-resume` commands described below were later consolidated into `xoch-open -> xoch-build -> xoch-doc -> xoch-close`, with arc-opening, arc-closing, and resuming folded into `xoch-open`/`xoch-close`. See the root `README.md`'s Core Workflow section for the current command set. This document is kept as-is below as the historical record of the RepFlow-inspired decisions it describes.
+
 ## Purpose
 
 This document records the decisions behind Xoch's RepFlow-inspired workflow evolution. It is a design reference for why the current Xoch command vocabulary, lifecycle, and directory model look the way they do.

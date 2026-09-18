@@ -67,8 +67,7 @@ Ask what the engineer wants to explore, then answer normally.
 
 When the sidebar appears complete, remind the engineer of the likely return command:
 
-- `xoch-make` to continue implementation
-- `xoch-next` to review/advance the current phase
+- `xoch-build` to continue implementation or review/advance the current phase
 - `xoch-revise-plan` if the sidebar changed the plan
 
 Before the final output or an explicitly chained command, complete the sidebar workflow:

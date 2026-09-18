@@ -48,28 +48,25 @@ In Claude Code:
 ## Core Workflow
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 | Step | Command | Purpose |
 |---|---|---|
-| 1 | `xoch-open-job` | Open or resume a job. |
-| 2 | `xoch-spec` | Capture requirements, acceptance criteria, and job-versus-arc fit. |
-| 3 | `xoch-plan` | Create the implementation approach and phases after confirming the spec shape. |
-| 4 | `xoch-make` | Implement or guide the current phase. |
-| 5 | `xoch-next` | Review the current phase and advance. |
-| 6 | `xoch-review` | Verify acceptance, quality, tests, and docs. |
-| 7 | `xoch-close-job` | Close the job and clear active work. |
+| 1 | `xoch-open` | Open a new job or arc, reopen a closed job, or resume paused/archived work, through an accepted plan. |
+| 2 | `xoch-build` | Implement, review, and advance through each phase; once every phase is done, run the final review. |
+| 3 | `xoch-doc` | Verify or refresh documentation freshness. |
+| 4 | `xoch-close` | Close the job (or an arc) and clear active work. |
 
-Use `xoch-make` and `xoch-next` repeatedly until all phases are complete.
+`xoch-open` flows continuously from opening through an accepted plan in one invocation. `xoch-build` is invoked once per phase until all phases are complete, then once more for the final review.
 
 ### Phase Rhythm
 
-`xoch-make` is where implementation happens. It loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
+`xoch-build` carries a job through phase work as three internal steps, tracked by `current_step` in job state rather than by which command was last typed:
 
-`xoch-next` is the phase checkpoint. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation.
-
-After the final phase, `xoch-review` checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close-job`. `xoch-close-job` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close-job` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
+- **`implement`** is where implementation happens. It loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
+- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-build` invocation.
+- **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch-close` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
 
 ---
 
@@ -77,9 +74,7 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 
 | Command | Purpose |
 |---|---|
-| `xoch-open-arc` | Open an optional arc grouping related jobs, optionally adopting the active standalone job. |
 | `xoch-revise-arc` | Revise arc purpose, notes, or job membership. |
-| `xoch-close-arc` | Close an arc when its related jobs are complete. |
 | `xoch-revise-spec` | Revise a job's foundational requirements. |
 | `xoch-revise-plan` | Revise a job's implementation plan or remaining phases. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
@@ -90,10 +85,11 @@ After the final phase, `xoch-review` checks acceptance coverage, quality, risk, 
 | `xoch-trace` | Investigate root cause for bugs or unclear symptoms before changing code. |
 | `xoch-patch` | Use a focused path for small or urgent fixes. |
 | `xoch-pause` | Pause the active job. |
-| `xoch-resume` | Resume paused or archived work. |
 | `xoch-sidebar` | Explore a related question without advancing job state. |
 | `xoch-help` | List every Xoch command with its description. |
 | `xoch-meow` | Verify installation. |
+
+Opening an arc, closing an arc, and resuming paused/archived work are all part of `xoch-open`/`xoch-close` now, not separate commands.
 
 ---
 
@@ -201,7 +197,7 @@ Arc files are intentionally small:
 
 `jobs.md` is the membership list. It can group job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job `state.md` should use `arc: [arc-id]`, but the job folder still stays under `.xoch/work/jobs/`.
 
-`xoch-spec` should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, the agent should recommend `xoch-open-arc` before job planning. `xoch-open-arc` checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, the agent asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
+`xoch-open`'s `spec` step should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, it recommends setting up an arc before job planning. Arc setup checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, it asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
 
 ### Job State
 
@@ -287,22 +283,22 @@ Workflow prompts use standard next-action language:
 
 ```text
 How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
-Ready for next step: `xoch-next`
+Ready for next step: `xoch-build`
 ```
 
 ## Support Workflows
 
-`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-review` or `xoch-close-job`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
+`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-build`'s `final_review` step or `xoch-close`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
-`xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open-job` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
+`xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
 
 `xoch-roadmap` is a read-only progress view. It summarizes the active workflow, current phase, completed phases, upcoming phase goals/files/acceptance, risks, and the actual next command without modifying state.
 
-`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in job `notes/` and normally route back to `xoch-spec` or `xoch-revise-spec`.
+`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in job `notes/` and normally route back to `xoch-open`'s `spec` step or `xoch-revise-spec`.
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 
-`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open-job` or revise the active job.
+`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open` or revise the active job.
 
 ---
 
@@ -317,7 +313,7 @@ Ready for next step: `xoch-next`
 
 **Prompt not found:** Run `./install.js` and restart the AI tool.
 
-**No current job:** Run `xoch-open-job`.
+**No current job:** Run `xoch-open`.
 
 **Docs feel stale:** Run `xoch-doc`.
 

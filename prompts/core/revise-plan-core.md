@@ -194,13 +194,15 @@ review_status: null
 closure_status: null
 last_plan_revision: revisions/plan-[date].md
 last_updated: [today]
-next_command: xoch-make
+next_command: xoch-build
+current_step: implement
 ```
 
 If the job should go straight to review, set:
 
 ```yaml
-next_command: xoch-review
+next_command: xoch-build
+current_step: final_review
 ```
 
 and record why implementation is already complete.
@@ -213,9 +215,9 @@ For multi-project jobs, retain an explicit project owner for every revised phase
 
 Recommend:
 
-- `xoch-make` for the current or next phase
-- `xoch-next` if the revised current phase is already implemented and needs checkpointing
-- `xoch-review` if all implementation phases are complete
+- `xoch-build` to continue at the current or next phase's `implement` step
+- `xoch-build` if the revised current phase is already implemented and needs its `advance` step for checkpointing
+- `xoch-build` if all implementation phases are complete, to run its `final_review` step
 - `xoch-revise-arc` if arc sequencing or membership also changed
 
 ## Output

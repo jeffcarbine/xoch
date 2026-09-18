@@ -151,7 +151,8 @@ next_command: xoch-revise-plan
 If the plan is still valid, set:
 
 ```yaml
-next_command: xoch-make
+next_command: xoch-build
+current_step: implement
 ```
 
 and record why no plan revision is needed.
@@ -165,8 +166,8 @@ For multi-project jobs, preserve project ownership in the revised spec and sync 
 Recommend:
 
 - `xoch-revise-plan` when phases or implementation strategy need updates
-- `xoch-make` when the current plan remains valid
-- `xoch-review` when the change only affects final verification
+- `xoch-build` when the current plan remains valid
+- `xoch-build` (its `final_review` step) when the change only affects final verification
 - `xoch-doc` when docs need immediate refresh
 
 ## Output

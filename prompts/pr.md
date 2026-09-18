@@ -17,7 +17,7 @@ Generate a copyable pull request title and Markdown body for completed work in t
 
 Use the `~/.xoch/bin/xoch-actions.js job current --json` result from the workflow boundary. A branch name, job ID, title, or supplied change summary is not enough to substitute for an active job.
 
-If no current job exists, ask the engineer to run `xoch-open-job` first. Do not generate a PR draft.
+If no current job exists, ask the engineer to run `xoch-open` first. Do not generate a PR draft.
 
 Resolve available job artifacts before reading them:
 
@@ -88,7 +88,7 @@ Description:
 After the title and description blocks, make the final line:
 
 ```text
-Ready for next step: `xoch-close-job`
+Ready for next step: `xoch-close`
 ```
 
 ## Rules
@@ -99,4 +99,4 @@ Ready for next step: `xoch-close-job`
 - Keep the generated content provider-neutral and copyable.
 - Do not call Git hosting or other external services.
 - Do not modify source code, Git state, job artifacts, or workflow state while generating the draft.
-- After the PR draft, the next step is always `xoch-close-job` — this command does not chain into it automatically.
+- After the PR draft, the next step is always `xoch-close` — this command does not chain into it automatically.

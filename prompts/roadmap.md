@@ -19,7 +19,7 @@ Use the result already returned by:
 ~/.xoch/bin/xoch-actions.js job current --json
 ```
 
-If no job is active, say so and route to `xoch-open-job` or `xoch-resume`.
+If no job is active, say so and route to `xoch-open`.
 
 If a managed workflow is active, report its name, stage, pending action, artifact, and return command before phase information. Roadmap is read-only and does not finish or abandon that workflow.
 

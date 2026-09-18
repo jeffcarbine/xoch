@@ -87,8 +87,8 @@ Keys:
 
 - **`storage.mode`** (`in-repo` default | `centralized`) -- where job/arc state lives. See
   [Storage Location](../README.md#storage-location) in the root README.
-- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-make`
-  always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
+- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-build`'s
+  `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,
   including having none.
 - **`tokenBudgets.<skill>`** -- per-skill read-budget override in tokens (built-in defaults: spec

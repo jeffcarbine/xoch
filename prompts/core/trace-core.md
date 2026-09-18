@@ -13,7 +13,7 @@ Investigate a defect, failure, or unclear symptom before changing code.
 
 Create a focused investigation trail that identifies likely root cause, evidence, risks, and recommended next steps.
 
-Use `xoch-trace` when the problem is not yet clear enough for `xoch-make` or when a bug needs disciplined investigation before a patch.
+Use `xoch-trace` when the problem is not yet clear enough for `xoch-build` or when a bug needs disciplined investigation before a patch.
 
 ## Work Model
 
@@ -27,7 +27,7 @@ Target-model trace notes live under its `notes_dir`:
 [notes-dir]/trace-[date].md
 ```
 
-If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
+If no job exists, write findings only after asking whether to open a job with `xoch-open` or keep the trace as an ad hoc note.
 
 When a target-model job is active and `xoch-trace` is not already active, begin the workflow while preserving the job's prior next command:
 
@@ -155,7 +155,7 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-open-job | xoch-revise-plan | xoch-make | more trace]
+[xoch-patch | xoch-open | xoch-revise-plan | xoch-build | more trace]
 ```
 
 For legacy migration jobs, write the note in the legacy job folder.
@@ -165,9 +165,9 @@ For legacy migration jobs, write the note in the legacy job folder.
 Recommend:
 
 - `xoch-patch` for a focused urgent fix
-- `xoch-open-job` for a new normal job
+- `xoch-open` for a new normal job
 - `xoch-revise-plan` if the active job plan needs adjustment
-- `xoch-make` if the current phase can implement the fix
+- `xoch-build` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
 
 ## Output

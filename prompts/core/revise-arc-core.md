@@ -123,10 +123,10 @@ Do not move job folders.
 
 Recommend the next command:
 
-- `xoch-open-job` to create a new job in the arc
+- `xoch-open` to create a new job in the arc
 - `xoch-revise-spec` for changed job requirements
 - `xoch-revise-plan` for changed job sequencing or phases
-- `xoch-make` to continue active job implementation
+- `xoch-build` to continue active job implementation
 
 ## Output
 
