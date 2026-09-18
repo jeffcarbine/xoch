@@ -239,6 +239,16 @@ test('every standalone-script namespace reaches its module without a dispatcher 
 // content. These tests close the real file's happy-path, idempotent-
 // rerun, and orphan-cleanup coverage, which only a genuine install run
 // against this repo's real prompts/ can reach.
+//
+// No test here deliberately exercises failRender() or its call sites
+// (bin/init.js:41, malformed-partial/render-failure paths), the
+// unresolved-partial check (bin/init.js:~206), or the "prompts/
+// directory not found" branch (bin/init.js:~480) -- see the
+// DOCUMENTED COVERAGE EXCEPTION comments at those sites in bin/init.js.
+// Those exact behaviors are already covered at 100% by
+// test/init.test.js's scratch-copied bin/init.js, which relocates the
+// script specifically to substitute the malformed content these
+// branches require.
 // ---------------------------------------------------------------------
 
 function xochDir(ctx) {

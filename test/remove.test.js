@@ -57,6 +57,12 @@ function buildInstalledFixture(ctx) {
   fs.writeFileSync(path.join(kiroDir(ctx), 'not-ours.md'), 'not ours');
 }
 
+// No test here triggers isFileOrSymlink()'s catch branch
+// (bin/remove.js:~29) -- see the DOCUMENTED COVERAGE EXCEPTION comment
+// at that site in bin/remove.js. It's a TOCTOU guard reachable only by
+// an external process deleting a just-listed path in the microtask gap
+// before lstat, which can't be constructed deterministically without
+// mocking fs.
 test('xoch remove removes rendered skill files from all four tool directories', () => {
   const ctx = scratch();
   try {
@@ -112,6 +118,15 @@ test('xoch remove is a no-op that still exits 0 when nothing was ever installed'
   }
 });
 
+// No test here triggers verify()'s "CLI version could not be determined"
+// branch (bin/remove.js:~156) -- see the DOCUMENTED COVERAGE EXCEPTION
+// comment at that site in bin/remove.js. pkg.version is read from this
+// repo's own real package.json at module-load time, which npm
+// guarantees has a non-empty version string; triggering the branch
+// would require a malformed package.json, reachable only by relocating
+// this script (as test/prompt-check.test.js's buildFixtureRoot() does
+// for bin/xoch.js's equivalent require), not by exercising the real,
+// installed file.
 test('xoch verify reports success when both the CLI and rendered prompts are present', () => {
   const ctx = scratch();
   try {
