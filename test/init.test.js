@@ -1,15 +1,19 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run } = require('./lib/runner.js');
-const { runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { test, run } from './lib/runner.js';
+import { runScript } from './lib/cli.js';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const REAL_SCRIPT = path.join(__dirname, '..', 'bin', 'init.js');
 const REAL_DISPATCHER = path.join(__dirname, '..', 'bin', 'xoch.js');
+const REAL_IS_MAIN_JS = path.join(__dirname, '..', 'bin', 'lib', 'is-main.js');
 
 // init.js's *source* paths (prompts/) are derived from __dirname (one
 // level up, since init.js lives in bin/), not cwd or $HOME, so isolating
@@ -36,8 +40,12 @@ const SCRATCH_ROOT = path.join(__dirname, '..', '.init-test-scratch');
 const SCRATCH_BIN_DIR = path.join(SCRATCH_ROOT, 'bin');
 const SCRATCH_SCRIPT = path.join(SCRATCH_BIN_DIR, 'init.js');
 fs.rmSync(SCRATCH_ROOT, { recursive: true, force: true });
-fs.mkdirSync(SCRATCH_BIN_DIR, { recursive: true });
+fs.mkdirSync(path.join(SCRATCH_BIN_DIR, 'lib'), { recursive: true });
 fs.copyFileSync(REAL_SCRIPT, SCRATCH_SCRIPT);
+// init.js imports ./lib/is-main.js (its require.main-equivalent CLI-entry
+// guard) relative to its own location, so the scratch copy needs a real
+// copy alongside it too.
+fs.copyFileSync(REAL_IS_MAIN_JS, path.join(SCRATCH_BIN_DIR, 'lib', 'is-main.js'));
 
 function scratch() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-test-home-'));
@@ -474,7 +482,8 @@ test('a write failure while rendering a prompt is reported (renderPromptFile cal
     const fixture = buildFixture(ctx, { withCore: false });
     const outputAsDir = path.join(ctx.cwd, 'output-is-a-dir.md');
     fs.mkdirSync(outputAsDir);
-    const script = `require(${JSON.stringify(fixture.scriptCopy)}).renderPromptFile(${JSON.stringify(fixture.promptsDir)}, ${JSON.stringify(path.join(fixture.promptsDir, 'meow.md'))}, ${JSON.stringify(outputAsDir)});`;
+    const specifier = JSON.stringify(pathToFileURL(fixture.scriptCopy).href);
+    const script = `import(${specifier}).then((m) => m.renderPromptFile(${JSON.stringify(fixture.promptsDir)}, ${JSON.stringify(path.join(fixture.promptsDir, 'meow.md'))}, ${JSON.stringify(outputAsDir)}));`;
     const result = spawnSync(process.execPath, ['-e', script], { cwd: ctx.cwd, encoding: 'utf8' });
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /Error rendering/);

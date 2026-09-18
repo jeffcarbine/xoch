@@ -1,11 +1,11 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup } = require('./lib/cli.js');
-const { readJson, writeJson, updateJson } = require('../bin/lib/json-store.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, cleanup } from './lib/cli.js';
+import { readJson, writeJson, updateJson } from '../bin/lib/json-store.js';
 
 test('readJson returns {} for a missing file', () => {
   const ctx = scratch();

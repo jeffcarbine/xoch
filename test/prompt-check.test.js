@@ -1,18 +1,22 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run: runTests } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { test, run as runTests } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'prompt-check.js');
 const REAL_XOCH_JS = path.join(__dirname, '..', 'bin', 'xoch.js');
 const REAL_INIT_JS = path.join(__dirname, '..', 'bin', 'init.js');
+const REAL_IS_MAIN_JS = path.join(__dirname, '..', 'bin', 'lib', 'is-main.js');
 
-// Pure functions (no process.exit calls) -- safe to require in-process.
-const { listJsFilesRecursive, scanForUnresolvedMarkers } = require(SCRIPT);
+// Pure functions (no process.exit calls) -- safe to import in-process.
+const { listJsFilesRecursive, scanForUnresolvedMarkers } = await import(pathToFileURL(SCRIPT).href);
 
 function run(args, ctx) {
   return runScript(SCRIPT, args, ctx);
@@ -25,7 +29,8 @@ function run(args, ctx) {
 // to construct directly than through the full `run` pipeline, or (for
 // checkClaudeSkill) impossible to reach through it at all -- see below.
 function callExported(fnName, args, ctx) {
-  const script = `require(${JSON.stringify(SCRIPT)}).${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')});`;
+  const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+  const script = `import(${specifier}).then((m) => m.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')}));`;
   return spawnSync(process.execPath, ['-e', script], {
     cwd: ctx.cwd,
     env: { ...process.env, HOME: ctx.home },
@@ -405,11 +410,19 @@ function buildFixtureRoot(ctx) {
   const root = path.join(ctx.cwd, 'fixture-repo');
   fs.mkdirSync(path.join(root, 'bin', 'lib'), { recursive: true });
   fs.mkdirSync(path.join(root, 'prompts', 'partials'), { recursive: true });
-  // bin/xoch.js's own module-load `require('../package.json')` needs a
-  // real file here regardless of which subcommand runs.
-  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.0-test' }));
+  // bin/xoch.js's own module-load package.json read (readFileSync off an
+  // import.meta.url-derived path) needs a real file here regardless of
+  // which subcommand runs. "type": "module" is required too -- Node
+  // resolves each copied script's module system from the nearest
+  // package.json, and the copied bin/xoch.js and bin/init.js use ESM
+  // import/export syntax.
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.0-test', type: 'module' }));
   fs.copyFileSync(REAL_XOCH_JS, path.join(root, 'bin', 'xoch.js'));
   fs.copyFileSync(REAL_INIT_JS, path.join(root, 'bin', 'init.js'));
+  // Both copied scripts import ./lib/is-main.js (their require.main-
+  // equivalent CLI-entry guard) relative to their own location, so this
+  // fixture needs a real copy alongside them too.
+  fs.copyFileSync(REAL_IS_MAIN_JS, path.join(root, 'bin', 'lib', 'is-main.js'));
   fs.writeFileSync(path.join(root, 'bin', 'helper-one.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'bin', 'lib', 'sub-helper.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'prompts', 'meow.md'), '---\nname: meow\ndescription: A test prompt\n---\n\nHello, meow.\n');

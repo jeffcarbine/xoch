@@ -1,11 +1,14 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run: runTests } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { test, run as runTests } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'xoch-actions.js');
 
@@ -19,7 +22,8 @@ function run(args, ctx, input) {
 // passes the literal 'begin'/'update'/'complete'/'abandon' strings) but is
 // still reachable through the exported function itself.
 function callExported(fnName, args, ctx) {
-  const script = `require(${JSON.stringify(SCRIPT)}).${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')});`;
+  const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+  const script = `import(${specifier}).then((m) => m.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')}));`;
   return spawnSync(process.execPath, ['-e', script], {
     cwd: ctx.cwd,
     env: { ...process.env, HOME: ctx.home },

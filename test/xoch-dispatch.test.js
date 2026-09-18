@@ -1,10 +1,13 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run: runTests } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { test, run as runTests } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'xoch.js');
 const XOCH_ACTIONS = path.join(__dirname, '..', 'bin', 'xoch-actions.js');
@@ -12,7 +15,7 @@ const CONFIG_SCRIPT = path.join(__dirname, '..', 'config.js');
 const GENERATE_ID_SCRIPT = path.join(__dirname, '..', 'bin', 'generate-job-id.js');
 const ARCHIVE_SCRIPT = path.join(__dirname, '..', 'bin', 'archive-actions.js');
 const GIT_STATE_SCRIPT = path.join(__dirname, '..', 'bin', 'git-state.js');
-const pkg = require('../package.json');
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 function run(args, ctx, input) {
   return runScript(SCRIPT, args, ctx, input);

@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
-const { test, run } = require('./lib/runner.js');
-const { scopeErrors } = require('../bin/lib/project-scope-validator.js');
+import assert from 'assert';
+import { test, run } from './lib/runner.js';
+import { scopeErrors } from '../bin/lib/project-scope-validator.js';
 
 // A message table that just echoes which check fired, so assertions can
 // check for a specific error by name without depending on wording.

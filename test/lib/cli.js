@@ -5,10 +5,10 @@
 // require()'d in-process) so its own process.exit() calls never affect
 // the test runner itself.
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { spawnSync } = require('child_process');
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { spawnSync } from 'child_process';
 
 function scratch() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-test-home-'));
@@ -31,4 +31,4 @@ function runScript(scriptPath, args, ctx, input) {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-module.exports = { scratch, cleanup, runScript };
+export { scratch, cleanup, runScript };

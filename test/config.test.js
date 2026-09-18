@@ -1,13 +1,16 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { test, run } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.join(__dirname, '..', 'config.js');
+const CONFIG_MODULE_URL = pathToFileURL(path.join(__dirname, '..', 'config.js')).href;
 
 function configPath(ctx) {
   return path.join(ctx.home, '.xoch', 'config.json');
@@ -551,7 +554,7 @@ test('interactive mode walks through both storage.mode and documentation.comment
 // "print the prompt" branch (only reached on a real TTY) is exercised
 // in-process instead, with fs.readSync and process.stdin.isTTY patched
 // for the duration of a single, non-exiting runInteractive() call.
-test('a real TTY gets the inline selection prompt', () => {
+test('a real TTY gets the inline selection prompt', async () => {
   const ctx = scratch();
   const originalIsTTY = process.stdin.isTTY;
   const originalReadSync = fs.readSync;
@@ -560,10 +563,10 @@ test('a real TTY gets the inline selection prompt', () => {
   const originalWrite = process.stdout.write;
   try {
     process.env.HOME = ctx.home;
-    // config.js reads os.homedir() once, at require() time, into a
+    // config.js reads os.homedir() once, at import time, into a
     // module-level CONFIG_PATH constant -- HOME must already point at the
-    // scratch home before this first (and only, per test process) require.
-    const config = require('../config.js');
+    // scratch home before this first (and only, per test process) import.
+    const config = await import(CONFIG_MODULE_URL);
     process.stdin.isTTY = true;
     const answer = Buffer.from('3\n3\n', 'utf8');
     let offset = 0;
@@ -590,46 +593,58 @@ test('a real TTY gets the inline selection prompt', () => {
   assert.match(wrote, /Choose documentation comment mode:/);
 });
 
+// Isolated in its own subprocess (matching callExported()-style helpers
+// elsewhere in this test suite) rather than a second in-process import of
+// config.js: ESM has no require.cache-style invalidation, and a
+// cache-busting query-string import (an earlier version of this test used
+// `${CONFIG_MODULE_URL}?t=...`) creates a second, distinct module URL that
+// node's coverage reporter cannot merge back into config.js's normal
+// (subprocess-aggregated) coverage entry -- it silently discards the
+// well-covered subprocess data instead. A real subprocess gets a
+// naturally fresh module evaluation with no query string needed, and its
+// coverage merges normally, like every other subprocess invocation of
+// config.js in this file.
 test('budgets on a real TTY prints the inline skill/value prompts', () => {
   const ctx = scratch();
-  const originalIsTTY = process.stdin.isTTY;
-  const originalReadSync = fs.readSync;
-  const originalHome = process.env.HOME;
-  let wrote = '';
-  const originalWrite = process.stdout.write;
   try {
-    process.env.HOME = ctx.home;
-    delete require.cache[require.resolve('../config.js')];
-    const config = require('../config.js');
-    process.stdin.isTTY = true;
-    const answer = Buffer.from('spec\n6000\n\n', 'utf8');
-    let offset = 0;
-    fs.readSync = (fd, buf) => {
-      if (fd !== 0) return originalReadSync.apply(fs, arguments);
-      if (offset >= answer.length) return 0;
-      buf[0] = answer[offset];
-      offset += 1;
-      return 1;
-    };
-    process.stdout.write = (chunk, ...rest) => {
-      wrote += chunk;
-      return true;
-    };
-    config.runBudgetsInteractive();
+    const specifier = JSON.stringify(CONFIG_MODULE_URL);
+    // The fs.readSync monkeypatch is installed only inside the .then(),
+    // after config.js has already loaded -- installing it beforehand also
+    // intercepts Node's own internal synchronous file read of config.js's
+    // source (a real fd, not stdin), which doesn't have a `[fd, buf]`-only
+    // signature to fall back on cleanly.
+    const script = [
+      "const fs = require('fs');",
+      `import(${specifier}).then((config) => {`,
+      '  const originalReadSync = fs.readSync;',
+      "  const answer = Buffer.from('spec\\n6000\\n\\n', 'utf8');",
+      '  let offset = 0;',
+      '  fs.readSync = (fd, buf, ...rest) => {',
+      '    if (fd !== 0) return originalReadSync.call(fs, fd, buf, ...rest);',
+      '    if (offset >= answer.length) return 0;',
+      '    buf[0] = answer[offset];',
+      '    offset += 1;',
+      '    return 1;',
+      '  };',
+      '  process.stdin.isTTY = true;',
+      '  config.runBudgetsInteractive();',
+      '});',
+    ].join('\n');
+    const result = spawnSync(process.execPath, ['-e', script], {
+      cwd: ctx.cwd,
+      env: { ...process.env, HOME: ctx.home },
+      encoding: 'utf8',
+    });
+    assert.match(result.stdout, /Enter a skill name to update/);
+    assert.match(result.stdout, /New budget for "spec" \(currently 5000\): /);
   } finally {
-    process.stdout.write = originalWrite;
-    fs.readSync = originalReadSync;
-    process.stdin.isTTY = originalIsTTY;
-    process.env.HOME = originalHome;
     cleanup(ctx);
   }
-  assert.match(wrote, /Enter a skill name to update/);
-  assert.match(wrote, /New budget for "spec" \(currently 5000\): /);
 });
 
-test('readLine retries after a transient EAGAIN from the stdin read', () => {
+test('readLine retries after a transient EAGAIN from the stdin read', async () => {
   const originalReadSync = fs.readSync;
-  const config = require('../config.js');
+  const config = await import(CONFIG_MODULE_URL);
   const answer = Buffer.from('x\n', 'utf8');
   let offset = 0;
   let threwOnce = false;
@@ -654,9 +669,9 @@ test('readLine retries after a transient EAGAIN from the stdin read', () => {
   }
 });
 
-test('readLine propagates a non-EAGAIN error from the stdin read', () => {
+test('readLine propagates a non-EAGAIN error from the stdin read', async () => {
   const originalReadSync = fs.readSync;
-  const config = require('../config.js');
+  const config = await import(CONFIG_MODULE_URL);
   try {
     fs.readSync = (fd) => {
       if (fd !== 0) return originalReadSync.apply(fs, arguments);

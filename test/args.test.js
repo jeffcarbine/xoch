@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
-const { test, run } = require('./lib/runner.js');
-const { parseFlags } = require('../bin/lib/args.js');
+import assert from 'assert';
+import { test, run } from './lib/runner.js';
+import { parseFlags } from '../bin/lib/args.js';
 
 test('parseFlags reads a boolean flag as true', () => {
   const flags = parseFlags(['--json'], ['json']);
