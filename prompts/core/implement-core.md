@@ -91,7 +91,7 @@ Keep this practical and specific. The engineer should understand what needs to b
 
 After the briefing, stop and ask:
 
-{{xoch-partial:action-choice.md agent_action="makes" engineer_action="makes"}}
+{{xoch-partial:action-choice.md agent_action="builds" engineer_action="builds"}}
 
 Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-build`.
 
