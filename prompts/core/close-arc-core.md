@@ -1,13 +1,15 @@
 ---
-name: xoch-close-arc
-description: Close an Xoch arc after its related jobs are complete or intentionally parked
+name: xoch-close-arc-core
+description: Full reference workflow for xoch-close's arc-closing mode
 ---
 
-# Xoch - Close Arc
+# Xoch - Close Arc Core
 
-{{xoch-partial:workflow-boundary.md}}
+This is the full reference workflow for `xoch-close`'s arc-closing mode. It is rendered to `~/.xoch/prompts/core/close-arc-core.md` and is not installed as a command.
 
 Close an optional arc when its related jobs are complete, intentionally parked, or moved out of the arc.
+
+This mode replaces the old standalone `xoch-close-arc` command.
 
 ## Purpose
 

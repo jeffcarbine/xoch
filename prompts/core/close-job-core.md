@@ -1,15 +1,15 @@
 ---
-name: xoch-close-job
-description: Close completed Xoch work and finalize job state
+name: xoch-close-job-core
+description: Full reference workflow for xoch-close's job-closing mode
 ---
 
-# Xoch - Close Job
+# Xoch - Close Job Core
 
-{{xoch-partial:workflow-boundary.md}}
+This is the full reference workflow for `xoch-close`'s job-closing mode. It is rendered to `~/.xoch/prompts/core/close-job-core.md` and is not installed as a command.
 
 Close a completed Xoch job.
 
-`close-job` replaces the old `finalize` command and is the lifecycle opposite of `open-job`.
+This mode replaces the old standalone `xoch-close-job` command and is the lifecycle opposite of `xoch-open`'s `title` step.
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Verify review, coverage, and documentation status, record final job history, cle
 Target flow:
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.js job current --json` result from the workflow boundary. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
+Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is not already available; it returns target-model JSON state or legacy pointer metadata.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically unless the engineer explicitly asks.
 
@@ -64,7 +64,7 @@ Confirm one of these is true:
 - `state.md` says `implementation_complete`
 - the engineer explicitly wants to close a small or manually tracked job
 
-If implementation is incomplete, recommend returning to `xoch-make` or `xoch-next`.
+If implementation is incomplete, recommend returning to `xoch-build`.
 
 ### Step 3: Check Review Status
 
@@ -78,7 +78,7 @@ Review may be:
 
 If review is missing or not passing, ask whether to:
 
-1. Run `xoch-review`
+1. Continue `xoch-build` to run its `final_review` step
 2. Record an explicit review waiver and continue closing
 3. Stop and keep the job active
 
@@ -88,13 +88,13 @@ Only continue without a passing review when the engineer explicitly chooses a wa
 
 {{xoch-partial:coverage-gate.md}}
 
-Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use `xoch-review`'s recorded coverage evidence when review already covered it, or check directly with the project's coverage command otherwise.
+Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise.
 
-This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-make` to close the gap, even when review was waived or skipped entirely.
+This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely.
 
 ### Step 5: Check Documentation Freshness
 
-`xoch-doc` is a required gate after a passing `xoch-review`, not an optional detour. Confirm it has already run for this job's current state — check `state.md`/`review.md` for a recorded documentation status (current, updated, not impacted, stale, waived, or unknown).
+`xoch-doc` is a required gate after a passing review, not an optional detour. Confirm it has already run for this job's current state — check `state.md`/`review.md` for a recorded documentation status (current, updated, not impacted, stale, waived, or unknown).
 
 If `xoch-doc` has not run yet for this job's final state, route to `xoch-doc` now rather than offering to skip it. A documentation waiver can still exist, but only as something `xoch-doc` itself records — not as a shortcut offered here.
 
@@ -166,6 +166,7 @@ Update `state.md`:
 status: closed
 closure_status: closed
 next_command: null
+current_step: null
 closed: [today]
 last_updated: [today]
 ```
