@@ -39,7 +39,7 @@ open-job -> spec -> plan -> make -> next -> review -> close-job
 
 Use `make` and `next` repeatedly until all phases are complete.
 
-`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `make` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise-spec`/`revise-plan` ceremony and no amending already-completed phase snapshots. `phase advance --next-type` (in `xoch-actions.js`) is what carries the type from `phases.md` into job state.
+`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `make` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise-spec`/`revise-plan` ceremony and no amending already-completed phase snapshots. `xoch phase advance --next-type` is what carries the type from `phases.md` into job state.
 
 `review` is the expected gate before `close-job`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close-job`. `close-job` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close-job` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
 
@@ -214,7 +214,7 @@ Use `workflow-boundary.md` at the start of every stateful command. It queries `c
 
 Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
-Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch-actions.js file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
+Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 
 ## Multi-Project Jobs
 
@@ -222,20 +222,20 @@ Standalone jobs remain unchanged. Multi-project jobs add `.xoch/work/jobs/[job-i
 
 Prompts must:
 
-- validate and query scope with `project-scope.js`
+- validate and query scope with `xoch project-scope`
 - write job artifacts through the primary job directory
 - tag plan tasks, files, validation, commits, and evidence by project
-- synchronize with `context-sync.js` after shared context writes
+- synchronize with `xoch context-sync` after shared context writes
 - keep source files, git operations, and active pointers repository-local
 - stop when scope validation or synchronization fails
 
-Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `workspace-actions.js`. Shareable dependency declarations may use `.xoch/docs/dependencies.json` and resolve through `dependency-actions.js`.
+Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `xoch workspace`. Shareable dependency declarations may use `.xoch/docs/dependencies.json` and resolve through `xoch dependency`.
 
 ## Prompt Style
 
 Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
-Prefer installed helpers for deterministic mechanics. Use `~/.xoch/bin/xoch-actions.js` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
+Prefer installed helpers for deterministic mechanics. Use `xoch` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
 
 Helper filenames use kebab-case consistently. Deterministic helpers cover core state mechanics, README assembly, archives, acceptance coverage, project commands, git state, documentation routing, prompt validation, workspace mapping, dependency resolution, multi-project routing, and guarded context synchronization. See the root README helper inventory.
 

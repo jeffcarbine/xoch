@@ -82,7 +82,7 @@ Decide whether the change needs README-level documentation at all, not just wher
 For each changed path that does need a documentation decision, resolve its target:
 
 ```bash
-~/.xoch/bin/docs-target.js resolve --path "[changed path]" --json
+xoch docs-target resolve --path "[changed path]" --json
 ```
 
 When the result's `sibling` is `true`, the resolved README sits directly beside the changed path -- proceed without asking.
@@ -146,7 +146,7 @@ Recommend:
 After documentation writes, status notes, accepted baselines, and multi-project synchronization are complete, finish the managed workflow before final output or an explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-doc --next "[recommended or explicitly invoked command]"
+xoch workflow complete --job "[job-id]" --name xoch-doc --next "[recommended or explicitly invoked command]"
 ```
 
 ## Output

@@ -47,7 +47,7 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 ### Step 1: Identify Current Job
 
-Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
+Use the `xoch job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 If a current job exists, use its job ID and job folder.
 
@@ -60,8 +60,8 @@ If no current job exists, ask the engineer for:
 Generate or clean job IDs with:
 
 ```bash
-~/.xoch/bin/generate-job-id.js --id "[provided-id]"
-~/.xoch/bin/generate-job-id.js
+xoch generate-id --id "[provided-id]"
+xoch generate-id
 ```
 
 ### Step 2: Ensure Job State
@@ -235,7 +235,7 @@ Do not write `spec.md` or mark spec state complete until the engineer chooses `[
 Write `spec.md` with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path spec.md <<'XOCHEOF'
+xoch file write --job "[job-id]" --path spec.md <<'XOCHEOF'
 [spec.md content]
 XOCHEOF
 ```
@@ -308,7 +308,7 @@ Use this structure:
 
 ## Token Usage (Spec Phase)
 
-Budget: [current value reported by `token-estimator.js budget check --skill spec`]
+Budget: [current value reported by `xoch token-estimator budget check --skill spec`]
 [Files read and estimates]
 ```
 
@@ -335,7 +335,7 @@ Specification captured.
 Job: [job-id]
 ```
 
-Then run `~/.xoch/bin/xoch-actions.js job step-advance --job "[job-id]"` to move `current_step` from `spec` to `plan`, and continue directly into the `plan` step (`plan-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-open` owns both steps.
+Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `spec` to `plan`, and continue directly into the `plan` step (`plan-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-open` owns both steps.
 
 ## Rules
 

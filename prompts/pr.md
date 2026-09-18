@@ -15,14 +15,14 @@ Generate a copyable pull request title and Markdown body for completed work in t
 
 ### 1. Identify the active job
 
-Use the `~/.xoch/bin/xoch-actions.js job current --json` result from the workflow boundary. A branch name, job ID, title, or supplied change summary is not enough to substitute for an active job.
+Use the `xoch job current --json` result from the workflow boundary. A branch name, job ID, title, or supplied change summary is not enough to substitute for an active job.
 
 If no current job exists, ask the engineer to run `xoch-open` first. Do not generate a PR draft.
 
 Resolve available job artifacts before reading them:
 
 ```bash
-~/.xoch/bin/xoch-actions.js job evidence --job "[job-id]" --json
+xoch job evidence --job "[job-id]" --json
 ```
 
 Read the active job's `state.md`. Use the smallest sufficient evidence set for the requested draft, preferring:

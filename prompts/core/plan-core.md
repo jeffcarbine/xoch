@@ -103,7 +103,7 @@ Identify files needed to understand the implementation approach:
 When validation commands are not already established by project context, detect advisory candidates with:
 
 ```bash
-~/.xoch/bin/project-commands.js detect --json
+xoch project-commands detect --json
 ```
 
 This also surfaces coverage-command candidates (`kind: coverage`) when the target project's tooling signals one.
@@ -160,7 +160,7 @@ Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state 
 Write `plan.md` with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path plan.md <<'XOCHEOF'
+xoch file write --job "[job-id]" --path plan.md <<'XOCHEOF'
 [plan.md content]
 XOCHEOF
 ```
@@ -178,7 +178,7 @@ Use this structure:
 
 ## Token Usage (Plan Phase)
 
-Budget: [current value reported by `token-estimator.js budget check --skill plan`]
+Budget: [current value reported by `xoch token-estimator budget check --skill plan`]
 [Files read and estimates]
 
 ---
@@ -225,7 +225,7 @@ Budget: [current value reported by `token-estimator.js budget check --skill plan
 Write `phases.md` with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path phases.md <<'XOCHEOF'
+xoch file write --job "[job-id]" --path phases.md <<'XOCHEOF'
 [phases.md content]
 XOCHEOF
 ```
@@ -314,7 +314,7 @@ last_updated: [today]
 Then enter phase 1 through the deterministic helper rather than hand-writing phase fields -- it parses the `phases.md` just written, builds `phase_index` from every phase in it (not just phase 1), and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `next_command` (`xoch-build`), and `current_step` (`implement`) together:
 
 ```bash
-~/.xoch/bin/xoch-actions.js phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type "[implementation or checkpoint, from phase 1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+xoch phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type "[implementation or checkpoint, from phase 1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
 ```
 
 `--phase 0` is the entry idiom: there is no "Phase 0" section in `phases.md`, so nothing gets marked complete -- this call only establishes phase 1 as current.
@@ -324,7 +324,7 @@ For legacy migration jobs, write `plan.md` and `milestones.md` in the existing l
 After accepted plan artifacts are written, verify acceptance-criteria references when practical:
 
 ```bash
-~/.xoch/bin/coverage-actions.js compare --job "[job-id]" --require plan --json
+xoch coverage compare --job "[job-id]" --require plan --json
 ```
 
 At plan time, missing snapshot/review coverage is expected; treat `missing_from_plan` and orphaned plan IDs as the actionable fields.

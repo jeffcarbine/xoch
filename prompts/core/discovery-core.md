@@ -62,7 +62,7 @@ Turn a broad uncertainty into a short list of answerable discovery questions.
 When a target-model job is active and `xoch-discovery` is not already the active workflow, begin it before further research. Preserve the command that should resume afterward:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-open | xoch-revise-spec | prior next command]"
+xoch workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-open | xoch-revise-spec | prior next command]"
 ```
 
 ### Step 2: Inventory Available Sources
@@ -138,7 +138,7 @@ Present a concise draft containing:
 Before asking for acceptance, write these findings to the planned discovery note with `Status: Draft`. This preserves the pending result across agents and conversations. Then update the workflow boundary:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "notes/discovery-[topic]-[date].md" --return "[return command]"
+xoch workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "notes/discovery-[topic]-[date].md" --return "[return command]"
 ```
 
 Then ask:
@@ -153,7 +153,7 @@ If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`
 
 When a job exists, write to `[notes-dir]/discovery-[topic]-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
 
-Normalize the topic portion when needed with `~/.xoch/bin/generate-job-id.js --id "[topic]"`. If that note path already exists, add a short numeric suffix rather than overwriting prior discovery.
+Normalize the topic portion when needed with `xoch generate-id --id "[topic]"`. If that note path already exists, add a short numeric suffix rather than overwriting prior discovery.
 
 Use this structure:
 
@@ -211,7 +211,7 @@ last_updated: [today]
 After the accepted note and state update exist, complete the workflow before executing any explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-discovery --next "[recommended or explicitly invoked command]"
+xoch workflow complete --job "[job-id]" --name xoch-discovery --next "[recommended or explicitly invoked command]"
 ```
 
 ### Step 9: Route

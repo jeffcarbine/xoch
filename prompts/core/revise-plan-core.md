@@ -103,7 +103,7 @@ Classify phases as:
 Write `plan-[date].md` with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "revisions/plan-[date].md" <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "revisions/plan-[date].md" <<'XOCHEOF'
 [revision note content]
 XOCHEOF
 ```

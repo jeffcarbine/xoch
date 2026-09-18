@@ -29,7 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
+Use the `xoch job current --json` result from the command wrapper. Run it now if the result is unavailable.
 
 Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
 
@@ -118,7 +118,7 @@ For agent-owned or collaborative work:
 3. Identify focused tests/checks before editing. When commands are not already known, inspect advisory candidates with:
 
    ```bash
-   ~/.xoch/bin/project-commands.js detect --json
+   xoch project-commands detect --json
    ```
 
    For multi-project phases, run command detection separately from each touched project root.
@@ -162,7 +162,7 @@ Check `documentation.commentMode` in `~/.xoch/config.json` (default `always` whe
 If the job is target-model, append useful implementation notes with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "notes/make-[date].md" --append <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "notes/make-[date].md" --append <<'XOCHEOF'
 [implementation notes]
 XOCHEOF
 ```
@@ -246,7 +246,7 @@ Job: [job-id]
 Current phase: [N] - [title]
 ```
 
-Then run `~/.xoch/bin/xoch-actions.js job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-build` owns both steps.
+Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-build` owns both steps.
 
 ## Rules
 

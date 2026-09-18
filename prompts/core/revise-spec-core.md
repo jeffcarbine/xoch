@@ -85,7 +85,7 @@ If the arc association changes, recommend `xoch-revise-arc` as well.
 Write `spec-[date].md` with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "revisions/spec-[date].md" <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "revisions/spec-[date].md" <<'XOCHEOF'
 [revision note content]
 XOCHEOF
 ```
