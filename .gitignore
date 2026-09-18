@@ -12,6 +12,9 @@ node_modules/
 # cleaned up per-test, this is just a crash-path safety net)
 .install-test-scratch/
 
+# init.js test scratch (same reasoning as .install-test-scratch/ above)
+.init-test-scratch/
+
 # IDE files
 .vscode/
 .idea/

@@ -24,6 +24,7 @@ const XOCH_ACTIONS_GROUPS = ['job', 'state', 'arc', 'pointer', 'workflow', 'snap
 // usage is `archive-actions.js restore ...`, not `archive restore ...`), so
 // the namespace token itself is stripped before forwarding.
 const STANDALONE_MODULES = {
+  init: ['./init.js', 'main'],
   archive: ['./archive-actions.js', 'run'],
   'generate-id': ['./generate-job-id.js', 'main'],
   'docs-drift': ['./docs-drift.js', 'main'],
@@ -45,6 +46,7 @@ function usage() {
   console.log(`Usage:
   xoch <job|state|arc|pointer|workflow|snapshot|phase|file> ...   Deterministic job/workflow actions (see xoch-actions.js)
   xoch config ...                                                 Engineer-facing config: storage mode, documentation comment mode, token budgets, and config root lookup
+  xoch init                                                       Render prompts and install skill files for Copilot, Codex, Claude Code, and Kiro
   xoch archive ...
   xoch generate-id [--id ID]
   xoch docs-drift ...
