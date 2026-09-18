@@ -212,7 +212,7 @@ test('every xoch-actions.js group namespace reaches xoch-actions.js without a di
 
 test('every standalone-script namespace reaches its module without a dispatcher wiring error', () => {
   const namespaces = [
-    'init', 'archive', 'generate-id', 'docs-drift', 'docs-target', 'git-state', 'gitignore',
+    'init', 'remove', 'verify', 'archive', 'generate-id', 'docs-drift', 'docs-target', 'git-state', 'gitignore',
     'coverage', 'context-sync', 'dependency', 'readme', 'project-scope',
     'project-commands', 'token-estimator', 'help', 'workspace',
   ];
