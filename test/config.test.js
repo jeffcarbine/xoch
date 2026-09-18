@@ -364,7 +364,7 @@ test('interactive selection 1 sets storage.mode to in-repo', () => {
   const ctx = scratch();
   try {
     runScript(SCRIPT, ['set', 'storage.mode', 'centralized'], ctx);
-    const result = runWithStdin([], ctx, '1\n');
+    const result = runWithStdin([], ctx, '1\n3\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /storage\.mode set to in-repo/);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
@@ -377,7 +377,7 @@ test('interactive selection 1 sets storage.mode to in-repo', () => {
 test('interactive selection 2 sets storage.mode to centralized', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n');
+    const result = runWithStdin([], ctx, '2\n3\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /storage\.mode set to centralized/);
   } finally {
@@ -388,7 +388,7 @@ test('interactive selection 2 sets storage.mode to centralized', () => {
 test('interactive selection 3 leaves the mode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n');
+    const result = runWithStdin([], ctx, '3\n3\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Left unchanged\./);
     assert.ok(!fs.existsSync(configPath(ctx)));
@@ -400,7 +400,7 @@ test('interactive selection 3 leaves the mode unchanged', () => {
 test('interactive empty selection leaves the mode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '\n');
+    const result = runWithStdin([], ctx, '\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Left unchanged\./);
   } finally {
@@ -411,7 +411,7 @@ test('interactive empty selection leaves the mode unchanged', () => {
 test('interactive selection choosing the already-current mode reports no change', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '1\n');
+    const result = runWithStdin([], ctx, '1\n3\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Already in-repo; nothing changed\./);
     assert.ok(!fs.existsSync(configPath(ctx)));
@@ -434,9 +434,114 @@ test('an invalid interactive selection exits 1', () => {
 test('interactive mode prints the current mode and prompt lines', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n');
+    const result = runWithStdin([], ctx, '3\n3\n');
     assert.match(result.stdout, /Current storage\.mode: in-repo/);
     assert.match(result.stdout, /Choose storage mode:/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive mode exits 1 if stdin runs out before the documentation.commentMode question', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n');
+    assert.strictEqual(result.status, 1);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive selection 1 sets documentation.commentMode to always', () => {
+  const ctx = scratch();
+  try {
+    runScript(SCRIPT, ['set', 'documentation.commentMode', 'follow-convention'], ctx);
+    const result = runWithStdin([], ctx, '3\n1\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /documentation\.commentMode set to always/);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.documentation.commentMode, 'always');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive selection 2 sets documentation.commentMode to follow-convention', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n2\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /documentation\.commentMode set to follow-convention/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive selection 3 leaves documentation.commentMode unchanged', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n3\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Choose documentation comment mode:/);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 2);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive empty selection leaves documentation.commentMode unchanged', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Choose documentation comment mode:/);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 2);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive selection choosing the already-current documentation.commentMode reports no change', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n1\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Already always; nothing changed\./);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('an invalid documentation.commentMode interactive selection exits 1', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n9\n');
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid selection: 9/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive mode prints the current documentation.commentMode and prompt lines', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '3\n3\n');
+    assert.match(result.stdout, /Current documentation\.commentMode: always/);
+    assert.match(result.stdout, /Choose documentation comment mode:/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive mode walks through both storage.mode and documentation.commentMode in one invocation', () => {
+  const ctx = scratch();
+  try {
+    const result = runWithStdin([], ctx, '2\n2\n');
+    assert.strictEqual(result.status, 0);
+    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+    assert.strictEqual(data.storage.mode, 'centralized');
+    assert.strictEqual(data.documentation.commentMode, 'follow-convention');
   } finally {
     cleanup(ctx);
   }
@@ -460,7 +565,7 @@ test('a real TTY gets the inline selection prompt', () => {
     // scratch home before this first (and only, per test process) require.
     const config = require('../config.js');
     process.stdin.isTTY = true;
-    const answer = Buffer.from('3\n', 'utf8');
+    const answer = Buffer.from('3\n3\n', 'utf8');
     let offset = 0;
     fs.readSync = (fd, buf) => {
       if (fd !== 0) return originalReadSync.apply(fs, arguments);
@@ -482,6 +587,7 @@ test('a real TTY gets the inline selection prompt', () => {
     cleanup(ctx);
   }
   assert.match(wrote, /Selection \[1\/2\/3\]: /);
+  assert.match(wrote, /Choose documentation comment mode:/);
 });
 
 test('budgets on a real TTY prints the inline skill/value prompts', () => {

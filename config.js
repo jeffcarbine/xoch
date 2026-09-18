@@ -182,11 +182,7 @@ function readLine() {
   }
 }
 
-function runInteractive() {
-  console.log('Xoch Config');
-  console.log('===========');
-  console.log('');
-
+function runStorageModeInteractive() {
   const current = readStorageMode();
   console.log(`Current storage.mode: ${current}`);
   console.log('');
@@ -232,6 +228,57 @@ function runInteractive() {
   printMigrationWarning();
 }
 
+function runCommentModeInteractive() {
+  const current = readCommentMode();
+  console.log(`Current documentation.commentMode: ${current}`);
+  console.log('');
+  console.log('Choose documentation comment mode:');
+  console.log('  1) always — add inline documentation (JSDoc/docstrings/etc.) unconditionally (default)');
+  console.log('  2) follow-convention — match whatever the target project/file already does');
+  console.log('  3) leave unchanged');
+  console.log('');
+  if (process.stdin.isTTY) process.stdout.write('Selection [1/2/3]: ');
+
+  const choice = readLine();
+  if (choice === null) process.exit(1);
+
+  let target = '';
+  switch (choice) {
+    case '1':
+      target = 'always';
+      break;
+    case '2':
+      target = 'follow-convention';
+      break;
+    case '3':
+    case '':
+      console.log('Left unchanged.');
+      return;
+    default:
+      process.stderr.write(`${RED}Error: invalid selection: ${choice}${NC}\n`);
+      process.exit(1);
+      return;
+  }
+
+  if (target === current) {
+    console.log(`Already ${target}; nothing changed.`);
+    return;
+  }
+
+  writeCommentMode(target);
+  console.log(`${GREEN}✓${NC} documentation.commentMode set to ${target}`);
+}
+
+function runInteractive() {
+  console.log('Xoch Config');
+  console.log('===========');
+  console.log('');
+
+  runStorageModeInteractive();
+  console.log('');
+  runCommentModeInteractive();
+}
+
 function runBudgetsInteractive() {
   console.log('Xoch Token Budgets');
   console.log('===================');
@@ -268,7 +315,7 @@ function runBudgetsInteractive() {
 
 function usage() {
   console.log(`Usage:
-  node config.js                          Interactive mode
+  node config.js                          Interactive mode (storage mode + documentation comment mode)
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
   node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
@@ -279,9 +326,12 @@ function usage() {
   node config.js budgets                      Interactively review/update token budgets`);
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  const [cmd, arg2, arg3] = args;
+// Takes an explicit argv (like every other bin/ script's main(argv)) so
+// bin/xoch.js's dispatcher can call this in-process with the `config`
+// namespace token already stripped, instead of this reading process.argv
+// itself and seeing the dispatcher's own argv shape.
+function main(argv) {
+  const [cmd, arg2, arg3] = argv;
 
   switch (cmd || '') {
     case '':
@@ -318,7 +368,7 @@ function main() {
 }
 
 if (require.main === module) {
-  main();
+  main(process.argv.slice(2));
 }
 
 module.exports = {
@@ -344,6 +394,8 @@ module.exports = {
   cmdShow,
   readLine,
   runInteractive,
+  runStorageModeInteractive,
+  runCommentModeInteractive,
   runBudgetsInteractive,
   usage,
   main,

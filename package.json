@@ -17,6 +17,9 @@
   "author": "Jeff Carbine",
   "type": "commonjs",
   "main": "install.js",
+  "bin": {
+    "xoch": "./bin/xoch.js"
+  },
   "scripts": {
     "test": "node --test --experimental-test-coverage test/*.test.js"
   }
