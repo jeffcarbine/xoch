@@ -4,11 +4,12 @@
 // Xoch Token Estimator
 // Estimates token count for a file without loading it into AI context.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { parseFlags } = require('./lib/args.js');
-const { readJson, updateJson } = require('./lib/json-store.js');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { readJson, updateJson } from './lib/json-store.js';
 
 const LIMIT_TOKENS = 3000;
 
@@ -319,8 +320,8 @@ function main(argv) {
   runSingle(argv[0], argv[1] || 'report');
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { estimateTokens, skillBudget, budgetStatus, runBatch, runSingle, main };
+export { estimateTokens, skillBudget, budgetStatus, runBatch, runSingle, main };

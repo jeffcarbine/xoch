@@ -3,9 +3,10 @@
 
 // Safe archive and restore operations for Xoch job and arc folders.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
 
 function usage() {
   console.log('Usage:');
@@ -134,8 +135,8 @@ function run(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2));
 }
 
-module.exports = { run };
+export { run };

@@ -3,10 +3,11 @@
 
 // Acceptance-criteria coverage checks for Xoch jobs.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { prettyGenerate } from './lib/ruby-json.js';
 
 function usage() {
   console.log('Usage:');
@@ -133,8 +134,8 @@ function run(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2));
 }
 
-module.exports = { run, criteria };
+export { run, criteria };

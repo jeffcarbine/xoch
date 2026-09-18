@@ -3,12 +3,13 @@
 
 // Read-only git working state for Xoch checkpoints and diagnostics.
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { parseFlags } = require('./lib/args.js');
-const { git } = require('./lib/git.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { git } from './lib/git.js';
+import { prettyGenerate } from './lib/ruby-json.js';
 
 function usage() {
   console.log('Usage:');
@@ -79,8 +80,8 @@ function main(argv) {
   inspect(rest);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { inspect, main };
+export { inspect, main };

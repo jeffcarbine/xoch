@@ -9,7 +9,13 @@
 // to it -- no subprocess spawning, and each script's own process.exit()
 // calls terminate the shared process exactly as they would standalone.
 
-const pkg = require('../package.json');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 // xoch-actions.js already speaks `<group> <action> ...rest` (job:current,
 // state:set, file:write, ...) -- those groups become top-level `xoch
@@ -76,15 +82,15 @@ function usage() {
 // interactive setup) lives in the root-level config.js. Merging both under
 // one `xoch config` namespace reads as "everything about my Xoch config"
 // instead of splitting the root lookup into an oddly-named separate command.
-function runConfig(rest) {
+async function runConfig(rest) {
   if (rest[0] === 'root') {
-    require('./xoch-actions.js').main(['config', 'root']);
+    (await import('./xoch-actions.js')).main(['config', 'root']);
     return;
   }
-  require('../config.js').main(rest);
+  (await import('../config.js')).main(rest);
 }
 
-function main(argv) {
+async function main(argv) {
   const [first, ...rest] = argv;
 
   if (!first || first === '-h' || first === '--help') {
@@ -99,18 +105,18 @@ function main(argv) {
   }
 
   if (XOCH_ACTIONS_GROUPS.includes(first)) {
-    require('./xoch-actions.js').main(argv);
+    (await import('./xoch-actions.js')).main(argv);
     return;
   }
 
   if (first === 'config') {
-    runConfig(rest);
+    await runConfig(rest);
     return;
   }
 
   if (Object.prototype.hasOwnProperty.call(STANDALONE_MODULES, first)) {
     const [modulePath, fnName] = STANDALONE_MODULES[first];
-    require(modulePath)[fnName](rest);
+    (await import(modulePath))[fnName](rest);
     return;
   }
 
@@ -118,8 +124,8 @@ function main(argv) {
   process.exit(1);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { main, usage, runConfig, XOCH_ACTIONS_GROUPS, STANDALONE_MODULES };
+export { main, usage, runConfig, XOCH_ACTIONS_GROUPS, STANDALONE_MODULES };

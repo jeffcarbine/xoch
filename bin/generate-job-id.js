@@ -8,8 +8,9 @@
 // 1. With user-provided ID: node generate-job-id.js --id "my-job-id"
 // 2. Auto-generate: node generate-job-id.js
 
-const crypto = require('crypto');
-const path = require('path');
+import crypto from 'crypto';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
 
 // Full clean: lowercase, replace non a-z0-9- with '-', collapse runs of
 // '-', strip leading/trailing '-'. Used for engineer-provided IDs and
@@ -67,8 +68,8 @@ function main(argv) {
   console.log(generateJobId({ id }));
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { generateJobId, cleanId, projectNameSlug, main };
+export { generateJobId, cleanId, projectNameSlug, main };

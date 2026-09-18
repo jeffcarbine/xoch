@@ -3,14 +3,15 @@
 
 // Xoch deterministic helper actions.
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
 
-const { readJson } = require('./lib/json-store.js');
-const { parseFlags } = require('./lib/args.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
-const { cleanId, generateJobId } = require('./generate-job-id.js');
+import { readJson } from './lib/json-store.js';
+import { parseFlags } from './lib/args.js';
+import { prettyGenerate } from './lib/ruby-json.js';
+import { cleanId, generateJobId } from './generate-job-id.js';
 
 function die(message) {
   process.stderr.write(`Error: ${message}\n`);
@@ -1114,11 +1115,11 @@ function main(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = {
+export {
   die,
   today,
   slugify,

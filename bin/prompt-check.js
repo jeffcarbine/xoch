@@ -3,10 +3,14 @@
 
 // Validate Xoch helper naming/syntax and prompt rendering in an isolated HOME.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { execFileSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function usage() {
   console.log(`Usage:
@@ -188,11 +192,11 @@ function run(argv) {
   console.log('Xoch prompt and helper checks passed.');
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2));
 }
 
-module.exports = {
+export {
   usage,
   parseArgs,
   resolveRoot,

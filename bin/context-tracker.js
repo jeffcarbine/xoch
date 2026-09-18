@@ -9,11 +9,12 @@
 // whatever was last recorded, so it's only as reliable as the calling
 // agent's discipline in keeping it updated.
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { parseFlags } = require('./lib/args.js');
-const { readJson, updateJson } = require('./lib/json-store.js');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { readJson, updateJson } from './lib/json-store.js';
 
 function usage() {
   console.log('Usage:');
@@ -125,8 +126,8 @@ function main(argv) {
   process.exit(2);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { computeHash, runCheck, runRecord, main };
+export { computeHash, runCheck, runRecord, main };

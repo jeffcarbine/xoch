@@ -8,9 +8,13 @@
 // is an in-process dispatcher engineers reach via the npm-installed `xoch`
 // binary instead of copied standalone scripts.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // This file lives in bin/, one level below the package root that
 // install.js used to call home, so package-relative paths climb one
@@ -512,11 +516,11 @@ function main() {
   console.log("Note: You may need to restart your AI tool if its skills directory was just created.");
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main();
 }
 
-module.exports = {
+export {
   SCRIPT_DIR,
   PROMPTS_SOURCE_DIR,
   CORE_PROMPTS_SOURCE_DIR,

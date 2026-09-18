@@ -8,12 +8,16 @@
 // Also home to `verify()`, the programmatic check the xoch-meow prompt
 // runs to confirm the CLI and rendered prompts are both in place (AC-006).
 
-const fs = require('fs');
-const path = require('path');
-const pkg = require('../package.json');
-const {
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+import {
   COPILOT_DIR, CODEX_DIR, CLAUDE_DIR, KIRO_DIR, XOCH_RUNTIME_DIR, PROMPTS_DIR,
-} = require('./init.js');
+} from './init.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 const GREEN = '\x1b[0;32m';
 const YELLOW = '\x1b[1;33m';
@@ -153,14 +157,15 @@ function verify() {
   if (versionOk) {
     console.log(`  ${GREEN}✓${NC} CLI installed (xoch v${pkg.version})`);
   } else {
-    // DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): `pkg` is
-    // required from this repo's own real package.json at module-load
-    // time (line ~11), which npm guarantees has a non-empty "version"
-    // string -- this branch can only fire against a malformed
-    // package.json, which would require relocating this script (as
-    // test/prompt-check.test.js's buildFixtureRoot() does for
-    // bin/xoch.js's own equivalent top-level `require('../package.json')`)
-    // rather than exercising the real, installed file.
+    // DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18; mechanism
+    // updated for the es6-imports job, 2026-09-18): `pkg` is read from
+    // this repo's own real package.json at module-load time via
+    // readFileSync+JSON.parse off an import.meta.url-derived path (see
+    // above), which npm guarantees has a non-empty "version" string --
+    // this branch can only fire against a malformed package.json, which
+    // would require relocating this script (as test/prompt-check.test.js's
+    // buildFixtureRoot() does for bin/xoch.js's own equivalent top-level
+    // package.json read) rather than exercising the real, installed file.
     console.log(`  ${RED}✗${NC} CLI version could not be determined`);
   }
 
@@ -189,11 +194,11 @@ function main(argv) {
   remove();
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = {
+export {
   removeCopilot,
   removeCodex,
   removeClaude,

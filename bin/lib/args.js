@@ -24,4 +24,4 @@ function parseFlags(argv, booleanFlags = []) {
   return flags;
 }
 
-module.exports = { parseFlags };
+export { parseFlags };

@@ -3,12 +3,13 @@
 
 // Detect source drift without assuming a fixed README packet schema.
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { spawnSync } = require('child_process');
-const { parseFlags } = require('./lib/args.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { spawnSync } from 'child_process';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { prettyGenerate } from './lib/ruby-json.js';
 
 const EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.rb', '.py', '.php', '.go', '.rs', '.java',
@@ -167,8 +168,8 @@ function main(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { baseline, check, main };
+export { baseline, check, main };

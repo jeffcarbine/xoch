@@ -5,10 +5,11 @@
 // Sets Xoch configuration values (currently: storage.mode). Similar to
 // install.js in style, but for engineer-facing config, not installation.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { readJson, updateJson } = require('./bin/lib/json-store');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { isMainModule } from './bin/lib/is-main.js';
+import { readJson, updateJson } from './bin/lib/json-store.js';
 
 const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
@@ -367,11 +368,11 @@ function main(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = {
+export {
   CONFIG_PATH,
   VALID_STORAGE_MODES,
   VALID_COMMENT_MODES,

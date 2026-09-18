@@ -3,8 +3,9 @@
 
 // Deterministic root README assembly from engineer-approved Xoch packets.
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
 
 function usage() {
   console.log('Usage:');
@@ -156,8 +157,8 @@ function main(argv) {
   assemble(argv.slice(1));
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { assemble, main };
+export { assemble, main };

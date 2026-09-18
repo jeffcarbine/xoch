@@ -1,6 +1,6 @@
 'use strict';
 
-const path = require('path');
+import path from 'path';
 
 // Common multi-project scope validation logic, shared by project-scope.js
 // and context-sync.js. The two bash originals (project-scope.sh's
@@ -74,4 +74,4 @@ function scopeErrors(data, messages) {
   return errors;
 }
 
-module.exports = { scopeErrors };
+export { scopeErrors };

@@ -3,9 +3,10 @@
 
 // Resolve a changed path to the nearest durable documentation boundary.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
 
 function usage() {
   console.log('Usage:');
@@ -94,8 +95,8 @@ function main(argv) {
   resolve(rest);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { resolve, main };
+export { resolve, main };
