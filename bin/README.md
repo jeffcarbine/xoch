@@ -28,6 +28,7 @@ xoch-actions.js workflow abandon --job ID [--name NAME] --reason TEXT [--next CO
 xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
 xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
 xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+xoch-actions.js job step-advance --job ID
 xoch-actions.js config root
 xoch-actions.js job evidence --job ID [--json]
 xoch-actions.js arc evidence --arc ID [--json]
@@ -44,6 +45,15 @@ declares `**Type**: Checkpoint`, echoed into that phase's `phase_index` entry to
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
 they reject path traversal outside it.
+
+`job current`/`job set-current` project a job's `next_command` and `current_step` into
+`current.json` alongside `workflow`, self-healing on every `job current` read so a bundled
+multi-step command (`xoch-open`, `xoch-build`) can tell exactly where it is from that one call.
+`job step-advance` moves `current_step` forward for a transition with no phase-index bookkeeping
+and no outcome to judge (`title`->`spec`, `spec`->`plan`, `implement`->`advance`) -- it refuses to
+move past `plan` or `advance` (those cross a phase boundary; use `phase advance`, which sets
+`current_step` too) or past `final_review` (leaving it depends on the review's own pass/fail
+outcome, not a fixed lookup).
 
 ### `generate-job-id.js`
 
