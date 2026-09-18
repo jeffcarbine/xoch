@@ -56,12 +56,12 @@ function resolveRoot(root) {
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     // Matches bash's `cd "$root"` failing under `set -e`: the script dies
     // immediately with cd's own error and exit code 1, never reaching the
-    // "install.sh not found" check below (that message is only reachable
-    // when root exists but lacks install.sh/install.js).
+    // "bin/xoch.js not found" check below (that message is only reachable
+    // when root exists but lacks bin/xoch.js).
     fail(`cd: ${root}: No such file or directory`, 1);
   }
-  if (!fs.existsSync(path.join(resolved, 'install.js'))) {
-    fail(`install.js not found: ${resolved}`, 2);
+  if (!fs.existsSync(path.join(resolved, 'bin', 'xoch.js'))) {
+    fail(`bin/xoch.js not found: ${resolved}`, 2);
   }
   return resolved;
 }
@@ -95,7 +95,7 @@ function listJsFilesRecursive(dir) {
 }
 
 function checkSyntax(root) {
-  const files = [...listJsFilesRecursive(path.join(root, 'bin')), path.join(root, 'install.js')];
+  const files = listJsFilesRecursive(path.join(root, 'bin'));
   for (const file of files) {
     try {
       execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
@@ -115,9 +115,9 @@ function checkSyntax(root) {
   }
 }
 
-function runInstall(root, tempHome) {
+function runInit(root, tempHome) {
   try {
-    execFileSync(process.execPath, [path.join(root, 'install.js')], {
+    execFileSync(process.execPath, [path.join(root, 'bin', 'xoch.js'), 'init'], {
       env: { ...process.env, HOME: tempHome },
       stdio: ['ignore', 'ignore', 'inherit'],
     });
@@ -174,7 +174,7 @@ function run(argv) {
 
   const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-prompt-check.'));
   try {
-    runInstall(root, tempHome);
+    runInit(root, tempHome);
 
     if (scanForUnresolvedMarkers(path.join(tempHome, '.xoch', 'prompts'))) {
       fail('Prompt check failed: unresolved partial or variable', 1);
@@ -199,7 +199,7 @@ module.exports = {
   checkHelperNaming,
   listJsFilesRecursive,
   checkSyntax,
-  runInstall,
+  runInit,
   scanForUnresolvedMarkers,
   checkClaudeSkill,
   run,

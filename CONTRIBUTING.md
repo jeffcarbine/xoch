@@ -12,7 +12,7 @@ Use Xoch to work on Xoch:
 xoch-open -> xoch-build -> xoch-doc -> xoch-close
 ```
 
-For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`./config.js set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `~/.xoch/bin/xoch-actions.js config root`.
+For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`xoch config set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `xoch config root`.
 
 ---
 
@@ -58,7 +58,7 @@ Target-model job files live under the resolved Xoch storage root:
 [xoch-root]/work/jobs/[job-id]/
 ```
 
-`[xoch-root]` is `.xoch` by default (in-repo), or `~/.xoch/projects/<slug>` when centralized storage is enabled — see `bin/xoch-actions.js`'s `xochRoot()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch-actions.js config root` instead.
+`[xoch-root]` is `.xoch` by default (in-repo), or `~/.xoch/projects/<slug>` when centralized storage is enabled — see `bin/xoch-actions.js`'s `xochRoot()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch config root` instead.
 
 Common files:
 
@@ -108,25 +108,19 @@ Helper scripts live under:
 bin/
 ```
 
-Helpers should be deterministic, explicit, shell-friendly, and easy to smoke test. Do not add network-dependent helper behavior to the installer.
+Helpers should be deterministic, explicit, shell-friendly, and easy to smoke test. Do not add network-dependent helper behavior to `xoch init`.
 
 The canonical helper inventory and purpose of each command live in the root `README.md`. Do not duplicate that inventory here; this document defines contributor-facing helper conventions.
 
-During install, helper scripts are copied to:
+Once installed via npm, `bin/xoch.js` (the package's `bin` entry) requires its sibling `bin/*.js` modules in-process and forwards `xoch <namespace> <command> ...` to each one's own exported `main(argv)`/`run(argv)` -- no scripts are copied anywhere. Prompt files should call helpers through the installed `xoch` CLI, such as `xoch token-estimator`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
 
-```text
-~/.xoch/bin/
-```
-
-Prompt files should call helpers from the installed path, such as `~/.xoch/bin/token-estimator.js`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
-
-Treat `[xoch-root]/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch-actions.js job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
+Treat `[xoch-root]/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
 
 ---
 
 ## Installer
 
-`install.js` installs top-level prompt files for supported AI tools.
+`xoch init` (`bin/init.js`) renders and installs top-level prompt files for supported AI tools.
 
 Installer expectations:
 
@@ -134,7 +128,6 @@ Installer expectations:
 - skip `prompts/README.md`
 - skip `prompts/partials/` fragments
 - render prompt partials before installing prompts
-- copy `bin/*.js` helpers to `~/.xoch/bin/`
 - fail when rendered prompts contain unresolved partial markers
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
 - install Claude Code commands as personal skills under `~/.claude/skills/`
@@ -149,7 +142,6 @@ Prompt partials live under `prompts/partials/` and use `{{xoch-partial:...}}` in
 Run focused checks for your change:
 
 ```bash
-node --check install.js
 bin/prompt-check.js run
 git diff --check
 ```
@@ -158,7 +150,7 @@ When installer behavior changes, run a temporary-HOME install smoke test.
 
 ### Tests And Coverage
 
-Every `bin/*.js` script, `bin/lib/*.js` module, `config.js`, and `install.js` has a matching `test/*.test.js` file using the shared harness (`test/lib/runner.js`'s `test()`/`run()`, `test/lib/cli.js`'s `scratch()`/`cleanup()`/`runScript()` for isolated-`$HOME` subprocess spawns). Run the full suite:
+Every `bin/*.js` script, `bin/lib/*.js` module, and `config.js` has a matching `test/*.test.js` file using the shared harness (`test/lib/runner.js`'s `test()`/`run()`, `test/lib/cli.js`'s `scratch()`/`cleanup()`/`runScript()` for isolated-`$HOME` subprocess spawns). Run the full suite:
 
 ```bash
 npm test

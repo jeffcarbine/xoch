@@ -20,9 +20,8 @@ Xoch is a lightweight workflow system for AI-assisted software work[^1]. It keep
 ## Quick Start
 
 ```bash
-git clone https://github.com/jeffcarbine/xoch.git
-cd xoch
-./install.js
+npm i -g @jeffcarbine/xoch
+xoch init
 ```
 
 Verify installation:
@@ -158,18 +157,18 @@ Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and refer
 
 ### Storage Location
 
-By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). See [bin/README.md](bin/README.md#configjs) for the `config.js` commands that set it, and for `~/.xoch/config.json`'s full shape.
+By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). See [bin/README.md](bin/README.md#configjs) for the `xoch config` commands that set it, and for `~/.xoch/config.json`'s full shape.
 
 Centralized mode leaves zero files in the repo — not even a gitignored `.xoch/` folder. The setting is global and applies to every project; there is no per-project override, and no automatic migration when switching modes. Missing or invalid config falls back to the default in-repo behavior.
 
-Resolve the active root directly with `~/.xoch/bin/xoch-actions.js config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
+Resolve the active root directly with `xoch config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
 
 ### Active Pointer And Workflows
 
 `.xoch/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
 
 ```bash
-~/.xoch/bin/xoch-actions.js job current --json
+xoch job current --json
 ```
 
 Do not edit the pointer manually. `state.md` keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
@@ -246,22 +245,18 @@ If `storage.mode` is set to `centralized` (see [Storage Location](#storage-locat
 Xoch prompts estimate file reads with:
 
 ```bash
-~/.xoch/bin/token-estimator.js --batch file1 file2
+xoch token-estimator --batch file1 file2
 ```
 
-Prompts use installed helper scripts under `~/.xoch/bin/` so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
+Prompts invoke the installed `xoch` CLI so they do not depend on the current project containing Xoch's source `bin/` directory. Engineers may override budgets when doing so is worth the extra context.
 
-Deterministic workflow actions live in:
+Deterministic workflow actions (job/arc/state/pointer/snapshot/phase/file mechanics) live under the `job`, `state`, `arc`, `pointer`, `workflow`, `snapshot`, `phase`, and `file` namespaces, e.g. `xoch job open ...`, `xoch state set ...`, `xoch snapshot create ...`.
 
-```bash
-~/.xoch/bin/xoch-actions.js
-```
+Prompts prefer the `xoch` CLI for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents should still use judgment for specs, plans, reviews, summaries, and scope decisions.
 
-Prompts prefer this helper for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents should still use judgment for specs, plans, reviews, summaries, and scope decisions.
+All helper filenames use kebab-case. See [bin/README.md](bin/README.md) for every namespace's full usage, including `xoch config`, which forwards to `config.js` at the repo root.
 
-All helper filenames use kebab-case. See [bin/README.md](bin/README.md) for every installed helper's full usage, including `config.js`, which lives at the repo root alongside them conceptually.
-
-Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (default: spec 5,000 tokens, plan 7,000 tokens, 5,000 for anything else unlisted), seeded on install and editable with `node config.js budgets` or `node config.js set tokenBudgets.<skill> <value>`. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
+Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (default: spec 5,000 tokens, plan 7,000 tokens, 5,000 for anything else unlisted), seeded on install and editable with `xoch config budgets` or `xoch config set tokenBudgets.<skill> <value>`. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
 
 Before full-file reads beyond active Xoch pointer/state files, Xoch should run `token-estimator.js budget check --skill <skill> --files [files...]` against the candidate files and report the estimate. A FAIL result is a hard stop: reading past budget is not a judgment call the agent makes on its own -- it requires an explicit waiver from the engineer.
 
@@ -311,7 +306,7 @@ Ready for next step: `xoch-build`
 
 ## Troubleshooting
 
-**Prompt not found:** Run `./install.js` and restart the AI tool.
+**Prompt not found:** Run `xoch init` and restart the AI tool.
 
 **No current job:** Run `xoch-open`.
 

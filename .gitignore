@@ -8,11 +8,8 @@
 # Node modules (if testing)
 node_modules/
 
-# install.js test scratch (in-repo so node's coverage reporter tracks it;
+# init.js test scratch (in-repo so node's coverage reporter tracks it;
 # cleaned up per-test, this is just a crash-path safety net)
-.install-test-scratch/
-
-# init.js test scratch (same reasoning as .install-test-scratch/ above)
 .init-test-scratch/
 
 # IDE files

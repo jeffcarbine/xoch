@@ -8,7 +8,8 @@ const { test, run: runTests } = require('./lib/runner.js');
 const { scratch, cleanup, runScript } = require('./lib/cli.js');
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'prompt-check.js');
-const REAL_INSTALL_JS = path.join(__dirname, '..', 'install.js');
+const REAL_XOCH_JS = path.join(__dirname, '..', 'bin', 'xoch.js');
+const REAL_INIT_JS = path.join(__dirname, '..', 'bin', 'init.js');
 
 // Pure functions (no process.exit calls) -- safe to require in-process.
 const { listJsFilesRecursive, scanForUnresolvedMarkers } = require(SCRIPT);
@@ -108,14 +109,14 @@ test('a --root that does not exist fails like a shell cd, exit 1', () => {
   }
 });
 
-test('a --root with no install.js fails distinctly, exit 2', () => {
+test('a --root with no bin/xoch.js fails distinctly, exit 2', () => {
   const ctx = scratch();
   try {
     const emptyRoot = path.join(ctx.cwd, 'empty-root');
     fs.mkdirSync(emptyRoot);
     const result = run(['run', '--root', emptyRoot], ctx);
     assert.strictEqual(result.status, 2);
-    assert.match(result.stderr, /install\.js not found/);
+    assert.match(result.stderr, /bin\/xoch\.js not found/);
   } finally {
     cleanup(ctx);
   }
@@ -210,12 +211,11 @@ test('listJsFilesRecursive finds .js files at every nesting depth, ignoring non-
 // checkSyntax (direct call)
 // ---------------------------------------------------------------------
 
-test('checkSyntax passes for valid JS in bin/ and a valid install.js', () => {
+test('checkSyntax passes for valid JS in bin/', () => {
   const ctx = scratch();
   try {
     fs.mkdirSync(path.join(ctx.cwd, 'bin'));
     fs.writeFileSync(path.join(ctx.cwd, 'bin', 'ok.js'), 'const x = 1;\n');
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const y = 2;\n');
     const result = callExported('checkSyntax', [ctx.cwd], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
@@ -228,19 +228,6 @@ test('checkSyntax fails and exits with the syntax checker\'s own status for a br
   try {
     fs.mkdirSync(path.join(ctx.cwd, 'bin'));
     fs.writeFileSync(path.join(ctx.cwd, 'bin', 'broken.js'), 'const x = ;\n');
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const y = 2;\n');
-    const result = callExported('checkSyntax', [ctx.cwd], ctx);
-    assert.notStrictEqual(result.status, 0);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('checkSyntax also checks install.js itself', () => {
-  const ctx = scratch();
-  try {
-    fs.mkdirSync(path.join(ctx.cwd, 'bin'));
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const z = ;\n');
     const result = callExported('checkSyntax', [ctx.cwd], ctx);
     assert.notStrictEqual(result.status, 0);
   } finally {
@@ -253,11 +240,11 @@ test('checkSyntax also checks install.js itself', () => {
 // same site marked there). That branch only fires when the `node --check`
 // child is killed by a signal rather than exiting normally, and `--check`
 // never executes the file being checked -- so nothing in the checked file
-// can trigger it. Contrast with the "runInstall falls back to exit code 1
-// when install.js is killed by a signal" test below, which covers an
-// identical-looking `e.status || 1` fallback for runInstall: that one IS
-// testable, since the executed install.js can self-signal. See review.md
-// for the full investigation.
+// can trigger it. Contrast with the "runInit falls back to exit code 1
+// when the init subprocess is killed by a signal" test below, which covers
+// an identical-looking `e.status || 1` fallback for runInit: that one IS
+// testable, since the executed bin/xoch.js child can self-signal. See
+// review.md for the full investigation.
 
 // ---------------------------------------------------------------------
 // scanForUnresolvedMarkers (pure, in-process)
@@ -309,16 +296,16 @@ test('scanForUnresolvedMarkers detects a leftover {{VAR}} placeholder, even nest
   }
 });
 
-test('runInstall falls back to exit code 1 when install.js is killed by a signal rather than exiting normally', () => {
+test('runInit falls back to exit code 1 when the init subprocess is killed by a signal rather than exiting normally', () => {
   const ctx = scratch();
   try {
     const root = path.join(ctx.cwd, 'signal-root');
-    fs.mkdirSync(root, { recursive: true });
+    fs.mkdirSync(path.join(root, 'bin'), { recursive: true });
     // execFileSync's error has status: null (not a number) when the child
     // is killed by a signal instead of exiting -- the only way to force
     // the `e.status || 1` fallback rather than a real (truthy) exit code.
-    fs.writeFileSync(path.join(root, 'install.js'), "process.kill(process.pid, 'SIGTERM');\nsetTimeout(() => {}, 5000);\n");
-    const result = callExported('runInstall', [root, ctx.home], ctx);
+    fs.writeFileSync(path.join(root, 'bin', 'xoch.js'), "process.kill(process.pid, 'SIGTERM');\nsetTimeout(() => {}, 5000);\n");
+    const result = callExported('runInit', [root, ctx.home], ctx);
     assert.strictEqual(result.status, 1);
   } finally {
     cleanup(ctx);
@@ -328,7 +315,7 @@ test('runInstall falls back to exit code 1 when install.js is killed by a signal
 // ---------------------------------------------------------------------
 // checkClaudeSkill (direct call)
 //
-// This can't be reached through the full `run` pipeline: install.js
+// This can't be reached through the full `run` pipeline: xoch init
 // always installs a prompt and its Claude skill together (already proven
 // 100%-covered in its own test file), and the temp $HOME `run` uses is
 // randomly generated internally with no way to intercept it mid-run. So
@@ -410,14 +397,19 @@ test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude s
 });
 
 // ---------------------------------------------------------------------
-// full pipeline (`run`) -- real install.js, real subprocess, slower
+// full pipeline (`run`) -- real bin/xoch.js + bin/init.js, real
+// subprocess, slower
 // ---------------------------------------------------------------------
 
 function buildFixtureRoot(ctx) {
   const root = path.join(ctx.cwd, 'fixture-repo');
   fs.mkdirSync(path.join(root, 'bin', 'lib'), { recursive: true });
   fs.mkdirSync(path.join(root, 'prompts', 'partials'), { recursive: true });
-  fs.copyFileSync(REAL_INSTALL_JS, path.join(root, 'install.js'));
+  // bin/xoch.js's own module-load `require('../package.json')` needs a
+  // real file here regardless of which subcommand runs.
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.0-test' }));
+  fs.copyFileSync(REAL_XOCH_JS, path.join(root, 'bin', 'xoch.js'));
+  fs.copyFileSync(REAL_INIT_JS, path.join(root, 'bin', 'init.js'));
   fs.writeFileSync(path.join(root, 'bin', 'helper-one.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'bin', 'lib', 'sub-helper.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'prompts', 'meow.md'), '---\nname: meow\ndescription: A test prompt\n---\n\nHello, meow.\n');
@@ -449,7 +441,7 @@ test('run fails fast on a non-kebab-case helper before ever installing anything'
   }
 });
 
-test('run fails when install.js itself fails', () => {
+test('run fails when xoch init itself fails', () => {
   const ctx = scratch();
   try {
     const root = buildFixtureRoot(ctx);

@@ -16,9 +16,18 @@
   "license": "ISC",
   "author": "Jeff Carbine",
   "type": "commonjs",
-  "main": "install.js",
   "bin": {
     "xoch": "./bin/xoch.js"
+  },
+  "files": [
+    "prompts/",
+    "bin/",
+    "config.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14.14.0"
   },
   "scripts": {
     "test": "node --test --experimental-test-coverage test/*.test.js"
