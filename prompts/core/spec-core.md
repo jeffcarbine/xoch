@@ -125,7 +125,7 @@ Ask for or extract:
 - documentation targets
 - risks or unknowns
 
-Read relevant accepted `notes/discovery-*.md` findings when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
+Read relevant accepted findings from `[xoch-root]/discoveries/*-discovery.md` (resolvable with `xoch config root`) when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
 
 If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
 

@@ -44,10 +44,10 @@ Do not read the core prompt unless it is needed.
 
 For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation (or maintain `.xoch/docs/` packets), load only the context needed, and update or confirm docs against current source and job evidence.
 
-When documentation work is complete, put status, targets, and caveats first. Unless the engineer already stated which they want, make the final line an explicit choice rather than asserting one command:
+When documentation work is complete, put status, targets, and caveats first. Unless the engineer already stated which they want, make the final line name both valid next commands rather than asserting one:
 
 ```text
-{{xoch-partial:next-choice.md prompt="Ready to wrap up." option_a="[P]ull request" option_b="[C]lose the job without one"}}
+{{xoch-partial:next-step-choice.md command_a="xoch-pr" command_b="xoch-close"}}
 ```
 
-`[P]` routes to `xoch-pr`; `[C]` routes to `xoch-close`. When the engineer's message already states which they want, skip the choice and route directly with `{{xoch-partial:next-step.md command="..."}}` instead.
+This is a routing line, not an in-session action -- either command needs its own fresh invocation. When the engineer's message already states which they want, skip it and route directly with `{{xoch-partial:next-step.md command="..."}}` instead.

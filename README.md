@@ -297,7 +297,7 @@ Ready for next step: `xoch-build`
 
 `xoch-roadmap` is a read-only progress view. It summarizes the active workflow, current phase, completed phases, upcoming phase goals/files/acceptance, risks, and the actual next command without modifying state.
 
-`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in job `notes/` and normally route back to `xoch-open`'s `spec` step or `xoch-revise-spec`.
+`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in a shared `[xoch-root]/discoveries/` directory, independent of any job, and normally route back to `xoch-open`'s `spec` step or `xoch-revise-spec`.
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 

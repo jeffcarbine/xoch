@@ -130,11 +130,12 @@ function runInit(root, tempHome) {
   }
 }
 
-// Matches prompt-check.sh's rg scan: catches both an unresolved
-// {{xoch-partial:...}} reference and a stray unsubstituted {{VAR}}
-// placeholder left in a rendered prompt -- a broader net than install.js's
-// own hasUnresolvedPartial, which only looks for the partial marker.
-const UNRESOLVED_MARKER_RE = /\{\{xoch-partial:|\{\{[A-Za-z_][A-Za-z0-9_]*\}\}/;
+// Matches prompt-check.sh's rg scan: catches an unresolved
+// {{xoch-partial:...}} reference, an unresolved {{xoch-config:...}}
+// reference, and a stray unsubstituted {{VAR}} placeholder left in a
+// rendered prompt -- a broader net than init.js's own render-time checks,
+// which only look for their own marker.
+const UNRESOLVED_MARKER_RE = /\{\{xoch-partial:|\{\{xoch-config:|\{\{[A-Za-z_][A-Za-z0-9_]*\}\}/;
 
 function scanForUnresolvedMarkers(dir) {
   if (!fs.existsSync(dir)) return false;

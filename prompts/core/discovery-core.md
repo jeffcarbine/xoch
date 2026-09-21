@@ -17,17 +17,15 @@ Use `xoch-discovery` for product, domain, design, API, dependency, workflow, com
 
 ## Work Model
 
-When a job is active:
-
-{{xoch-partial:job-evidence.md}}
-
-Target-model discovery notes live under its `notes_dir`:
+Discovery notes live in a shared directory, independent of any job -- resolvable with `xoch config root`:
 
 ```text
-[notes-dir]/discovery-[topic]-[date].md
+[xoch-root]/discoveries/[date]-[topic]-discovery.md
 ```
 
-If no job exists, discovery may continue in chat. Ask before writing an ad hoc note or opening a job.
+This makes an accepted discovery findable and reusable by a later, unrelated job, and means discovery can start and finish in chat even before any job exists. When a job is active:
+
+{{xoch-partial:job-evidence.md}}
 
 {{xoch-partial:project-routing.md}}
 
@@ -135,10 +133,18 @@ Present a concise draft containing:
 - spec impact
 - recommended next step
 
-Before asking for acceptance, write these findings to the planned discovery note with `Status: Draft`. This preserves the pending result across agents and conversations. Then update the workflow boundary:
+Before asking for acceptance, write these findings to a new discovery note (using Step 8's structure) with `Status: Draft`:
 
 ```bash
-xoch workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "notes/discovery-[topic]-[date].md" --return "[return command]"
+xoch discovery write --topic "[topic]" <<'XOCHEOF'
+[draft discovery note content]
+XOCHEOF
+```
+
+This preserves the pending result across agents and conversations. Record the path it prints -- this exact file gets updated in place through `[M]`/`[R]` revisions and Step 8's acceptance, never re-created. Then update the workflow boundary, when a job is active:
+
+```bash
+xoch workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "[path printed above]" --return "[return command]"
 ```
 
 Then ask:
@@ -151,9 +157,7 @@ If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`
 
 ### Step 8: Record Accepted Discovery
 
-When a job exists, write to `[notes-dir]/discovery-[topic]-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
-
-Normalize the topic portion when needed with `xoch generate-id --id "[topic]"`. If that note path already exists, add a short numeric suffix rather than overwriting prior discovery.
+Update the discovery note Step 7 already wrote, in place -- do not write a new one; `xoch discovery write` always creates a fresh, non-colliding file, and this is an edit to the one draft already tracked.
 
 Use this structure:
 
@@ -195,13 +199,13 @@ Use this structure:
 [xoch-open | xoch-revise-spec | more discovery | blocked]
 ```
 
-For legacy jobs, write the note in the legacy job folder. For multi-project jobs, write through the primary job and synchronize accepted findings.
+Discovery notes are shared regardless of job model, including for legacy jobs. For multi-project jobs, write through the primary project's root and synchronize accepted findings to participants.
 
 Update `state.md` only when discovery affects active workflow routing. Keep it compact:
 
 ```yaml
 discovery_status: [status]
-last_discovery: notes/discovery-[topic]-[date].md
+last_discovery: "[path printed by the discovery write in Step 7]"
 unresolved_questions:
   - [question]
 next_command: [xoch-open | xoch-revise-spec | xoch-discovery]

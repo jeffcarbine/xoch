@@ -692,6 +692,24 @@ function writeConfig(ctx, data) {
   fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify(data));
 }
 
+test('a config reference with a hyphenated variant key resolves correctly', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    writeConfig(ctx, { documentation: { commentMode: 'follow-convention' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:documentation.commentMode always="Always text." follow-convention="Follow text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Follow text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('a config reference substitutes the text matching the resolved config value', () => {
   const ctx = scratch();
   try {

@@ -1012,6 +1012,46 @@ function fileEdit(argv) {
   console.log(`File edited: ${target} (${occurrences} replacement${occurrences === 1 ? '' : 's'})`);
 }
 
+// Discovery findings live in a shared directory rather than a job's own
+// notes -- unlike everything else in this file, they need to be writable
+// and readable with no job active at all, and stay discoverable by a
+// later, unrelated job. Filenames are date-topic-discovery.md, matching
+// the shape discovery-core.md already documented before this existed as a
+// deterministic command; a same-day rewrite of the same topic gets a
+// numeric suffix instead of overwriting the earlier finding.
+function discoveryWrite(argv) {
+  const flags = parseFlags(argv, []);
+  const topic = flags.topic;
+  if (!topic) die('--topic is required');
+  const topicSlug = slugify(topic);
+  if (!topicSlug) die(`--topic produces an empty slug: '${topic}'`);
+
+  const content = fs.readFileSync(0, 'utf8');
+  const discoveriesDir = path.join(xochRoot(), 'discoveries');
+  const datePrefix = today();
+  const base = `${datePrefix}-${topicSlug}`;
+
+  let target = path.join(discoveriesDir, `${base}-discovery.md`);
+  let suffix = 2;
+  while (fs.existsSync(target)) {
+    target = path.join(discoveriesDir, `${base}-${suffix}-discovery.md`);
+    suffix += 1;
+  }
+
+  writeAtomicText(target, content);
+  console.log(`Discovery written: ${target}`);
+}
+
+function discoveryRead(argv) {
+  const flags = parseFlags(argv, []);
+  const relPath = flags.path;
+  if (!relPath) die('--path is required');
+  if (isTraversalArtifact(relPath)) die('discovery path must not escape the discoveries directory (traversal rejected)');
+  const target = path.join(xochRoot(), 'discoveries', relPath);
+  if (!fs.existsSync(target)) die(`discovery not found: ${target}`);
+  process.stdout.write(fs.readFileSync(target, 'utf8'));
+}
+
 function usage() {
   process.stdout.write(`Usage:
   xoch-actions.js job current [--json]
@@ -1033,6 +1073,8 @@ function usage() {
   xoch-actions.js file write --job ID --path PATH [--append]
   xoch-actions.js file read --job ID --path PATH
   xoch-actions.js file edit --job ID --path PATH [--replace-all]
+  xoch-actions.js discovery write --topic TOPIC
+  xoch-actions.js discovery read --path PATH
 `);
 }
 
@@ -1110,6 +1152,12 @@ function main(argv) {
     case 'file:edit':
       fileEdit(rest);
       break;
+    case 'discovery:write':
+      discoveryWrite(rest);
+      break;
+    case 'discovery:read':
+      discoveryRead(rest);
+      break;
     default:
       die(`unknown action: ${group} ${action || ''}`);
   }
@@ -1149,5 +1197,7 @@ export {
   fileWrite,
   fileRead,
   fileEdit,
+  discoveryWrite,
+  discoveryRead,
   main,
 };

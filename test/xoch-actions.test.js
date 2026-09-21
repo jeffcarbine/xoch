@@ -2368,4 +2368,148 @@ test('file write/read round trip under centralized storage mode', () => {
   }
 });
 
+function discoveriesDirOf(ctx) {
+  return path.join(xochRootDir(ctx), 'discoveries');
+}
+
+function soleFileMatching(dir, pattern) {
+  const matches = fs.readdirSync(dir).filter((name) => pattern.test(name));
+  assert.strictEqual(matches.length, 1, `expected exactly one match for ${pattern} in ${dir}, found: ${matches.join(', ')}`);
+  return matches[0];
+}
+
+test('discovery write: creates the discoveries dir and a dated, topic-slugged file with exact content', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['discovery', 'write', '--topic', 'Auth Flow'], ctx, '# Discovery - Auth Flow\n\nFindings here.\n');
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Discovery written:/);
+    const name = soleFileMatching(discoveriesDirOf(ctx), /^\d{4}-\d{2}-\d{2}-auth-flow-discovery\.md$/);
+    const content = fs.readFileSync(path.join(discoveriesDirOf(ctx), name), 'utf8');
+    assert.strictEqual(content, '# Discovery - Auth Flow\n\nFindings here.\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery write: works with no active job at all', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['discovery', 'write', '--topic', 'No Job Yet'], ctx, 'content\n');
+    assert.strictEqual(result.status, 0);
+    soleFileMatching(discoveriesDirOf(ctx), /^\d{4}-\d{2}-\d{2}-no-job-yet-discovery\.md$/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery write: still writes to the shared directory, not the active job\'s notes dir, when a job is active', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    const result = run(['discovery', 'write', '--topic', 'With Active Job'], ctx, 'content\n');
+    assert.strictEqual(result.status, 0);
+    soleFileMatching(discoveriesDirOf(ctx), /^\d{4}-\d{2}-\d{2}-with-active-job-discovery\.md$/);
+    assert.strictEqual(fs.existsSync(path.join(jobDirOf(ctx, 'j1'), 'notes')), false);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery write: a second write for the same topic on the same day gets a numeric suffix rather than overwriting', () => {
+  const ctx = scratch();
+  try {
+    const first = run(['discovery', 'write', '--topic', 'Repeat Topic'], ctx, 'first\n');
+    assert.strictEqual(first.status, 0);
+    const second = run(['discovery', 'write', '--topic', 'Repeat Topic'], ctx, 'second\n');
+    assert.strictEqual(second.status, 0);
+
+    const names = fs.readdirSync(discoveriesDirOf(ctx)).filter((name) => name.includes('repeat-topic'));
+    assert.strictEqual(names.length, 2);
+    const firstName = names.find((name) => !/-2-discovery\.md$/.test(name));
+    const secondName = names.find((name) => /-2-discovery\.md$/.test(name));
+    assert.strictEqual(fs.readFileSync(path.join(discoveriesDirOf(ctx), firstName), 'utf8'), 'first\n');
+    assert.strictEqual(fs.readFileSync(path.join(discoveriesDirOf(ctx), secondName), 'utf8'), 'second\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery write: rejects a missing --topic and a topic that slugs to empty', () => {
+  const ctx = scratch();
+  try {
+    const missing = run(['discovery', 'write'], ctx, 'content\n');
+    assert.strictEqual(missing.status, 1);
+    assert.match(missing.stderr, /--topic is required/);
+
+    const empty = run(['discovery', 'write', '--topic', '!!!'], ctx, 'content\n');
+    assert.strictEqual(empty.status, 1);
+    assert.match(empty.stderr, /empty slug/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery read: exact round trip, missing file errors cleanly', () => {
+  const ctx = scratch();
+  try {
+    run(['discovery', 'write', '--topic', 'Read Back'], ctx, 'round trip content\n');
+    const name = soleFileMatching(discoveriesDirOf(ctx), /^\d{4}-\d{2}-\d{2}-read-back-discovery\.md$/);
+
+    const readResult = run(['discovery', 'read', '--path', name], ctx);
+    assert.strictEqual(readResult.status, 0);
+    assert.strictEqual(readResult.stdout, 'round trip content\n');
+
+    const missingResult = run(['discovery', 'read', '--path', 'does-not-exist-discovery.md'], ctx);
+    assert.strictEqual(missingResult.status, 1);
+    assert.match(missingResult.stderr, /discovery not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery read: rejects a missing --path', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['discovery', 'read'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /--path is required/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery read: rejects path traversal (relative and absolute)', () => {
+  const ctx = scratch();
+  try {
+    const relResult = run(['discovery', 'read', '--path', '../escape.md'], ctx);
+    assert.strictEqual(relResult.status, 1);
+    assert.match(relResult.stderr, /traversal/);
+    const absResult = run(['discovery', 'read', '--path', '/etc/escape.md'], ctx);
+    assert.strictEqual(absResult.status, 1);
+    assert.match(absResult.stderr, /traversal/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('discovery write/read round trip under centralized storage mode', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'centralized' } }));
+    const centralDiscoveriesDir = path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd), 'discoveries');
+
+    run(['discovery', 'write', '--topic', 'Central Mode'], ctx, 'centralized content\n');
+    const name = soleFileMatching(centralDiscoveriesDir, /^\d{4}-\d{2}-\d{2}-central-mode-discovery\.md$/);
+    assert.strictEqual(fs.readFileSync(path.join(centralDiscoveriesDir, name), 'utf8'), 'centralized content\n');
+    assert.strictEqual(fs.existsSync(discoveriesDirOf(ctx)), false);
+
+    const readResult = run(['discovery', 'read', '--path', name], ctx);
+    assert.strictEqual(readResult.stdout, 'centralized content\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 runTests();

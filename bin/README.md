@@ -67,6 +67,8 @@ xoch arc evidence --arc ID [--json]
 xoch file write --job ID --path PATH [--append]
 xoch file read --job ID --path PATH
 xoch file edit --job ID --path PATH [--replace-all]
+xoch discovery write --topic TOPIC
+xoch discovery read --path PATH
 ```
 
 `phase advance`'s `--next-type` marks the phase being advanced *into* as `implementation`
@@ -76,7 +78,13 @@ persisted as `current_phase_type` in `state.md` and, when the target phase's own
 declares `**Type**: Checkpoint`, echoed into that phase's `phase_index` entry too.
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
-they reject path traversal outside it.
+they reject path traversal outside it. `discovery write`/`discovery read` are the one exception to
+job-scoping in this file: they read and write `[xoch-root]/discoveries/`, a directory shared
+across every job (and reachable with no job active at all), so accepted discovery findings stay
+findable by a later, unrelated job instead of disappearing inside whichever job happened to be
+active when the research ran. `discovery write` derives its own filename
+(`[date]-[topic-slug]-discovery.md`) from `--topic` and prints the path it wrote; a same-day
+rewrite of the same topic gets a numeric suffix rather than overwriting the earlier finding.
 
 `job current`/`job set-current` project a job's `next_command` and `current_step` into
 `current.json` alongside `workflow`, self-healing on every `job current` read so a bundled
@@ -113,8 +121,7 @@ Not under `bin/` -- it lives at the repo root, since it's an engineer-facing set
 than something prompts shell out to at runtime. `xoch config` forwards to it (except `xoch config
 root`, which is `xoch-actions.js`'s own `config:root` storage-root lookup, merged under the same
 namespace). Contributors working from a clone of this repo may also run it directly (`node
-config.js` or `./config.js`). Prompts that need a config value read `~/.xoch/config.json` directly
-instead.
+config.js` or `./config.js`).
 
 ```text
 xoch config                          Interactive mode
@@ -123,6 +130,8 @@ xoch config get storage.mode         Print current storage.mode
 xoch config set storage.mode VALUE   Set storage.mode (in-repo|centralized)
 xoch config get documentation.commentMode       Print documentation.commentMode
 xoch config set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
+xoch config get coverage.strictness       Print coverage.strictness
+xoch config set coverage.strictness VALUE Set coverage.strictness (required|recommended)
 xoch config get tokenBudgets.SKILL       Print SKILL's resolved read budget
 xoch config set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
 xoch config budgets                      Interactively review/update token budgets
@@ -136,10 +145,13 @@ Keys:
   `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,
   including having none.
+- **`coverage.strictness`** (`required` default | `recommended`) -- whether the 100%-coverage gate
+  (`bin/init.js#coverage-gate`) is unwaivable before a job can close, or instead reports a gap and
+  asks the engineer live whether to close it now or accept it and proceed.
 - **`tokenBudgets.<skill>`** -- per-skill read-budget override in tokens (built-in defaults: spec
   5,000, plan 7,000; 5,000 for anything unlisted).
 
-All three are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
+All four are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
 available:
 
 ```json
@@ -147,11 +159,19 @@ available:
   "version": 1,
   "storage": { "mode": "centralized" },
   "documentation": { "commentMode": "follow-convention" },
+  "coverage": { "strictness": "recommended" },
   "tokenBudgets": { "spec": 6000 }
 }
 ```
 
 Missing or invalid values fall back to their defaults.
+
+Prompts never read `~/.xoch/config.json` themselves. A prompt source file that needs config-dependent
+text uses a `{{xoch-config:key value1="..." value2="..." default="..."}}` marker (see
+[Partials](../prompts/README.md#partials) in the prompts README); `init.js` resolves it once, at
+render time, into the installed prompt. Every config-writing command in `config.js` finishes by
+calling `init.js`'s `reinstall()` (render + reinstall to all four tool targets), so installed
+prompts never drift from the config that produced them.
 
 ## Context And Budgets
 

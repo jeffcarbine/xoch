@@ -88,9 +88,9 @@ Only continue without a passing review when the engineer explicitly chooses a wa
 
 {{xoch-partial:coverage-gate.md}}
 
-Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise.
+{{xoch-config:coverage.strictness required="Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise." recommended="Confirm coverage on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise. If a gap wasn't already reported and decided at review time, report it now and ask the engineer whether to close it or accept it and proceed." default="Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise."}}
 
-This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely.
+{{xoch-config:coverage.strictness required="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely." recommended="A remaining gap may stand here without being a documented exception, as long as the engineer explicitly accepted it (at review time, or just now) — record which. If coverage is incomplete and the engineer has not accepted the gap, do not close the job — route to `xoch-build` to close the gap or get an explicit decision." default="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely."}}
 
 ### Step 5: Check Documentation Freshness
 
@@ -141,7 +141,7 @@ Use this structure:
 
 ## Coverage
 
-[100% coverage confirmed on every job-touched file with code, or "not applicable - no code touched", or "documented exception: [file/branch, see review.md]"]
+{{xoch-config:coverage.strictness required="[100% coverage confirmed on every job-touched file with code, or \"not applicable - no code touched\", or \"documented exception: [file/branch, see review.md]\"]" recommended="[100% coverage confirmed on every job-touched file with code, \"not applicable - no code touched\", \"documented exception: [file/branch, see review.md]\", or \"accepted gap: [file/branch, engineer decision recorded in review.md]\"]" default="[100% coverage confirmed on every job-touched file with code, or \"not applicable - no code touched\", or \"documented exception: [file/branch, see review.md]\"]"}}
 
 ## Documentation
 
@@ -216,7 +216,7 @@ Follow-up: [summary]
 {{xoch-partial:response-ending.md}}
 
 - Closing requires either passing review or an explicit review waiver.
-- Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`.
+- {{xoch-config:coverage.strictness required="Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`." recommended="Closing requires coverage to be complete, a documented exception per `coverage-gate.md`, or an explicitly engineer-accepted gap on every job-touched file with code — an unaddressed, undecided gap still blocks closing." default="Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`."}}
 - `xoch-doc` must have run for this job before closing; do not offer to skip invoking it. A documentation waiver may exist, but only as something `xoch-doc` recorded.
 - Do not hide skipped validation.
 - Do not clear the wrong active job pointer.

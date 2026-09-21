@@ -88,6 +88,23 @@ test('xoch job current --json produces the same output as invoking xoch-actions.
   }
 });
 
+test('xoch discovery write produces the same output as invoking xoch-actions.js directly', () => {
+  const ctxA = scratch();
+  const ctxB = scratch();
+  try {
+    const viaDispatcher = run(['discovery', 'write', '--topic', 'Dispatch Check'], ctxA, 'content\n');
+    const direct = runScript(XOCH_ACTIONS, ['discovery', 'write', '--topic', 'Dispatch Check'], ctxB, 'content\n');
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    // xochRoot() in in-repo mode is relative ('.xoch'), so the printed
+    // path never embeds either context's absolute cwd -- a plain
+    // comparison is safe, unlike the config-set comparison above.
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctxA);
+    cleanup(ctxB);
+  }
+});
+
 test('an xoch-actions.js group with a missing action produces the same error as invoking it directly', () => {
   const ctx = scratch();
   try {
@@ -251,9 +268,9 @@ test('every standalone-script namespace reaches its module without a dispatcher 
 // against this repo's real prompts/ can reach.
 //
 // No test here deliberately exercises failRender() or its call sites
-// (bin/init.js:66, malformed-partial/malformed-config/render-failure
-// paths), the unresolved-partial check (bin/init.js:295), or the
-// "prompts/ directory not found" branch (bin/init.js:589) -- see the
+// (bin/init.js:70, malformed-partial/malformed-config/render-failure
+// paths), the unresolved-partial check (bin/init.js:303), or the
+// "prompts/ directory not found" branch (bin/init.js:597) -- see the
 // DOCUMENTED COVERAGE EXCEPTION comments at those sites in bin/init.js.
 // Those exact behaviors are already covered at 100% by
 // test/init.test.js's scratch-copied bin/init.js, which relocates the

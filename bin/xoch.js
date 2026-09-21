@@ -22,7 +22,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'
 // <group> <action> ...` namespaces by forwarding argv untouched, group name
 // included, since that's exactly the grammar xoch-actions.js's own main()
 // expects.
-const XOCH_ACTIONS_GROUPS = ['job', 'state', 'arc', 'pointer', 'workflow', 'snapshot', 'phase', 'file'];
+const XOCH_ACTIONS_GROUPS = ['job', 'state', 'arc', 'pointer', 'workflow', 'snapshot', 'phase', 'file', 'discovery'];
 
 // Namespace -> [module path relative to this file, exported function name].
 // Each standalone script's own CLI grammar starts with its first real verb
@@ -52,7 +52,7 @@ const STANDALONE_MODULES = {
 
 function usage() {
   console.log(`Usage:
-  xoch <job|state|arc|pointer|workflow|snapshot|phase|file> ...   Deterministic job/workflow actions (see xoch-actions.js)
+  xoch <job|state|arc|pointer|workflow|snapshot|phase|file|discovery> ...   Deterministic job/workflow actions (see xoch-actions.js)
   xoch config ...                                                 Engineer-facing config: storage mode, documentation comment mode, token budgets, and config root lookup
   xoch init                                                       Render prompts and install skill files for Copilot, Codex, Claude Code, and Kiro
   xoch remove                                                     Reverse xoch init: remove installed skill files and ~/.xoch

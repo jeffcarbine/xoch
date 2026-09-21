@@ -45,15 +45,19 @@ const NC = '\x1b[0m';
 // DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18; extended
 // misc-9-21-26): failRender() and every call site that reaches it
 // (parsePartial's and parseConfigMarker's malformed-reference branches,
-// resolveConfigValue's no-matching-variant branch, renderPromptFile's
+// renderPromptFile's own no-matching-config-variant branch and
 // read/write-failure branches) are unreachable when this file runs from
 // its real, installed location -- they only fire against malformed or
 // broken prompt content, and this repo's actual prompts/ directory is
 // well-formed by construction (CI and `npm test` would already be
-// failing otherwise). The only way to exercise them is to relocate this
-// script's __dirname so a synthetic fixture prompts/ directory can be
-// substituted for the real one -- exactly what test/init.test.js's
-// scratch-copied bin/init.js does, reaching 100% coverage on that copy.
+// failing otherwise). The multi-line marker-body branch shared by
+// parsePartial and parseConfigMarker is reachable with well-formed
+// content too, but no real prompt happens to write a marker across
+// multiple lines, so it falls in the same boat. The only way to
+// exercise any of this is to relocate this script's __dirname so a
+// synthetic fixture prompts/ directory can be substituted for the real
+// one -- exactly what test/init.test.js's scratch-copied bin/init.js
+// does, reaching 100% coverage on that copy.
 // Node's coverage instrumentation tracks the scratch copy and this real
 // file as separate entries by absolute path, so that 100% doesn't roll
 // up here; the code itself is still fully behavior-tested. See
@@ -97,7 +101,7 @@ function parsePartial(rawBody, sourceFile) {
     failRender(`Error: invalid prompt partial path '${partialPath}' in ${sourceFile}`);
   }
 
-  const vars = parseAssignments(assignments, sourceFile);
+  const vars = parseAssignments(assignments, sourceFile, /^[A-Za-z_][A-Za-z0-9_]*/);
 
   return [partialPath, vars];
 }
@@ -105,8 +109,12 @@ function parsePartial(rawBody, sourceFile) {
 // Parses zero or more `key="value"` assignments (quoted-value, with
 // escaped-quote/backslash handling) out of a marker body -- shared by
 // parsePartial's variables and parseConfigMarker's value-keyed variants,
-// since both use the same `key="value"` grammar.
-function parseAssignments(assignments, sourceFile) {
+// since both use the same `key="value"` grammar for the value half. The
+// key half differs: a partial variable name must match the identifier-only
+// `{{placeholder}}` syntax it substitutes into, while a config marker's
+// keys are config *values* (e.g. "follow-convention"), which can contain
+// hyphens -- so callers pass their own keyPattern rather than sharing one.
+function parseAssignments(assignments, sourceFile, keyPattern) {
   const vars = {};
   let i = 0;
   const len = assignments.length;
@@ -116,7 +124,7 @@ function parseAssignments(assignments, sourceFile) {
   for (;;) {
     skipWs();
     if (i >= len) break;
-    const keyMatch = /^[A-Za-z_][A-Za-z0-9_]*/.exec(assignments.slice(i));
+    const keyMatch = keyPattern.exec(assignments.slice(i));
     if (!keyMatch) failRender(`Error: malformed variable assignment near '${assignments.slice(i)}' in ${sourceFile}`);
     const key = keyMatch[0];
     i += key.length;
@@ -166,7 +174,7 @@ function parseConfigMarker(rawBody, sourceFile) {
   // only its format needs validating.
   if (!CONFIG_KEY_RE.test(key)) failRender(`Error: invalid prompt config key '${key}' in ${sourceFile}`);
 
-  const variants = parseAssignments(assignments, sourceFile);
+  const variants = parseAssignments(assignments, sourceFile, /^[A-Za-z_][A-Za-z0-9_-]*/);
   return [key, variants];
 }
 

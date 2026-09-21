@@ -127,7 +127,7 @@ partials/action-choice.md
 partials/accept-or-modify.md
 partials/engineer-git-rule.md
 partials/next-step.md
-partials/next-choice.md
+partials/next-step-choice.md
 partials/response-ending.md
 partials/phase-boundary.md
 partials/context-economy.md
@@ -177,6 +177,14 @@ Partials can receive quoted variables:
 
 Inside a partial, variables use `{{label}}`. The installer fails if a partial path is missing, escapes outside `prompts/partials/`, references an unset variable, or leaves unresolved `{{xoch-partial:...}}` markers in rendered prompts.
 
+A prompt file may also select text by the engineer's own config, resolved once at render time instead of the agent reading `~/.xoch/config.json` itself mid-conversation:
+
+```text
+{{xoch-config:documentation.commentMode always="Apply inline documentation unconditionally." follow-convention="Match the target project's existing convention." default="Apply inline documentation unconditionally."}}
+```
+
+`key` is a dotted path into `~/.xoch/config.json` (e.g. `coverage.strictness`); each other assignment names one possible resolved value and the text to substitute for it, with an optional `default="..."` used when the key is unset or doesn't match any listed value. The installer fails on a malformed marker, an invalid key, or a resolved value with no matching text and no `default=`. `{{xoch-config:...}}` runs after `{{xoch-partial:...}}` substitution, over the whole partial-expanded string, so a config marker nested inside a partial's own body still resolves.
+
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
 Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `build.md`, `discovery.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing. A bundled multi-step wrapper like `build.md` picks which core file to read based on `current_step` rather than always reading the same one.
@@ -194,10 +202,10 @@ Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as sp
 Do you want to [A]ccept the spec, or do you have any [M]odifications?
 ```
 
-Use `next-choice.md` instead of `next-step.md` when the next command is genuinely ambiguous between two options and shouldn't be asserted as a single definitive routing line. Rendered prompts read as a two-option text-game choice, e.g.:
+Use `next-step-choice.md` instead of `next-step.md` when the next command is genuinely ambiguous between two options and shouldn't be asserted as a single definitive routing line. Rendered prompts stay in the `Ready for next step: ...` family -- naming both valid commands, not a lettered action choice, since neither option runs in-session:
 
 ```text
-Ready to wrap up. [P]ull request, or [C]lose the job without one?
+Ready for next step: `xoch-pr` | `xoch-close`
 ```
 
 Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.

@@ -48,8 +48,9 @@ Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's
 - `phases/phase-[N].md`: optional detailed phase body.
 - `snapshots/phase-[N].md`: completion evidence captured by `xoch-build`'s `advance` step.
 - `notes/`: implementation, trace, or sidebar notes.
-- `notes/discovery-*.md`: accepted findings for unknowns that affect requirements or decisions.
 - `revisions/`: spec, plan, or arc revision history.
+
+Discovery notes are not job files: `[xoch-root]/discoveries/*-discovery.md` sits outside every job's own directory, shared across jobs and reachable even before any job exists.
 
 `state.md` also preserves managed side-workflow fields when one is active: `active_workflow`, `workflow_stage`, `pending_action`, `workflow_artifact`, `return_command`, and `workflow_started_at`. `current.json` is the machine-readable runtime projection used for command routing.
 
