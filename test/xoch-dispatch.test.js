@@ -143,7 +143,14 @@ test('xoch config set documentation.commentMode follow-convention produces the s
     const viaDispatcher = run(['config', 'set', 'documentation.commentMode', 'follow-convention'], ctxA);
     const direct = runScript(CONFIG_SCRIPT, ['set', 'documentation.commentMode', 'follow-convention'], ctxB);
     assert.strictEqual(viaDispatcher.status, direct.status);
-    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+    // The set now triggers a real reinstall, whose output embeds each
+    // context's own (randomly named) scratch $HOME path -- normalize that
+    // one difference away before comparing, since it isn't a behavioral
+    // difference between the dispatcher and a direct invocation.
+    assert.strictEqual(
+      viaDispatcher.stdout.split(ctxA.home).join('<HOME>'),
+      direct.stdout.split(ctxB.home).join('<HOME>')
+    );
   } finally {
     cleanup(ctxA);
     cleanup(ctxB);
@@ -246,7 +253,7 @@ test('every standalone-script namespace reaches its module without a dispatcher 
 // No test here deliberately exercises failRender() or its call sites
 // (bin/init.js:66, malformed-partial/malformed-config/render-failure
 // paths), the unresolved-partial check (bin/init.js:295), or the
-// "prompts/ directory not found" branch (bin/init.js:569) -- see the
+// "prompts/ directory not found" branch (bin/init.js:589) -- see the
 // DOCUMENTED COVERAGE EXCEPTION comments at those sites in bin/init.js.
 // Those exact behaviors are already covered at 100% by
 // test/init.test.js's scratch-copied bin/init.js, which relocates the

@@ -10,10 +10,12 @@ import path from 'path';
 import os from 'os';
 import { isMainModule } from './bin/lib/is-main.js';
 import { readJson, updateJson } from './bin/lib/json-store.js';
+import { reinstall } from './bin/init.js';
 
 const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
 const VALID_COMMENT_MODES = ['always', 'follow-convention'];
+const VALID_COVERAGE_STRICTNESS = ['required', 'recommended'];
 
 // Kept in sync by hand with bin/token-estimator.js's (and install.js's)
 // copy of this table -- the installed runtime can't require this
@@ -32,6 +34,10 @@ function isValidStorageMode(value) {
 
 function isValidCommentMode(value) {
   return VALID_COMMENT_MODES.includes(value);
+}
+
+function isValidCoverageStrictness(value) {
+  return VALID_COVERAGE_STRICTNESS.includes(value);
 }
 
 function isValidBudgetValue(value) {
@@ -69,6 +75,12 @@ function readCommentMode() {
   return isValidCommentMode(mode) ? mode : 'always';
 }
 
+function readCoverageStrictness() {
+  const data = readJson(CONFIG_PATH);
+  const strictness = data.coverage && data.coverage.strictness;
+  return isValidCoverageStrictness(strictness) ? strictness : 'required';
+}
+
 function printConfig() {
   const data = readJson(CONFIG_PATH);
   const mode = readStorageMode();
@@ -78,6 +90,8 @@ function printConfig() {
   data.tokenBudgets = readTokenBudgets();
   data.documentation = data.documentation || {};
   data.documentation.commentMode = readCommentMode();
+  data.coverage = data.coverage || {};
+  data.coverage.strictness = readCoverageStrictness();
   console.log(JSON.stringify(data, null, 2));
 }
 
@@ -99,6 +113,15 @@ function writeCommentMode(value) {
   });
 }
 
+function writeCoverageStrictness(value) {
+  updateJson(CONFIG_PATH, (data) => {
+    data.version = data.version || 1;
+    data.coverage = data.coverage || {};
+    data.coverage.strictness = value;
+    return data;
+  });
+}
+
 function printMigrationWarning() {
   console.log(
     `${YELLOW}Note: switching storage.mode does not migrate existing job/arc data between `
@@ -113,6 +136,10 @@ function cmdGet(key) {
   }
   if (key === 'documentation.commentMode') {
     console.log(readCommentMode());
+    return;
+  }
+  if (key === 'coverage.strictness') {
+    console.log(readCoverageStrictness());
     return;
   }
   if (key.startsWith('tokenBudgets.')) {
@@ -132,6 +159,7 @@ function cmdSet(key, value) {
     writeStorageMode(value);
     console.log(`${GREEN}✓${NC} storage.mode set to ${value}`);
     printMigrationWarning();
+    reinstall();
     return;
   }
   if (key === 'documentation.commentMode') {
@@ -141,6 +169,17 @@ function cmdSet(key, value) {
     }
     writeCommentMode(value);
     console.log(`${GREEN}✓${NC} documentation.commentMode set to ${value}`);
+    reinstall();
+    return;
+  }
+  if (key === 'coverage.strictness') {
+    if (!isValidCoverageStrictness(value)) {
+      process.stderr.write(`${RED}Error: invalid coverage.strictness value '${value}'. Expected one of: ${VALID_COVERAGE_STRICTNESS.join(' ')}${NC}\n`);
+      process.exit(1);
+    }
+    writeCoverageStrictness(value);
+    console.log(`${GREEN}✓${NC} coverage.strictness set to ${value}`);
+    reinstall();
     return;
   }
   if (key.startsWith('tokenBudgets.')) {
@@ -151,6 +190,7 @@ function cmdSet(key, value) {
     const skill = key.slice('tokenBudgets.'.length);
     writeTokenBudget(skill, value);
     console.log(`${GREEN}✓${NC} tokenBudgets.${skill} set to ${value}`);
+    reinstall();
     return;
   }
   process.stderr.write(`${RED}Error: unknown config key: ${key}${NC}\n`);
@@ -227,6 +267,7 @@ function runStorageModeInteractive() {
   writeStorageMode(target);
   console.log(`${GREEN}✓${NC} storage.mode set to ${target}`);
   printMigrationWarning();
+  reinstall();
 }
 
 function runCommentModeInteractive() {
@@ -268,6 +309,49 @@ function runCommentModeInteractive() {
 
   writeCommentMode(target);
   console.log(`${GREEN}✓${NC} documentation.commentMode set to ${target}`);
+  reinstall();
+}
+
+function runCoverageStrictnessInteractive() {
+  const current = readCoverageStrictness();
+  console.log(`Current coverage.strictness: ${current}`);
+  console.log('');
+  console.log('Choose coverage strictness:');
+  console.log('  1) required — every job-touched file with code must reach 100% coverage before the job can close (default)');
+  console.log('  2) recommended — coverage gaps are reported for the engineer to decide on, not auto-blocked');
+  console.log('  3) leave unchanged');
+  console.log('');
+  if (process.stdin.isTTY) process.stdout.write('Selection [1/2/3]: ');
+
+  const choice = readLine();
+  if (choice === null) process.exit(1);
+
+  let target = '';
+  switch (choice) {
+    case '1':
+      target = 'required';
+      break;
+    case '2':
+      target = 'recommended';
+      break;
+    case '3':
+    case '':
+      console.log('Left unchanged.');
+      return;
+    default:
+      process.stderr.write(`${RED}Error: invalid selection: ${choice}${NC}\n`);
+      process.exit(1);
+      return;
+  }
+
+  if (target === current) {
+    console.log(`Already ${target}; nothing changed.`);
+    return;
+  }
+
+  writeCoverageStrictness(target);
+  console.log(`${GREEN}✓${NC} coverage.strictness set to ${target}`);
+  reinstall();
 }
 
 function runInteractive() {
@@ -278,6 +362,8 @@ function runInteractive() {
   runStorageModeInteractive();
   console.log('');
   runCommentModeInteractive();
+  console.log('');
+  runCoverageStrictnessInteractive();
 }
 
 function runBudgetsInteractive() {
@@ -310,21 +396,26 @@ function runBudgetsInteractive() {
 
     writeTokenBudget(skill, value);
     console.log(`${GREEN}✓${NC} tokenBudgets.${skill} set to ${value}`);
+    reinstall();
     console.log('');
   }
 }
 
 function usage() {
   console.log(`Usage:
-  node config.js                          Interactive mode (storage mode + documentation comment mode)
+  node config.js                          Interactive mode (storage mode + documentation comment mode + coverage strictness)
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
   node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
   node config.js get documentation.commentMode       Print documentation.commentMode
   node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
+  node config.js get coverage.strictness       Print coverage.strictness
+  node config.js set coverage.strictness VALUE Set coverage.strictness (required|recommended)
   node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
   node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
-  node config.js budgets                      Interactively review/update token budgets`);
+  node config.js budgets                      Interactively review/update token budgets
+
+Every config-writing command re-renders and reinstalls prompts for Copilot, Codex, Claude Code, and Kiro, so installed prompts always reflect the current config.`);
 }
 
 // Takes an explicit argv (like every other bin/ script's main(argv)) so
@@ -376,19 +467,23 @@ export {
   CONFIG_PATH,
   VALID_STORAGE_MODES,
   VALID_COMMENT_MODES,
+  VALID_COVERAGE_STRICTNESS,
   DEFAULT_SKILL_BUDGETS,
   FALLBACK_SKILL_BUDGET,
   isValidStorageMode,
   isValidCommentMode,
+  isValidCoverageStrictness,
   isValidBudgetValue,
   readStorageMode,
   readCommentMode,
+  readCoverageStrictness,
   readTokenBudgets,
   resolvedBudget,
   writeTokenBudget,
   printConfig,
   writeStorageMode,
   writeCommentMode,
+  writeCoverageStrictness,
   printMigrationWarning,
   cmdGet,
   cmdSet,
@@ -397,6 +492,7 @@ export {
   runInteractive,
   runStorageModeInteractive,
   runCommentModeInteractive,
+  runCoverageStrictnessInteractive,
   runBudgetsInteractive,
   usage,
   main,

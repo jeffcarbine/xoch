@@ -556,6 +556,26 @@ function installKiro() {
   }
 }
 
+// Renders and (re)installs prompts to all four tool targets -- everything
+// `main()` does except seedConfig(), which callers that already just wrote
+// config.json (config.js's mutating commands) don't need to repeat. This is
+// the single function `xoch config` calls after any config write, so
+// installed prompts never drift from the engineer's current settings.
+function reinstall() {
+  renderPrompts();
+  cleanupCopilot();
+  cleanupCodex();
+  cleanupClaude();
+  cleanupKiro();
+  installCopilot();
+  console.log('');
+  installCodex();
+  console.log('');
+  installClaude();
+  console.log('');
+  installKiro();
+}
+
 function main() {
   console.log('Xoch Init');
   console.log('====================');
@@ -575,18 +595,7 @@ function main() {
   console.log('');
 
   seedConfig();
-  renderPrompts();
-  cleanupCopilot();
-  cleanupCodex();
-  cleanupClaude();
-  cleanupKiro();
-  installCopilot();
-  console.log('');
-  installCodex();
-  console.log('');
-  installClaude();
-  console.log('');
-  installKiro();
+  reinstall();
 
   console.log('');
   console.log(`${GREEN}Initialization complete!${NC}`);
@@ -630,5 +639,6 @@ export {
   installCodex,
   installClaude,
   installKiro,
+  reinstall,
   main,
 };
