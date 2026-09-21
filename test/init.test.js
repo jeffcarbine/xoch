@@ -682,4 +682,211 @@ test('seeding config.json tolerates a corrupt existing file by starting fresh', 
   }
 });
 
+// ---------------------------------------------------------------------
+// {{xoch-config:...}} -- render-time conditional text keyed by a dotted
+// ~/.xoch/config.json value, parallel to {{xoch-partial:...}}.
+// ---------------------------------------------------------------------
+
+function writeConfig(ctx, data) {
+  fs.mkdirSync(xochDir(ctx), { recursive: true });
+  fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify(data));
+}
+
+test('a config reference substitutes the text matching the resolved config value', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    writeConfig(ctx, { coverage: { strictness: 'required' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." recommended="Recommended text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Required text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a multi-line config reference with the key on its own line substitutes correctly', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    writeConfig(ctx, { coverage: { strictness: 'required' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness\nrequired="Required text."\nrecommended="Recommended text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Required text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference substitutes different text for a different resolved config value', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    writeConfig(ctx, { coverage: { strictness: 'recommended' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." recommended="Recommended text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Recommended text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference with an unset config key falls back to its default text', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    // No config.json written at all -- the key is entirely unset.
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." recommended="Recommended text." default="Fallback text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Fallback text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference whose resolved value has no matching variant and no default is rejected', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    writeConfig(ctx, { coverage: { strictness: 'bogus' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." recommended="Recommended text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /no text for config key 'coverage\.strictness' resolved to 'bogus'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference with an unset key and no default is rejected', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." recommended="Recommended text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /no text for config key 'coverage\.strictness' resolved to '\(unset\)'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('an empty config reference body is rejected', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), '{{xoch-config:   }}\n');
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /malformed prompt config reference/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference with an invalid key format is rejected', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), '{{xoch-config:coverage/strictness required="x"}}\n');
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid prompt config key 'coverage\/strictness'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference with no assignments at all has no text for its resolved value', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), '{{xoch-config:coverage.strictness}}\n');
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /no text for config key 'coverage\.strictness' resolved to '\(unset\)'/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a dotted key with an absent segment in an existing config file resolves as unset', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    // config.json exists, but has no "coverage" key at all.
+    writeConfig(ctx, { version: 1 });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness required="Required text." default="Fallback text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Fallback text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a dotted key that walks past a non-object segment resolves as unset', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    // "coverage.strictness" resolves to the string "required" -- there is
+    // no further object to walk "deep" into, so the whole key resolves
+    // as unset rather than throwing.
+    writeConfig(ctx, { coverage: { strictness: 'required' } });
+    fs.writeFileSync(
+      path.join(fixture.promptsDir, 'meow.md'),
+      '{{xoch-config:coverage.strictness.deep required="Required text." default="Fallback text."}}\n'
+    );
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 0);
+    const rendered = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8');
+    assert.strictEqual(rendered.trim(), 'Fallback text.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a config reference with a malformed variable assignment is rejected', () => {
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), '{{xoch-config:coverage.strictness 123bad="x"}}\n');
+    const result = runInit(fixture, ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /malformed variable assignment/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 run();

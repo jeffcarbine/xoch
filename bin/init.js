@@ -42,25 +42,27 @@ const YELLOW = '\x1b[1;33m';
 const RED = '\x1b[0;31m';
 const NC = '\x1b[0m';
 
-// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): failRender() and
-// every call site that reaches it (parsePartial's malformed-partial
-// branches, renderPromptFile's read/write-failure branches) are
-// unreachable when this file runs from its real, installed location --
-// they only fire against malformed or broken prompt content, and this
-// repo's actual prompts/ directory is well-formed by construction (CI
-// and `npm test` would already be failing otherwise). The only way to
-// exercise them is to relocate this script's __dirname so a synthetic
-// fixture prompts/ directory can be substituted for the real one --
-// exactly what test/init.test.js's scratch-copied bin/init.js does,
-// reaching 100% coverage on that copy. Node's coverage instrumentation
-// tracks the scratch copy and this real file as separate entries by
-// absolute path, so that 100% doesn't roll up here; the code itself is
-// still fully behavior-tested. See test/init.test.js and
-// test/xoch-dispatch.test.js's "real (non-scratch) coverage" tests,
-// which close every other real-file gap that doesn't require malformed
-// input (happy-path install/cleanup for all four tools, idempotent
-// re-run, orphan cleanup, config seed/preserve/corrupt-recovery, and
-// direct non-dispatcher invocation).
+// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18; extended
+// misc-9-21-26): failRender() and every call site that reaches it
+// (parsePartial's and parseConfigMarker's malformed-reference branches,
+// resolveConfigValue's no-matching-variant branch, renderPromptFile's
+// read/write-failure branches) are unreachable when this file runs from
+// its real, installed location -- they only fire against malformed or
+// broken prompt content, and this repo's actual prompts/ directory is
+// well-formed by construction (CI and `npm test` would already be
+// failing otherwise). The only way to exercise them is to relocate this
+// script's __dirname so a synthetic fixture prompts/ directory can be
+// substituted for the real one -- exactly what test/init.test.js's
+// scratch-copied bin/init.js does, reaching 100% coverage on that copy.
+// Node's coverage instrumentation tracks the scratch copy and this real
+// file as separate entries by absolute path, so that 100% doesn't roll
+// up here; the code itself is still fully behavior-tested. See
+// test/init.test.js and test/xoch-dispatch.test.js's "real
+// (non-scratch) coverage" tests, which close every other real-file gap
+// that doesn't require malformed input (happy-path install/cleanup for
+// all four tools, idempotent re-run, orphan cleanup, config
+// seed/preserve/corrupt-recovery, and direct non-dispatcher
+// invocation).
 function failRender(message) {
   process.stderr.write(`${message}\n`);
   process.exit(1);
@@ -95,6 +97,16 @@ function parsePartial(rawBody, sourceFile) {
     failRender(`Error: invalid prompt partial path '${partialPath}' in ${sourceFile}`);
   }
 
+  const vars = parseAssignments(assignments, sourceFile);
+
+  return [partialPath, vars];
+}
+
+// Parses zero or more `key="value"` assignments (quoted-value, with
+// escaped-quote/backslash handling) out of a marker body -- shared by
+// parsePartial's variables and parseConfigMarker's value-keyed variants,
+// since both use the same `key="value"` grammar.
+function parseAssignments(assignments, sourceFile) {
   const vars = {};
   let i = 0;
   const len = assignments.length;
@@ -118,8 +130,65 @@ function parsePartial(rawBody, sourceFile) {
     i += rawValue.length;
     vars[key] = rawValue.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
   }
+  return vars;
+}
 
-  return [partialPath, vars];
+const CONFIG_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+
+// Parses the body of a {{xoch-config:...}} reference: a dotted config key
+// (first line, or first whitespace-delimited token if single-line),
+// followed by one or more `value="text"` assignments naming the text for
+// each possible resolved config value (plus an optional `default="..."`
+// for when the key is unset or doesn't match any listed value). Reuses
+// parseAssignments for the `value="text"` grammar, matching
+// {{xoch-partial:...}}'s variable syntax exactly.
+function parseConfigMarker(rawBody, sourceFile) {
+  const body = rawBody.trim();
+  if (!body) failRender(`Error: malformed prompt config reference in ${sourceFile}`);
+
+  let key;
+  let assignments;
+  if (body.includes('\n')) {
+    const lines = body.split('\n').map((line) => line.replace(/\r$/, ''));
+    const [firstLine, ...rest] = lines;
+    key = firstLine.trim();
+    assignments = rest.join('\n');
+  } else {
+    // body is non-empty and trimmed, so \S+ always matches.
+    const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(body);
+    key = match[1];
+    assignments = match[2] || '';
+  }
+
+  // Unlike a partial path, a config key has no "./"-stripping step that
+  // could reduce a non-empty token to empty, so -- given body already
+  // passed the empty-body check above -- key is always non-empty here;
+  // only its format needs validating.
+  if (!CONFIG_KEY_RE.test(key)) failRender(`Error: invalid prompt config key '${key}' in ${sourceFile}`);
+
+  const variants = parseAssignments(assignments, sourceFile);
+  return [key, variants];
+}
+
+// Resolves a dotted key (e.g. "coverage.strictness") directly out of
+// ~/.xoch/config.json for {{xoch-config:...}} rendering. Returns
+// undefined when any segment of the key is missing -- callers treat
+// that the same as an explicit "unset" value. Deliberately has no
+// existsSync guard or try/catch around the read/parse: by the time
+// renderPrompts() calls this, seedConfig() has already run and always
+// leaves the file in place with valid JSON, so a missing file or a
+// parse failure here would mean it was removed or corrupted in the
+// narrow window between those two calls -- a genuine anomaly that
+// should surface through renderPromptFile's own outer catch (which
+// already reports "Error rendering ...") rather than being silently
+// swallowed here.
+function resolveConfigValue(key) {
+  const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  return key.split('.').reduce((node, segment) => (
+    node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, segment)
+      ? node[segment]
+      : undefined
+  ), data);
 }
 
 function renderPromptFile(promptsSourceDir, sourceFile, outputFile) {
@@ -133,7 +202,7 @@ function renderPromptFile(promptsSourceDir, sourceFile, outputFile) {
   }
 
   try {
-    const rendered = source.replace(/\{\{xoch-partial:(.*?)\}\}/gs, (match, rawBody) => {
+    let rendered = source.replace(/\{\{xoch-partial:(.*?)\}\}/gs, (match, rawBody) => {
       const [partialPath, vars] = parsePartial(rawBody, sourceFile);
       const partialFile = path.join(partialsDir, partialPath);
       if (!fs.existsSync(partialFile) || !fs.statSync(partialFile).isFile()) {
@@ -152,6 +221,22 @@ function renderPromptFile(promptsSourceDir, sourceFile, outputFile) {
       }
       return partialText;
     });
+
+    // Runs after the partial pass, over the whole partial-substituted
+    // string, so a {{xoch-config:...}} marker embedded inside a
+    // partial's own body still resolves normally.
+    rendered = rendered.replace(/\{\{xoch-config:(.*?)\}\}/gs, (match, rawBody) => {
+      const [key, variants] = parseConfigMarker(rawBody, sourceFile);
+      const value = resolveConfigValue(key);
+      const variantText = value !== undefined && Object.prototype.hasOwnProperty.call(variants, value)
+        ? variants[value]
+        : variants.default;
+      if (variantText === undefined) {
+        failRender(`Error: no text for config key '${key}' resolved to '${value !== undefined ? value : '(unset)'}' in ${sourceFile}`);
+      }
+      return variantText;
+    });
+
     fs.writeFileSync(outputFile, rendered);
   } catch (e) {
     failRender(`Error rendering ${sourceFile}: ${e.message}`);

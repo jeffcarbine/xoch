@@ -6,7 +6,7 @@ setup. Prompts prefer these over free-form edits so routine mechanics are consis
 testable; agents still use judgment for specs, plans, reviews, summaries, and scope decisions.
 
 All filenames use kebab-case. Once installed via npm, `bin/xoch.js` (the package's `bin` entry)
-requires its sibling modules in-process and forwards `xoch <namespace> <command> ...` to each
+imports its sibling modules in-process and forwards `xoch <namespace> <command> ...` to each
 one's own exported `main(argv)`/`run(argv)` -- no scripts are copied anywhere, so installed
 prompts invoke helpers through the `xoch` CLI rather than depending on a project containing
 Xoch's own source tree. Command examples below show that `xoch <namespace>` form; every script
