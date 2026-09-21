@@ -496,6 +496,19 @@ test('job current text mode shows the active workflow name and stage when one is
   }
 });
 
+test('job current text mode falls back to "none" for a job with no next_command set', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1', { next_command: undefined });
+    seedPointer(ctx, { id: 'j1' });
+    const result = run(['job', 'current'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /next_command: none/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('job current rejects invalid JSON in the pointer file', () => {
   const ctx = scratch();
   try {

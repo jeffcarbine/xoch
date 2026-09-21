@@ -10,6 +10,19 @@
 import { realpathSync } from 'fs';
 import { pathToFileURL } from 'url';
 
+// DOCUMENTED COVERAGE EXCEPTION (es6-imports, 2026-09-18): every branch
+// here (the empty-argv[1] guard, the realpathSync catch, and the
+// URL-mismatch case) is exercised directly against this real file by
+// test/is-main.test.js. The copy at test/init.test.js's
+// .init-test-scratch/bin/lib/is-main.js -- needed because bin/init.js
+// imports it relative to itself -- only ever gets invoked as a genuine,
+// valid, matching CLI entry point (test/init.test.js's runScript() always
+// runs it via a real `node <path>` call), so these defensive branches are
+// structurally unreachable on that specific copy. Node's coverage
+// instrumentation tracks the scratch copy and this real file as separate
+// entries by absolute path (see bin/init.js's own failRender()
+// exception for the same mechanism in the opposite direction), so full
+// coverage on the real file doesn't roll up to the scratch copy's entry.
 function isMainModule(moduleUrl) {
   const invoked = process.argv[1];
   if (!invoked) return false;
