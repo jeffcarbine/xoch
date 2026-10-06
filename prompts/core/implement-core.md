@@ -65,11 +65,10 @@ Before implementation, confirm:
 If foundational requirements or the plan no longer fit the work, route to:
 
 ```text
-xoch-revise-spec
-xoch-revise-plan
+xoch-revise
 ```
 
-Use `revise-spec` when the definition of done changes. Use `revise-plan` when the implementation path or phase breakdown changes.
+`xoch-revise` works out whether the definition of done (spec), the implementation path or phase breakdown (plan), or both need to change.
 
 ### Step 3: Explain The Current Phase
 
@@ -232,7 +231,7 @@ Follow this instead of Steps 2-8 when the current phase's `current_phase_type` i
 
 1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from `phases.md` and prior snapshots, not from memory alone.
 2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
-3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise-spec` or `xoch-revise-plan` for it, and do not reopen or amend the snapshots of phases already completed.
+3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise` for it, and do not reopen or amend the snapshots of phases already completed.
 4. Once the engineer confirms things look right — with or without corrections along the way — write `checkpoint-[N].md` under `snapshots_dir`, recording what was tested, what was found, and what was corrected.
 5. Continue into the `advance` step per the Output section below; a checkpoint phase advances the same way an implementation phase does.
 
@@ -258,8 +257,7 @@ Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `i
 
 - Do not start implementation without enough phase context.
 - Do not start or complete the next *phase* during the current `xoch-do` run. Moving from the `implement` step to the `advance` step within the same phase is expected and required, not a new phase.
-- Do not silently change spec scope; use `xoch-revise-spec`.
-- Do not silently reshape remaining phases; use `xoch-revise-plan`.
+- Do not silently change spec scope or reshape remaining phases; use `xoch-revise`.
 - Keep phase work focused.
 - In multi-project jobs, edit and validate each file from its declared owning project.
 - Record validation evidence, including skipped checks.

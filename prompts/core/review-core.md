@@ -187,7 +187,7 @@ Use this structure:
 
 ## Recommendation
 
-{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-do when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
+{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-do when needs_work | xoch-revise when scope changed | more investigation when blocked]"}}
 ```
 
 Update `state.md`, setting `current_step` from the same outcome rather than leaving it at `final_review`:

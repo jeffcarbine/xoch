@@ -155,7 +155,7 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-open | xoch-revise-plan | xoch-do | more trace]
+[xoch-patch | xoch-open | xoch-revise | xoch-do | more trace]
 ```
 
 For legacy migration jobs, write the note in the legacy job folder.
@@ -166,7 +166,7 @@ Recommend:
 
 - `xoch-patch` for a focused urgent fix
 - `xoch-open` for a new normal job
-- `xoch-revise-plan` if the active job plan needs adjustment
+- `xoch-revise` if the active job's spec or plan needs adjustment
 - `xoch-do` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
 

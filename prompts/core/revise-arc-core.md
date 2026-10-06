@@ -11,7 +11,7 @@ Revise an arc's purpose, status, notes, risks, documentation targets, or job mem
 
 ## Purpose
 
-Update an arc when the larger goal changes while preserving why the arc changed. This command is the arc-level sibling of `xoch-revise-spec` and `xoch-revise-plan`.
+Update an arc when the larger goal changes while preserving why the arc changed. This command is the arc-level sibling of `xoch-revise`.
 
 ## Work Model
 
@@ -66,8 +66,7 @@ Summarize:
 - whether job `state.md` files need updates
 - whether any job specs or plans should be revised
 
-If job requirements changed, route affected jobs to `xoch-revise-spec`.
-If job implementation order changed, route affected jobs to `xoch-revise-plan`.
+If job requirements or implementation order changed, route affected jobs to `xoch-revise` (spec for requirements, plan for order).
 
 ### Step 4: Write Revision Note
 
@@ -100,7 +99,7 @@ Use this structure:
 
 ## Follow-Up
 
-- [job] -> [xoch-revise-spec | xoch-revise-plan | none]
+- [job] -> [xoch-revise (spec) | xoch-revise (plan) | xoch-revise (both) | none]
 ```
 
 ### Step 5: Update Arc Files
@@ -124,8 +123,7 @@ Do not move job folders.
 Recommend the next command:
 
 - `xoch-open` to create a new job in the arc
-- `xoch-revise-spec` for changed job requirements
-- `xoch-revise-plan` for changed job sequencing or phases
+- `xoch-revise` for changed job requirements, sequencing, or phases
 - `xoch-do` to continue active job implementation
 
 ## Output
@@ -147,4 +145,4 @@ Revision: .xoch/work/arcs/[arc-id]/revisions/arc-[date].md
 - Job membership is by job ID reference.
 - Do not nest, move, archive, or delete job folders from arc commands.
 - Do not update job `state.md` arc fields without engineer confirmation.
-- Keep arc revisions focused on the shared goal; job-level scope changes belong in `revise-spec` or `revise-plan`.
+- Keep arc revisions focused on the shared goal; job-level scope changes belong in `xoch-revise`.

@@ -68,7 +68,7 @@ Ask what the engineer wants to explore, then answer normally.
 When the sidebar appears complete, remind the engineer of the likely return command:
 
 - `xoch-do` to continue implementation or review/advance the current phase
-- `xoch-revise-plan` if the sidebar changed the plan
+- `xoch-revise` if the sidebar changed the spec or plan
 
 Before the final output or an explicitly chained command, complete the sidebar workflow:
 
@@ -89,5 +89,4 @@ Sidebar complete.
 
 - Do not change job progress.
 - Do not mark phases complete.
-- If the sidebar changes requirements, route to `xoch-revise-spec`.
-- If the sidebar changes implementation structure, route to `xoch-revise-plan`.
+- If the sidebar changes requirements or implementation structure, route to `xoch-revise`.

@@ -81,7 +81,7 @@ For the current phase, assess:
 - documentation targets updated or deferred
 - risks, regressions, or missing evidence
 
-If requirements changed, recommend `xoch-revise-spec` or `xoch-revise-plan` instead of advancing blindly.
+If requirements changed, recommend `xoch-revise` instead of advancing blindly.
 
 For a completed checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the standard files/tests/coverage checklist above: what the engineer exercised live, what was found, and what was corrected.
 

@@ -148,7 +148,7 @@ Recommend:
 
 - `xoch-doc` when docs need updates from the map
 - `xoch-open` when resolved repositories should participate in one multi-project job
-- `xoch-revise-plan` when dependency discoveries affect active phases
+- `xoch-revise` (plan) when dependency discoveries affect active phases
 - `xoch-trace` when the map was created for investigation
 
 After confirmed map changes, validation, dependency resolution, and any job notes are complete, finish the managed workflow before final output or an explicitly chained command:

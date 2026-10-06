@@ -82,8 +82,7 @@ xoch-open
 or, for an active job:
 
 ```text
-xoch-revise-spec
-xoch-revise-plan
+xoch-revise
 ```
 
 ### Step 3: Inspect Focused Context

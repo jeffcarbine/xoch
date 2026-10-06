@@ -1,23 +1,23 @@
 ---
 name: xoch-revise-plan-core
-description: Full reference workflow for xoch-revise-plan
+description: Full reference workflow for xoch-revise's plan step
 ---
 
 # Xoch - Revise Plan Core
 
-This is the full reference workflow for `xoch-revise-plan`. It is rendered to `~/.xoch/prompts/core/revise-plan-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-revise`'s plan step. It is rendered to `~/.xoch/prompts/core/revise-plan-core.md` and is not installed as a command.
 
 Revise the job plan after requirements, discoveries, risks, or implementation reality change.
 
-`revise-plan` replaces the old `replan` command and uses phase language instead of milestone language.
+This step replaces the old standalone `xoch-revise-plan` command (and, before it, `replan`), and uses phase language instead of milestone language. It runs on its own in plan-only mode, or right after the spec step (`revise-spec-core.md`) when both change.
 
 ## Purpose
 
 Preserve completed phase history, update remaining phases, record why the plan changed, and keep the job moving without losing acceptance-criteria traceability.
 
-Use `revise-plan` when the implementation path changes but the spec remains valid.
+This step covers implementation-path changes against a valid spec.
 
-Use `xoch-revise-spec` first when the definition of done changes.
+When the definition of done changes, the spec step runs first.
 
 ## Work Model
 
@@ -56,9 +56,9 @@ If no active job exists, ask for the job ID.
 
 ### Step 2: Confirm Spec Stability
 
-Check whether the change is about implementation or requirements.
+If this step was entered straight from the spec step in the same invocation, the spec was just revised and accepted -- skip this check.
 
-Route to `xoch-revise-spec` first if the change modifies:
+Otherwise, check whether the change is about implementation or requirements. Switch to the spec step (`revise-spec-core.md`) within this same `xoch-revise` invocation, then return here, if the change modifies:
 
 - acceptance criteria
 - scope
@@ -66,7 +66,7 @@ Route to `xoch-revise-spec` first if the change modifies:
 - documentation targets
 - job purpose
 
-Continue with `revise-plan` if the spec remains valid.
+Continue with the plan step if the spec remains valid.
 
 ### Step 3: Identify The Plan Change
 
@@ -98,7 +98,17 @@ Classify phases as:
 - remaining and revised
 - removed or deferred
 
-### Step 5: Write Revision Note
+### Step 5: Present Draft Revision
+
+Before writing anything, present the drafted revision in chat: the reason, previous and updated plan summaries, phase classifications from Step 4, and the updated acceptance coverage.
+
+Then ask:
+
+{{xoch-partial:accept-or-modify.md artifact="plan revision"}}
+
+If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Do not write the revision note, `plan.md`, `phases.md`, or state until the engineer chooses `[A]`.
+
+### Step 6: Write Revision Note
 
 Write `plan-[date].md` with:
 
@@ -147,7 +157,7 @@ Use this structure:
 
 For legacy migration jobs, write the revision note in the legacy job folder.
 
-### Step 6: Update Plan And Phases
+### Step 7: Update Plan And Phases
 
 Update:
 
@@ -170,7 +180,7 @@ If the current phase changes, update `phases.md`:
 ## Current Phase: [N]
 ```
 
-### Step 7: Update State
+### Step 8: Update State
 
 For target-model jobs, update `state.md`:
 
@@ -211,7 +221,7 @@ For legacy migration jobs, update the legacy tracker or notes in place.
 
 For multi-project jobs, retain an explicit project owner for every revised phase task and sync the revision note, plan, phases, and state from the primary job.
 
-### Step 8: Route
+### Step 9: Route
 
 Recommend:
 
@@ -239,7 +249,8 @@ Current phase: [N] - [title]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Plans describe how; specs describe what.
-- Do not change acceptance criteria in `revise-plan`.
+- Do not change acceptance criteria in the plan step; switch to the spec step instead.
+- Present the draft revision and get `[A]` acceptance before writing anything.
 - Preserve completed phase history and snapshots.
 - Keep AC traceability after changing phases.
 - Do not move active legacy job folders during the migration.
