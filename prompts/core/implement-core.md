@@ -90,14 +90,14 @@ Keep this practical and specific. The engineer should understand what needs to b
 
 After the briefing, stop and ask:
 
-{{xoch-partial:action-choice.md agent_action="builds" engineer_action="builds"}}
+{{xoch-partial:action-choice.md agent_action="does" engineer_action="does"}}
 
 Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-do`.
 
 Interpret the choices as:
 
-- `[A]` Agent makes: inspect the needed files, implement the phase, validate, and record evidence. When this phase writes tests, the agent drafts them too (Step 6).
-- `[E]` Engineer makes: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect. When this phase writes tests, wait for the engineer to provide them before Step 6's fail-confirmation.
+- `[A]` Agent does: inspect the needed files, implement the phase, validate, and record evidence. When this phase writes tests, the agent drafts them too (Step 6).
+- `[E]` Engineer does: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect. When this phase writes tests, wait for the engineer to provide them before Step 6's fail-confirmation.
 - `[C]` Collaborate: work interactively, making only the changes the engineer confirms. When this phase writes tests, decide who writes which test as part of that same collaboration rather than fixing it in advance.
 
 This single choice also settles test ownership for the phase — there is no separate ask before Step 6.

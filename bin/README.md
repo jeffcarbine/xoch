@@ -58,6 +58,7 @@ xoch workflow update --job ID [--name NAME] [--stage STAGE] [--pending ACTION] [
 xoch workflow complete --job ID [--name NAME] [--next COMMAND]
 xoch workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
 xoch arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
+xoch arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
 xoch snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
 xoch phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
 xoch job step-advance --job ID
@@ -88,12 +89,24 @@ rewrite of the same topic gets a numeric suffix rather than overwriting the earl
 
 `job current`/`job set-current` project a job's `next_command` and `current_step` into
 `current.json` alongside `workflow`, self-healing on every `job current` read so a bundled
-multi-step command (`xoch-open`, `xoch-build`) can tell exactly where it is from that one call.
+multi-step command (`xoch-open`, `xoch-do`) can tell exactly where it is from that one call.
+Both also rename retired command names in `next_command`/`return_command` (`xoch-build` ->
+`xoch-do`; `xoch-revise-spec`, `xoch-revise-plan`, `xoch-revise-arc` -> `xoch-revise`), rewriting
+the job's `state.md` too so state and pointer agree.
 `job step-advance` moves `current_step` forward for a transition with no phase-index bookkeeping
 and no outcome to judge (`title`->`spec`, `spec`->`plan`, `implement`->`advance`) -- it refuses to
 move past `plan` or `advance` (those cross a phase boundary; use `phase advance`, which sets
 `current_step` too) or past `final_review` (leaving it depends on the review's own pass/fail
 outcome, not a fixed lookup).
+
+`arc job-move` moves one job's entry between the Active, Planned, Complete, and Parked sections of
+an arc's `jobs.md`, adding it when the arc doesn't list it yet. It keeps each section's `- None`
+placeholder in step (dropped when a section gains its first job, restored when it loses its last),
+preserves any notes already written under a heading, and carries the moved job's own indented
+detail lines with it. `--from` names a differently-keyed entry -- typically a Planned placeholder --
+to replace and take the title from; `--title` overrides the title. It refuses, rather than guesses,
+when `jobs.md` or the target section is missing. `xoch-open`, `xoch-close`, and `xoch-next` use it
+to keep arc membership current as jobs open and close.
 
 ### `generate-job-id.js`
 
@@ -141,7 +154,7 @@ Keys:
 
 - **`storage.mode`** (`in-repo` default | `centralized`) -- where job/arc state lives. See
   [Storage Location](../README.md#storage-location) in the root README.
-- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-build`'s
+- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-do`'s
   `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,
   including having none.

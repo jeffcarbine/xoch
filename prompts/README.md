@@ -24,49 +24,53 @@ Kiro:                   #xoch-[name]
 ## Core Workflow
 
 ```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
+open -> do -> doc -> close
 ```
 
 | Command | Purpose | Primary Output |
 |---|---|---|
-| `open-job` | Open or resume job work. | `.xoch/work/current.json`, job `state.md` |
-| `spec` | Capture requirements, acceptance criteria, and job-versus-arc fit. | job `spec.md` |
-| `plan` | Create implementation approach and phases after confirming spec shape. | job `plan.md`, `phases.md` |
-| `make` | Implement or guide current phase work. | source changes, test evidence |
-| `next` | Review current phase and advance. | phase snapshot, updated job state |
-| `review` | Verify acceptance, quality, tests, and documentation freshness. | job `review.md` |
-| `close-job` | Close completed job work. | job `closure.md`, cleared current pointer |
+| `open` | Open a fresh job, reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.md`, `spec.md`, `plan.md`, `phases.md` |
+| `do` | Do whatever the current step calls for: implement the current phase, review and advance it, and run the final quality-gate review once every phase is done. | source changes, test evidence, phase snapshots, job `review.md` |
+| `doc` | Create, refresh, repair, or validate docs; a required stop after a passing review. | updated docs, recorded documentation status |
+| `close` | Close a completed job or an arc. | job `closure.md`, cleared current pointer |
 
-Use `make` and `next` repeatedly until all phases are complete.
+Bundled commands track their position with `current_step` in job state, not with which command was last typed:
 
-`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `make` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise-spec`/`revise-plan` ceremony and no amending already-completed phase snapshots. `xoch phase advance --next-type` is what carries the type from `phases.md` into job state.
+- `open` runs `title` -> `spec` -> `plan` continuously in one invocation, each behind its own accept/modify gate, and stops when entering phase 1.
+- `do` runs `implement` -> `advance` within one phase in one invocation, then stops at each phase boundary. Once every phase is done, the next `do` runs `final_review`.
 
-`review` is the expected gate before `close-job`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close-job`. `close-job` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close-job` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
+Run `do` repeatedly until every phase is complete and the final review passes.
+
+`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `do` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise` ceremony and no amending already-completed phase snapshots. `xoch phase advance --next-type` is what carries the type from `phases.md` into job state.
+
+`do`'s `final_review` step is the expected gate before `close`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close`. `close` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
 
 ---
 
 ## Arcs
 
-| Command | Purpose |
+Arcs are an optional grouping for related jobs. There are no arc-only commands; the regular commands handle arcs:
+
+| Command | Arc behavior |
 |---|---|
-| `open-arc` | Open an optional grouping for related jobs, optionally adopting the active standalone job. |
-| `revise-arc` | Update arc purpose, status, notes, risks, or job membership references. |
-| `close-arc` | Close an arc after its jobs are complete, moved by reference, or intentionally parked. |
+| `open` | Set up an arc (optionally adopting the active standalone job), or open a job inside one -- listing it as Active in the arc's `jobs.md`. |
+| `next` | Close the active arc job, then open the arc's next Planned job, in one pass. Every closing gate still applies; refuses for standalone jobs or when nothing is Planned. |
+| `revise` | Arc mode updates arc purpose, status, notes, risks, documentation targets, or job membership. |
+| `close` | Close a job (marking it Complete in its arc's `jobs.md`), or close an arc once its jobs are complete, moved, or parked. |
 
-Arcs reference job IDs. They do not contain nested job folders.
+Arcs reference job IDs. They do not contain nested job folders. `xoch arc job-move` keeps `jobs.md`'s Active/Planned/Complete/Parked sections in step.
 
-`spec` should recommend `open-arc` when work appears too broad for one focused job. `open-arc` checks for an active standalone job, can add it to the new arc's `jobs.md`, and asks whether to infer arc metadata from the active job spec when one exists.
+`open`'s `spec` step recommends setting up an arc when work appears too broad for one focused job.
 
 ---
 
-## Revision Commands
+## Revision Command
 
 | Command | Purpose |
 |---|---|
-| `revise-spec` | Update foundational requirements, acceptance criteria, scope, constraints, or documentation targets. |
-| `revise-plan` | Update implementation approach, phase order, validation strategy, or remaining phases. |
+| `revise` | Revise a job's spec (requirements, acceptance criteria, scope, constraints, documentation targets), its plan (approach, phase order, validation strategy, remaining phases), both, or an arc. |
 
-Revision commands preserve prior history and record why foundational job artifacts changed.
+`revise` infers which applies, confirms it, and flows through the needed steps in one invocation -- spec before plan when both change -- each behind its own accept/modify gate. Revisions preserve prior history and record why foundational artifacts changed.
 
 ---
 
@@ -74,16 +78,15 @@ Revision commands preserve prior history and record why foundational job artifac
 
 | Command | Purpose |
 |---|---|
-| `doc` | Create, refresh, repair, or validate project docs, feature READMEs, and flexible root README packets. |
 | `pr` | Generate an evidence-backed pull request title and body for the active job. |
 | `map` | Maintain the local workspace map and resolve project dependencies. |
 | `roadmap` | Show active workflow, current progress, and upcoming phase contents without changing state. |
 | `discovery` | Resolve material product, domain, API, design, or implementation unknowns. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
-| `pause` | Pause the active job. |
-| `resume` | Resume paused or archived work. |
+| `pause` | Pause the active job. Resume it later with `open`. |
 | `sidebar` | Explore a related question without advancing job state. |
+| `help` | List every Xoch command with its description. |
 | `meow` | Verify Xoch installation. |
 
 ---
@@ -95,66 +98,68 @@ Installable prompt files should match the command inventory above. Documentation
 Expected top-level prompt files:
 
 ```text
-close-arc.md
-close-job.md
-doc.md
+close.md
 discovery.md
-make.md
+do.md
+doc.md
+help.md
 map.md
 meow.md
 next.md
+open.md
 patch.md
 pause.md
-plan.md
 pr.md
-resume.md
-review.md
+revise.md
 roadmap.md
-revise-arc.md
-revise-plan.md
-revise-spec.md
 sidebar.md
-spec.md
-open-arc.md
-open-job.md
 trace.md
 ```
 
 Expected partial files:
 
 ```text
-partials/action-choice.md
 partials/accept-or-modify.md
-partials/engineer-git-rule.md
-partials/next-step.md
-partials/next-step-choice.md
-partials/response-ending.md
-partials/phase-boundary.md
-partials/context-economy.md
-partials/state-phase-index.md
-partials/project-routing.md
-partials/workflow-boundary.md
-partials/managed-workflow.md
+partials/action-choice.md
+partials/arc-context.md
+partials/arc-evidence.md
 partials/behavior-tests.md
+partials/budget-check.md
+partials/context-economy.md
 partials/coverage-gate.md
+partials/current-phase-context.md
+partials/engineer-git-rule.md
+partials/estimator-reminder.md
+partials/job-evidence.md
+partials/managed-workflow.md
+partials/next-step-choice.md
+partials/next-step.md
+partials/phase-boundary.md
+partials/project-routing.md
+partials/response-ending.md
+partials/state-phase-index.md
+partials/workflow-boundary.md
 partials/xoch-file-helper-rule.md
 ```
 
-Expected core reference files:
+Expected core reference files, named for the step they implement rather than the command that reads them:
 
 ```text
-core/foundation-core.md
-core/advance-core.md
+core/advance-core.md          do: advance step
+core/close-arc-core.md        close: arc mode
+core/close-job-core.md        close: job mode (also run by next)
 core/discovery-core.md
 core/doc-check-core.md
 core/doc-write-core.md
-core/implement-core.md
-core/plan-core.md
-core/review-core.md
-core/revise-arc-core.md
-core/revise-plan-core.md
-core/revise-spec-core.md
-core/spec-core.md
+core/foundation-core.md
+core/implement-core.md        do: implement step
+core/open-core.md             open: entry modes and title step (also run by next)
+core/plan-core.md             open: plan step
+core/review-core.md           do: final_review step
+core/revise-arc-core.md       revise: arc step
+core/revise-plan-core.md      revise: plan step
+core/revise-spec-core.md      revise: spec step
+core/spec-core.md             open: spec step
 core/trace-core.md
 core/workflow-boundary-core.md
 ```
@@ -187,13 +192,13 @@ A prompt file may also select text by the engineer's own config, resolved once a
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `spec.md`, `plan.md`, `build.md`, `discovery.md`, `trace.md`, `doc.md`, and `revise-*.md` should only tell the agent to read core prompts when workflow details are missing. A bundled multi-step wrapper like `build.md` picks which core file to read based on `current_step` rather than always reading the same one.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `discovery.md`, `trace.md`, and `doc.md` should only tell the agent to read core prompts when workflow details are missing. Bundled wrappers pick which core file to read from state or the engineer's message rather than always reading the same one: `open.md` and `do.md` by `current_step`, `close.md` and `revise.md` by mode, and `next.md` by composing `close-job-core.md` then `open-core.md`.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
 ```text
-How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
-Ready for next step: `xoch-build`
+How would you like to proceed? [E]ngineer does, [A]gent does, or [C]ollaborate?
+Ready for next step: `xoch-do`
 ```
 
 Use `accept-or-modify.md` when a prompt drafts foundational artifacts such as specs or plans before writing them. Rendered prompts should ask:
@@ -210,17 +215,17 @@ Ready for next step: `xoch-pr` | `xoch-close`
 
 Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.
 
-Use `phase-boundary.md` in phase commands. It tells agents that `Ready for next step: ...` is a stop sign and that `make`/`next` must not roll into later phases without a fresh engineer invocation.
+Use `phase-boundary.md` in phase commands. It tells agents that `Ready for next step: ...` is a stop sign and that `do` must not roll into later phases without a fresh engineer invocation.
 
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
 
-Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `make`/`next` loop.
+Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `do` loop.
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 
 Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json` and, only when a workflow is actually active, reads `workflow-boundary-core.md` for the full protocol -- blocking silent workflow replacement and permitting explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
 
-Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`close-job.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
+Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`close-job-core.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
 Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 
@@ -254,18 +259,31 @@ Helper filenames use kebab-case consistently. Deterministic helpers cover core s
 | Old / Borrowed Term | Xoch Term |
 |---|---|
 | milestone / wave | phase |
-| start | open-job |
-| build | make |
-| advance | next |
-| audit | review |
-| finalize / ship | close-job |
+| start | open |
+| build / implement / audit | do |
+| finalize / ship | close |
 | context | work or doc, depending on meaning |
 | workspace | map |
 | debug | trace |
 | hotfix | patch |
-| replan | revise-plan |
-| respec | revise-spec |
+| replan / respec | revise |
 | epic | arc |
+
+---
+
+## Retired Command Names
+
+Older command names were merged into the current set. `xoch init` removes their installed copies, and job state still naming one is rewritten to its replacement the next time it's read.
+
+| Retired | Now |
+|---|---|
+| `open-job`, `open-arc`, `spec`, `plan`, `resume` | `open` |
+| `build`, `make`, `review` | `do` |
+| `next` (phase advance) | `do` (its `advance` step) |
+| `revise-spec`, `revise-plan`, `revise-arc` | `revise` |
+| `close-job`, `close-arc` | `close` |
+
+`next` is a reused name: it used to advance a phase, and now moves an arc from one job to the next.
 
 ---
 

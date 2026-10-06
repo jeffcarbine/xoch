@@ -9,7 +9,7 @@ Thank you for improving Xoch. Xoch is a prompt-first workflow package, so most c
 Use Xoch to work on Xoch:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`xoch config set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `xoch config root`.
@@ -64,15 +64,15 @@ Common files:
 
 | File | Purpose | Created By |
 |---|---|---|
-| `[xoch-root]/work/current.json` | Active job pointer | `open-job` |
-| `state.md` | Job status and routing | `open-job` |
-| `spec.md` | Requirements and ACs | `spec` |
-| `plan.md` | Implementation approach | `plan` |
-| `phases.md` | Phase tracker | `plan` |
-| `snapshots/phase-[N].md` | Phase completion snapshot | `next` |
-| `review.md` | Acceptance and quality review | `review` |
-| `closure.md` | Closure notes | `close-job` |
-| `revisions/` | Spec/plan revision notes | `revise-*` |
+| `[xoch-root]/work/current.json` | Active job pointer | `open` (`title` step) |
+| `state.md` | Job status and routing | `open` (`title` step) |
+| `spec.md` | Requirements and ACs | `open` (`spec` step) |
+| `plan.md` | Implementation approach | `open` (`plan` step) |
+| `phases.md` | Phase tracker | `open` (`plan` step) |
+| `snapshots/phase-[N].md` | Phase completion snapshot | `do` (`advance` step) |
+| `review.md` | Acceptance and quality review | `do` (`final_review` step) |
+| `closure.md` | Closure notes | `close` (or `next`) |
+| `revisions/` | Spec/plan/arc revision notes | `revise` |
 
 Arcs live under:
 

@@ -88,24 +88,26 @@ xoch remove
 ## Core Workflow
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 | Step | Command | Purpose |
 |---|---|---|
 | 1 | `xoch-open` | Open a new job or arc, reopen a closed job, or resume paused/archived work, through an accepted plan. |
-| 2 | `xoch-build` | Implement, review, and advance through each phase; once every phase is done, run the final review. |
+| 2 | `xoch-do` | Do whatever the current step calls for: implement, review, and advance each phase; once every phase is done, run the final review. |
 | 3 | `xoch-doc` | Verify or refresh documentation freshness. |
 | 4 | `xoch-close` | Close the job (or an arc) and clear active work. |
 
-`xoch-open` flows continuously from opening through an accepted plan in one invocation. `xoch-build` is invoked once per phase until all phases are complete, then once more for the final review.
+`xoch-open` flows continuously from opening through an accepted plan in one invocation. `xoch-do` is invoked once per phase until all phases are complete, then once more for the final review.
+
+In an arc, `xoch-next` replaces the `xoch-close` -> `xoch-open` hop between jobs: it closes the active job (every closing gate still applies) and opens the arc's next planned job in one pass.
 
 ### Phase Rhythm
 
-`xoch-build` carries a job through phase work as three internal steps, tracked by `current_step` in job state rather than by which command was last typed:
+`xoch-do` carries a job through phase work as three internal steps, tracked by `current_step` in job state rather than by which command was last typed:
 
 - **`implement`** is where implementation happens. It loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
-- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-build` invocation.
+- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-do` invocation.
 - **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch-close` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
 
 ---
@@ -114,9 +116,8 @@ xoch-open -> xoch-build -> xoch-doc -> xoch-close
 
 | Command | Purpose |
 |---|---|
-| `xoch-revise-arc` | Revise arc purpose, notes, or job membership. |
-| `xoch-revise-spec` | Revise a job's foundational requirements. |
-| `xoch-revise-plan` | Revise a job's implementation plan or remaining phases. |
+| `xoch-next` | Close the active arc job and open the arc's next planned job in one pass. |
+| `xoch-revise` | Revise a job's spec, its plan, both, or an arc -- inferring which, then flowing through each step behind its own accept/modify gate. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
 | `xoch-pr` | Generate an evidence-backed pull request title and body for the active job. |
 | `xoch-map` | Maintain the local workspace map and resolve project dependencies. |
@@ -130,6 +131,8 @@ xoch-open -> xoch-build -> xoch-doc -> xoch-close
 | `xoch-meow` | Verify installation. |
 
 Opening an arc, closing an arc, and resuming paused/archived work are all part of `xoch-open`/`xoch-close` now, not separate commands.
+
+Retired names map onto the current set: `xoch-build` -> `xoch-do`; `xoch-revise-spec`, `xoch-revise-plan`, and `xoch-revise-arc` -> `xoch-revise`. `xoch init` removes their installed copies, and job state still naming one is rewritten to its replacement the next time it's read. `xoch-next` is a reused name -- it used to advance a phase (now `xoch-do`'s `advance` step) and now moves an arc from one job to the next.
 
 ---
 
@@ -235,7 +238,7 @@ Arc files are intentionally small:
   revisions/
 ```
 
-`jobs.md` is the membership list. It can group job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job `state.md` should use `arc: [arc-id]`, but the job folder still stays under `.xoch/work/jobs/`.
+`jobs.md` is the membership list. It can group job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job `state.md` should use `arc: [arc-id]`, but the job folder still stays under `.xoch/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active -- all through `xoch arc job-move`, which keeps the sections and their `None` placeholders in step.
 
 `xoch-open`'s `spec` step should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, it recommends setting up an arc before job planning. Arc setup checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, it asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
 
@@ -251,13 +254,16 @@ Typical state includes the job ID, title, optional arc, current status, current 
 
 New work should use the resolved Xoch storage root's `work/` directory (see [Storage Location](#storage-location)). Older migration-era jobs may still exist under `.xoch/context/` (always repository-local, unaffected by the storage-location setting); Xoch prompts should not move those legacy jobs unless the engineer explicitly asks.
 
-### Revision Commands
+### Revising Foundations
 
-Use revision commands when foundational work changes:
+Use `xoch-revise` when foundational work changes. It infers which kind of change this is, confirms it, and runs the matching steps in one invocation:
 
-- `xoch-revise-spec` changes what success means: requirements, acceptance criteria, scope, constraints, or documentation targets.
-- `xoch-revise-plan` changes how the work will proceed: implementation approach, phase order, validation, or remaining phase scope.
-- `xoch-revise-arc` changes the larger grouping: purpose, job membership, arc status, or shared arc notes.
+- **spec** changes what success means: requirements, acceptance criteria, scope, constraints, or documentation targets.
+- **plan** changes how the work will proceed: implementation approach, phase order, validation, or remaining phase scope.
+- **both** runs spec then plan, so the plan is revised against the updated definition of done.
+- **arc** changes the larger grouping: purpose, job membership, arc status, or shared arc notes. It doesn't need an active job.
+
+Each step presents its draft behind its own accept/modify gate before writing, and offers -- never assumes -- a follow-on step when a change crosses between a job and its arc.
 
 Revision notes live under each job or arc `revisions/` folder and explain why the foundational artifact changed.
 
@@ -318,19 +324,19 @@ Partials live in `prompts/partials/`. The installer renders them into top-level 
 Workflow prompts use standard next-action language:
 
 ```text
-How would you like to proceed? [E]ngineer builds, [A]gent builds, or [C]ollaborate?
-Ready for next step: `xoch-build`
+How would you like to proceed? [E]ngineer does, [A]gent does, or [C]ollaborate?
+Ready for next step: `xoch-do`
 ```
 
 ## Support Workflows
 
-`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-build`'s `final_review` step or `xoch-close`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
+`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-do`'s `final_review` step or `xoch-close`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
 
 `xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
 
 `xoch-roadmap` is a read-only progress view. It summarizes the active workflow, current phase, completed phases, upcoming phase goals/files/acceptance, risks, and the actual next command without modifying state.
 
-`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in a shared `[xoch-root]/discoveries/` directory, independent of any job, and normally route back to `xoch-open`'s `spec` step or `xoch-revise-spec`.
+`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in a shared `[xoch-root]/discoveries/` directory, independent of any job, and normally route back to `xoch-open`'s `spec` step or `xoch-revise`'s spec step.
 
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 
