@@ -72,7 +72,7 @@ Jobs remain first-class folders under `[xoch-root]/work/jobs/[job-id]/`; arc mem
 
 1. **Check active job context.** If a standalone active job already exists, read its `state.md` evidence and ask whether to adopt it into the new arc, infer arc purpose/initial job list from its spec, or open the arc without adopting it.
 2. **Gather arc metadata:** arc ID or short name, arc title, larger goal, success outcome, known job IDs (if any), documentation targets, risks/constraints/non-goals. Generate a short kebab-case ID from the title when none is given.
-3. **Check existing arc state** under `[xoch-root]/work/arcs/`. If the named arc already exists, summarize it and ask whether to resume it or use `xoch-revise-arc` instead of creating a duplicate.
+3. **Check existing arc state** under `[xoch-root]/work/arcs/`. If the named arc already exists, summarize it and ask whether to resume it or use `xoch-revise` (arc) instead of creating a duplicate.
 4. **Create arc files** with the deterministic helper:
 
    ```bash

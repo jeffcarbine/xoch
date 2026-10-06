@@ -78,7 +78,7 @@ Identify:
 - documentation targets that need update
 - whether job status should move back from implementation/review/closure toward planning
 
-If the arc association changes, recommend `xoch-revise-arc` as well.
+If the arc association or the arc's own goal changes, offer to continue into `xoch-revise`'s arc step (`revise-arc-core.md`) after the job steps, in this same invocation.
 
 If the impact includes plan changes and the confirmed mode was spec-only, say so and ask whether to continue into the plan step after this one -- do not silently expand the revision.
 

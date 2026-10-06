@@ -2208,8 +2208,8 @@ test('reading the current job renames a retired xoch-build next command to xoch-
   }
 });
 
-test('reading the current job renames retired xoch-revise-spec and xoch-revise-plan next commands to xoch-revise', () => {
-  for (const retired of ['xoch-revise-spec', 'xoch-revise-plan']) {
+test('reading the current job renames retired xoch-revise-spec, xoch-revise-plan, and xoch-revise-arc next commands to xoch-revise', () => {
+  for (const retired of ['xoch-revise-spec', 'xoch-revise-plan', 'xoch-revise-arc']) {
     const ctx = scratch();
     try {
       const dir = seedJob(ctx, 'j1', { next_command: retired });

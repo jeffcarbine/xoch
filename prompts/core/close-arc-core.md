@@ -66,7 +66,7 @@ If active, planned, parked, missing, or unknown jobs remain, ask whether to:
 3. Remove them from the arc reference list
 4. Keep the arc active
 
-If moving references to another arc, use or recommend `xoch-revise-arc` for both arcs. Do not move job folders.
+If moving references to another arc, use or recommend `xoch-revise` (arc) for both arcs. Do not move job folders.
 
 ### Step 4: Check Documentation
 

@@ -228,7 +228,7 @@ Recommend:
 - `xoch-do` to continue at the current or next phase's `implement` step
 - `xoch-do` if the revised current phase is already implemented and needs its `advance` step for checkpointing
 - `xoch-do` if all implementation phases are complete, to run its `final_review` step
-- `xoch-revise-arc` if arc sequencing or membership also changed
+- `xoch-revise` (arc) if arc sequencing or membership also changed -- when this was already agreed earlier in this invocation, continue directly into the arc step (`revise-arc-core.md`) instead of routing
 
 ## Output
 

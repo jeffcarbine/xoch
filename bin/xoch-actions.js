@@ -104,6 +104,7 @@ const RETIRED_COMMANDS = {
   'xoch-build': 'xoch-do',
   'xoch-revise-spec': 'xoch-revise',
   'xoch-revise-plan': 'xoch-revise',
+  'xoch-revise-arc': 'xoch-revise',
 };
 
 /**
