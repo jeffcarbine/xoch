@@ -604,17 +604,17 @@ test('job current syncs the pointer workflow to match the job state when they di
 test('job current syncs the pointer next_command and current_step to match the job state when they differ', () => {
   const ctx = scratch();
   try {
-    seedJob(ctx, 'j1', { next_command: 'xoch-build', current_step: 'advance' });
+    seedJob(ctx, 'j1', { next_command: 'xoch-do', current_step: 'advance' });
     seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-make', current_step: 'implement' });
 
     const result = run(['job', 'current', '--json'], ctx);
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.next_command, 'xoch-build');
+    assert.strictEqual(data.next_command, 'xoch-do');
     assert.strictEqual(data.current_step, 'advance');
 
     const after = readJsonFile(pointerPath(ctx));
-    assert.strictEqual(after.next_command, 'xoch-build');
+    assert.strictEqual(after.next_command, 'xoch-do');
     assert.strictEqual(after.current_step, 'advance');
   } finally {
     cleanup(ctx);
@@ -1830,7 +1830,7 @@ test('phase advance without a phases.md just updates state.md fields', () => {
     assert.strictEqual(fieldValue(dir, 'current_phase'), '2');
     assert.strictEqual(fieldValue(dir, 'current_phase_title'), 'Phase Two');
     assert.strictEqual(fieldValue(dir, 'status'), 'phase_ready');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
     assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
   } finally {
     cleanup(ctx);
@@ -1913,7 +1913,7 @@ test('advancing with an empty --next-phase marks the job implementation-complete
     assert.match(result.stdout, /Phase advanced for job j1: 3 -> review/);
     assert.strictEqual(fieldValue(dir, 'status'), 'implementation_complete');
     assert.strictEqual(fieldValue(dir, 'current_phase'), 'null');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
     assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
     const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
     assert.match(stateText, /current_phase_files: \[\]/);
@@ -2133,12 +2133,12 @@ test('job step-advance moves title -> spec -> plan without touching next_command
 test('job step-advance moves implement -> advance without touching next_command', () => {
   const ctx = scratch();
   try {
-    const dir = seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-build' });
+    const dir = seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-do' });
     const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Step advanced for job j1: implement -> advance/);
     assert.strictEqual(fieldValue(dir, 'current_step'), 'advance');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
   } finally {
     cleanup(ctx);
   }
@@ -2147,12 +2147,12 @@ test('job step-advance moves implement -> advance without touching next_command'
 test('job step-advance refuses to move past final_review -- that outcome is judgment-dependent, not mechanical', () => {
   const ctx = scratch();
   try {
-    const dir = seedJob(ctx, 'j1', { current_step: 'final_review', next_command: 'xoch-build' });
+    const dir = seedJob(ctx, 'j1', { current_step: 'final_review', next_command: 'xoch-do' });
     const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /no deterministic follow-up for 'final_review'/);
     assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-build');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
   } finally {
     cleanup(ctx);
   }
@@ -2176,13 +2176,277 @@ test('job step-advance refuses to move past plan or advance -- those cross a pha
 test('job step-advance projects the new current_step into current.json via job current', () => {
   const ctx = scratch();
   try {
-    seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-build' });
-    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-build', current_step: 'implement' });
+    seedJob(ctx, 'j1', { current_step: 'implement', next_command: 'xoch-do' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-do', current_step: 'implement' });
     run(['job', 'step-advance', '--job', 'j1'], ctx);
     const result = run(['job', 'current', '--json'], ctx);
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.current_step, 'advance');
-    assert.strictEqual(data.next_command, 'xoch-build');
+    assert.strictEqual(data.next_command, 'xoch-do');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// Retired command names -- normalized whenever job state is read
+// ---------------------------------------------------------------------
+
+test('reading the current job renames a retired xoch-build next command to xoch-do in both the pointer and the job state', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-build', current_step: 'implement' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-build', current_step: 'implement' });
+
+    const result = run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(JSON.parse(result.stdout).next_command, 'xoch-do');
+    assert.strictEqual(readJsonFile(pointerPath(ctx)).next_command, 'xoch-do');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reading the current job renames retired xoch-revise-spec and xoch-revise-plan next commands to xoch-revise', () => {
+  for (const retired of ['xoch-revise-spec', 'xoch-revise-plan']) {
+    const ctx = scratch();
+    try {
+      const dir = seedJob(ctx, 'j1', { next_command: retired });
+      seedPointer(ctx, { id: 'j1' }, null, { next_command: retired });
+
+      const result = run(['job', 'current', '--json'], ctx);
+      assert.strictEqual(JSON.parse(result.stdout).next_command, 'xoch-revise', retired);
+      assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-revise', retired);
+    } finally {
+      cleanup(ctx);
+    }
+  }
+});
+
+test('reading the current job renames a retired command recorded as an active workflow\'s return command', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedActiveWorkflow(ctx, 'j1', { return_command: 'xoch-build' });
+
+    const result = run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(JSON.parse(result.stdout).workflow.return_command, 'xoch-do');
+    assert.strictEqual(fieldValue(dir, 'return_command'), 'xoch-do');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('making a job current renames a retired next command before writing the pointer', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-build' });
+
+    const result = run(['job', 'set-current', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(readJsonFile(pointerPath(ctx)).next_command, 'xoch-do');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reading the current job leaves a current command name untouched', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-open' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-open' });
+    const before = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
+
+    run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.md'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// arc job-move
+// ---------------------------------------------------------------------
+
+function seedArcJobs(ctx, arcId, sections) {
+  const dir = seedArc(ctx, arcId);
+  const body = ['Active', 'Planned', 'Complete', 'Parked']
+    .map((name) => `## ${name}\n\n${(sections[name] || ['- None']).join('\n')}\n`)
+    .join('\n');
+  fs.writeFileSync(path.join(dir, 'jobs.md'), `# Arc Jobs - ${arcId}\n\n${body}`);
+  return dir;
+}
+
+function sectionLines(dir, name) {
+  const text = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
+  const match = text.match(new RegExp(`## ${name}\\n\\n([\\s\\S]*?)(?:\\n## |$)`));
+  return match[1].split('\n').filter((line) => line.startsWith('- '));
+}
+
+test('moving a planned job to active takes it out of Planned and lists it under Active with its title', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', {
+      Active: ['- `first` - First job'],
+      Planned: ['- `second` - Second job', '- `third` - Third job'],
+    });
+
+    const result = run(['arc', 'job-move', '--arc', 'a1', '--job', 'second', '--to', 'active'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /second -> Active/);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `first` - First job', '- `second` - Second job']);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- `third` - Third job']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('moving a job into an empty section replaces its None placeholder, and emptying a section puts None back', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', { Active: ['- `first` - First job'] });
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'first', '--to', 'complete'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Complete'), ['- `first` - First job']);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- None']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('moving a job the arc does not list yet adds it under the target section', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', {});
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'fresh', '--title', 'Fresh job', '--to', 'active'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `fresh` - Fresh job']);
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'untitled', '--to', 'parked'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Parked'), ['- `untitled` - unknown']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('--from swaps a planned placeholder entry for the real job ID that was opened for it', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', { Planned: ['- `api-work` - Build the API'] });
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'build-the-api', '--from', 'api-work', '--to', 'active'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `build-the-api` - Build the API']);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('an explicit --title replaces the title an existing entry already had', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', { Planned: ['- `second` - Old title'] });
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'second', '--title', 'New title', '--to', 'active'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `second` - New title']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('an existing entry listed without a title is moved and labeled unknown', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', { Planned: ['- `bare`'] });
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'bare', '--to', 'active'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `bare` - unknown']);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('moving a job keeps notes written under section headings, and carries the moved job\'s own indented details with it', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArc(ctx, 'a1');
+    fs.writeFileSync(path.join(dir, 'jobs.md'), [
+      '# Arc Jobs - a1', '', 'Intro text stays.', '',
+      '## Active', '', 'Ordered by priority.', '', '- `first` - First job', '  - blocked on vendor', '',
+      '## Planned', '', '- `second` - Second job', '  - needs design review', '',
+      '## Complete', '', '- None', '',
+    ].join('\n'));
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'second', '--to', 'active'], ctx);
+    const text = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
+    assert.match(text, /Intro text stays\./);
+    assert.match(text, /## Active\n\nOrdered by priority\.\n\n- `first` - First job\n  - blocked on vendor\n- `second` - Second job\n  - needs design review\n/);
+    assert.match(text, /## Planned\n\n- None\n/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a section holding only notes keeps them alongside the job entry or the None placeholder it ends up with', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArc(ctx, 'a1');
+    fs.writeFileSync(path.join(dir, 'jobs.md'), [
+      '## Active', '', 'Nothing started yet.', '',
+      '## Planned', '', 'Queued work:', '', '- `last` - Last job',
+    ].join('\n'));
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'last', '--to', 'active'], ctx);
+    assert.strictEqual(
+      fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8'),
+      '## Active\n\nNothing started yet.\n\n- `last` - Last job\n\n## Planned\n\nQueued work:\n\n- None\n',
+    );
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a job listed more than once, or alongside its --from placeholder, ends up listed exactly once', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArcJobs(ctx, 'a1', {
+      Active: ['- `real-id` - Real title'],
+      Planned: ['- `placeholder` - Placeholder title'],
+    });
+
+    run(['arc', 'job-move', '--arc', 'a1', '--job', 'real-id', '--from', 'placeholder', '--to', 'complete'], ctx);
+    assert.deepStrictEqual(sectionLines(dir, 'Complete'), ['- `real-id` - Real title']);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- None']);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('arc job-move refuses missing flags, an unknown target section, an arc without jobs.md, and a jobs.md missing that section', () => {
+  const ctx = scratch();
+  try {
+    seedArcJobs(ctx, 'a1', {});
+    const noArc = run(['arc', 'job-move', '--job', 'j', '--to', 'active'], ctx);
+    assert.strictEqual(noArc.status, 1);
+    assert.match(noArc.stderr, /arc job-move requires --arc, --job, and --to/);
+
+    const badSection = run(['arc', 'job-move', '--arc', 'a1', '--job', 'j', '--to', 'someday'], ctx);
+    assert.strictEqual(badSection.status, 1);
+    assert.match(badSection.stderr, /--to must be one of active, planned, complete, parked/);
+
+    seedArc(ctx, 'a2');
+    const noJobs = run(['arc', 'job-move', '--arc', 'a2', '--job', 'j', '--to', 'active'], ctx);
+    assert.strictEqual(noJobs.status, 1);
+    assert.match(noJobs.stderr, /jobs\.md not found/);
+
+    const dir = seedArc(ctx, 'a3');
+    fs.writeFileSync(path.join(dir, 'jobs.md'), '# Arc Jobs - a3\n\n## Active\n\n- None\n');
+    const noSection = run(['arc', 'job-move', '--arc', 'a3', '--job', 'j', '--to', 'complete'], ctx);
+    assert.strictEqual(noSection.status, 1);
+    assert.match(noSection.stderr, /has no "## Complete" section/);
   } finally {
     cleanup(ctx);
   }

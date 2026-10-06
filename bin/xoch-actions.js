@@ -96,6 +96,35 @@ function markdownFields(filePath) {
   return fields;
 }
 
+// Command names retired by a rename or merge, mapped to the command that
+// replaced them. Job state written before the rename can still carry the
+// old name in next_command or return_command, so every read that projects
+// state into the pointer goes through stateWithCurrentCommands() first.
+const RETIRED_COMMANDS = {
+  'xoch-build': 'xoch-do',
+  'xoch-revise-spec': 'xoch-revise',
+  'xoch-revise-plan': 'xoch-revise',
+};
+
+/**
+ * Reads a job's state.md, rewriting any retired command name in
+ * next_command or return_command to its replacement first -- on disk, so
+ * state.md and the pointer projected from it agree afterward.
+ * @param {string} statePath - Path to the job's state.md.
+ * @returns {Object<string, string>} The (normalized) scalar state.
+ */
+function stateWithCurrentCommands(statePath) {
+  const state = scalarState(statePath);
+  const updates = {};
+  for (const field of ['next_command', 'return_command']) {
+    const replacement = RETIRED_COMMANDS[state[field]];
+    if (replacement) updates[field] = replacement;
+  }
+  if (!Object.keys(updates).length) return state;
+  updateStateFields(statePath, updates);
+  return { ...state, ...updates };
+}
+
 function nullable(value) {
   return value === undefined || value === null || value === '' || value === 'null' ? null : value;
 }
@@ -179,7 +208,7 @@ function resolveCurrentPointer() {
       abortRuby(`Invalid JSON in ${jsonPath}: ${e.message}`);
     }
     validatePointer(data, jsonPath, root);
-    const state = scalarState(path.join(data.job.directory, 'state.md'));
+    const state = stateWithCurrentCommands(path.join(data.job.directory, 'state.md'));
     if (Object.keys(state).length) {
       const projectedWorkflow = workflowFromState(state, data.workflow);
       const projectedNextCommand = nullable(state.next_command);
@@ -200,7 +229,7 @@ function resolveCurrentPointer() {
     const fields = markdownFields(markdownPath);
     const jobId = fields.job_id || fields.task_id;
     if (!jobId) abortRuby(`Cannot migrate ${markdownPath}: job ID is missing`);
-    const state = scalarState(path.join(root, 'work', 'jobs', jobId, 'state.md'));
+    const state = stateWithCurrentCommands(path.join(root, 'work', 'jobs', jobId, 'state.md'));
     const workflow = workflowFromState(state);
     data = {
       version: 1,
@@ -335,7 +364,7 @@ function syncCurrentPointer(jobId) {
   const root = xochRoot();
   const jobDir = path.join(root, 'work', 'jobs', jobId);
   const statePath = path.join(jobDir, 'state.md');
-  const state = scalarState(statePath);
+  const state = stateWithCurrentCommands(statePath);
   const title = state.title || jobId;
   const arc = state.arc || 'standalone';
   const started = state.started || today();
@@ -579,6 +608,103 @@ function updateStateFields(statePath, updates) {
     if (!found[key]) out.push(`${key}: ${value}`);
   }
   fs.writeFileSync(statePath, `${out.join('\n')}\n`);
+}
+
+// Section headings of an arc's jobs.md, keyed by the lowercase name
+// `arc job-move --to` accepts.
+const ARC_JOB_SECTIONS = {
+  active: 'Active',
+  planned: 'Planned',
+  complete: 'Complete',
+  parked: 'Parked',
+};
+
+/**
+ * Moves one job's entry between the sections of an arc's jobs.md (Active,
+ * Planned, Complete, Parked), adding it when the arc doesn't list it yet.
+ * Keeps each section's "- None" placeholder in step: removed when a section
+ * gains its first entry, restored when it loses its last. `--from` names a
+ * differently-keyed entry (typically a Planned placeholder) to take the
+ * title from and replace. Refuses rather than guesses when jobs.md or the
+ * target section is missing.
+ * @param {string[]} argv - `--arc ID --job ID --to SECTION [--from ID] [--title TITLE]`.
+ */
+function arcJobMove(argv) {
+  const flags = parseFlags(argv, []);
+  const { arc, job, to } = flags;
+  if (!arc || !job || !to) die('arc job-move requires --arc, --job, and --to');
+  const target = ARC_JOB_SECTIONS[to.toLowerCase()];
+  if (!target) die(`--to must be one of ${Object.keys(ARC_JOB_SECTIONS).join(', ')}`);
+
+  const jobsPath = path.join(xochRoot(), 'work', 'arcs', arc, 'jobs.md');
+  if (!fs.existsSync(jobsPath)) die(`jobs.md not found: ${jobsPath}`);
+  const lines = fs.readFileSync(jobsPath, 'utf8').replace(/\n$/, '').split('\n');
+  if (!lines.includes(`## ${target}`)) die(`${jobsPath} has no "## ${target}" section`);
+
+  // Drop every existing entry for this job (or its --from placeholder),
+  // remembering the title it carried and carrying any indented detail lines
+  // under it along to the new location.
+  const keys = [job, flags.from].filter(Boolean);
+  let existingTitle = null;
+  const carried = [];
+  const kept = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const m = lines[i].match(/^- `([^`]+)`(?: - (.*))?$/);
+    if (!m || !keys.includes(m[1])) {
+      kept.push(lines[i]);
+      continue;
+    }
+    existingTitle = existingTitle || m[2];
+    while (i + 1 < lines.length && /^\s+\S/.test(lines[i + 1])) {
+      i += 1;
+      carried.push(lines[i]);
+    }
+  }
+  const entry = [`- \`${job}\` - ${flags.title || existingTitle || 'unknown'}`, ...carried];
+
+  // Rebuild section by section, keeping everything already written under
+  // each heading: the entry goes after the target section's last job entry
+  // (and that entry's indented detail), and each section's "- None"
+  // placeholder is dropped or restored to match whether it lists any job.
+  const out = [];
+  let section = null;
+  let body = [];
+  const isEntry = (line) => line.startsWith('- ');
+  const flush = () => {
+    if (section === null) return;
+    const lines = body.filter((line) => line !== '- None');
+    while (lines.length && lines[0] === '') lines.shift();
+    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+    if (section === target) {
+      const last = lines.map(isEntry).lastIndexOf(true);
+      let at = last === -1 ? lines.length : last + 1;
+      while (at < lines.length && /^\s+\S/.test(lines[at])) at += 1;
+      if (last === -1 && lines.length) lines.push('');
+      lines.splice(last === -1 ? lines.length : at, 0, ...entry);
+    }
+    if (!lines.some(isEntry)) {
+      if (lines.length) lines.push('');
+      lines.push('- None');
+    }
+    out.push(...lines, '');
+  };
+  for (const line of kept) {
+    const heading = line.match(/^## (.+)$/);
+    if (heading) {
+      flush();
+      out.push(line, '');
+      section = heading[1];
+      body = [];
+    } else if (section === null) {
+      out.push(line);
+    } else {
+      body.push(line);
+    }
+  }
+  flush();
+
+  fs.writeFileSync(jobsPath, `${out.join('\n').replace(/\n+$/, '')}\n`);
+  console.log(`Arc ${arc}: ${job} -> ${target}`);
 }
 
 function validateToken(label, value) {
@@ -859,7 +985,7 @@ function phaseAdvance(argv) {
       current_phase_files: '[]',
       current_phase_acceptance_criteria: '[]',
       current_phase_validation: '[]',
-      next_command: 'xoch-build',
+      next_command: 'xoch-do',
       current_step: 'final_review',
       last_updated: todayStr,
     }
@@ -870,7 +996,7 @@ function phaseAdvance(argv) {
       current_phase_title: nextTitle,
       current_phase_goal: nextGoal,
       current_phase_type: nextType || 'implementation',
-      next_command: 'xoch-build',
+      next_command: 'xoch-do',
       current_step: 'implement',
       last_updated: todayStr,
     };
@@ -921,7 +1047,7 @@ function phaseAdvance(argv) {
 }
 
 // Step-only transitions for a bundled multi-step command (xoch-open,
-// xoch-build): no phase-index bookkeeping involved and no outcome-dependent
+// xoch-do): no phase-index bookkeeping involved and no outcome-dependent
 // judgment involved, so no --next-* content is needed. The caller (a bundled
 // skill) invokes this with no step name of its own choosing and reports
 // whatever current_step comes back -- it never decides or writes the step
@@ -1064,6 +1190,7 @@ function usage() {
   xoch-actions.js workflow complete --job ID [--name NAME] [--next COMMAND]
   xoch-actions.js workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
   xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
+  xoch-actions.js arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
   xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
   xoch-actions.js job step-advance --job ID
@@ -1115,6 +1242,9 @@ function main(argv) {
       break;
     case 'arc:open':
       arcOpen(rest);
+      break;
+    case 'arc:job-move':
+      arcJobMove(rest);
       break;
     case 'state:set':
       stateSet(rest);
@@ -1188,6 +1318,7 @@ export {
   stateSet,
   pointerClear,
   arcOpen,
+  arcJobMove,
   workflowAction,
   resolveCurrentPointer,
   snapshotCreate,

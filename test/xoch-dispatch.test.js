@@ -88,6 +88,27 @@ test('xoch job current --json produces the same output as invoking xoch-actions.
   }
 });
 
+test('xoch arc job-move produces the same output as invoking xoch-actions.js directly', () => {
+  const ctxA = scratch();
+  const ctxB = scratch();
+  try {
+    for (const ctx of [ctxA, ctxB]) {
+      const arcDir = path.join(ctx.cwd, '.xoch', 'work', 'arcs', 'a1');
+      fs.mkdirSync(arcDir, { recursive: true });
+      fs.writeFileSync(path.join(arcDir, 'jobs.md'), '# Arc Jobs - a1\n\n## Active\n\n- None\n\n## Planned\n\n- `j1` - Job one\n');
+    }
+    const args = ['arc', 'job-move', '--arc', 'a1', '--job', 'j1', '--to', 'active'];
+    const viaDispatcher = run(args, ctxA);
+    const direct = runScript(XOCH_ACTIONS, args, ctxB);
+    assert.strictEqual(viaDispatcher.status, 0);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctxA);
+    cleanup(ctxB);
+  }
+});
+
 test('xoch discovery write produces the same output as invoking xoch-actions.js directly', () => {
   const ctxA = scratch();
   const ctxB = scratch();
