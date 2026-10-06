@@ -34,6 +34,12 @@ If the engineer names an existing job ID (a directory already under `[xoch-root]
    xoch state set --job "[job-id]" --field status --value active
    ```
 
+   If the job belongs to an arc, move it back to Active in that arc's `jobs.md`:
+
+   ```bash
+   xoch arc job-move --arc "[arc-id]" --job "[job-id]" --to active
+   ```
+
 4. Check `current_step` from the state just read:
    - `title`, `spec`, or `plan` -- the job was closed before finishing the open sequence. Resume that exact step, folding the engineer's new description into it as additional input.
    - anything else, or `null` -- the job was closed after implementation finished (or was fully reviewed). New work on an old job shell means new requirements, not a continuation of the old plan. Move it back to `spec`:
@@ -194,6 +200,14 @@ The default when none of the above applies.
    ```
 
    For multi-project work, run this from the confirmed primary repository root even when `xoch-open` was invoked from a participant repository. If the helper is unavailable, create the same folders and state/current files manually using the foundation core model.
+
+   When the job belongs to an arc, list it as Active in that arc's `jobs.md`. If it was opened for an existing Planned entry whose ID differs from the generated job ID, pass that entry's ID as `--from` so the placeholder is replaced rather than duplicated:
+
+   ```bash
+   xoch arc job-move --arc "[arc-id]" --job "[job-id]" --title "[title]" --to active [--from "[planned-entry-id]"]
+   ```
+
+   If the helper refuses because `jobs.md` is missing or malformed, fix it by hand to the shape documented under Set Up An Arc and rerun it.
 
 5. For a multi-project job:
    - Resolve project names with `~/.xoch/workspace-map.json`; run `xoch-map` first when required projects are missing.

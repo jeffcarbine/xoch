@@ -194,13 +194,25 @@ Do not clear a pointer for a different active job.
 
 For multi-project jobs, run the same helper checks from every listed repository. Clear only pointers that identify this job; a participant may legitimately have no pointer or another active job.
 
-### Step 9: Leave Job In Place
+### Step 9: Update Arc Membership
+
+If the job's `state.md` names an arc (anything other than `standalone`), mark it Complete in that arc's `jobs.md`:
+
+```bash
+xoch arc job-move --arc "[arc-id]" --job "[job-id]" --to complete
+```
+
+If the helper refuses because `jobs.md` is missing or lacks a `## Complete` section, fix `jobs.md` by hand to the shape `open-core.md` documents, then rerun it -- and say so in the output. Do not skip this step silently.
+
+Then note what the arc has left: any remaining Planned entries, and whether every listed job is now Complete or Parked.
+
+### Step 10: Leave Job In Place
 
 Closed jobs stay in their existing folder; marking `status: closed` in `state.md` and clearing the active pointer is sufficient. Do not move or archive job folders.
 
 ## Output
 
-End with:
+Report:
 
 ```text
 Job closed.
@@ -210,6 +222,15 @@ Coverage: [status]
 Documentation: [status]
 Follow-up: [summary]
 ```
+
+When this closing is running inside `xoch-next`, stop here and hand back to `xoch-next`, which continues into opening the next job.
+
+Otherwise, for an arc job, add what Step 9 found and end with the matching next step:
+
+- Planned jobs remain -- name the next planned job, mention that `xoch-next` does closing and opening in one step next time, and end with `xoch-open` as the next step.
+- Every arc job is Complete or Parked -- end with `xoch-close` as the next step, to close the arc.
+
+For a standalone job, the closure summary is the final output.
 
 ## Rules
 

@@ -27,6 +27,8 @@ Decide which mode applies from the engineer's message and `job current --json`:
 
 Do not read the core file for the mode you are not closing.
 
+To close an arc job and go straight into opening the arc's next planned job, use `xoch-next` instead -- it runs this same job-closing flow, then `xoch-open`'s.
+
 ## Output
 
 Follow the chosen mode's own Output section as written.
