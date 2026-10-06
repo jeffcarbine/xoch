@@ -164,7 +164,7 @@ Use this structure:
 
 Recommend:
 
-- `xoch-build` (its `final_review` step) when patch is part of an active job and ready for review
+- `xoch-do` (its `final_review` step) when patch is part of an active job and ready for review
 - `xoch-close` when patch job is complete and reviewed/waived
 - `xoch-open` when follow-up work belongs in a normal job
 - `xoch-doc` when docs need refresh

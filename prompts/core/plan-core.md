@@ -18,7 +18,7 @@ The `plan` step normally runs right after `spec`, continuing in the same `xoch-o
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -132,7 +132,7 @@ Break the work into phases. Each phase should have:
 - files likely touched
 - acceptance criteria covered
 - the behaviors/tests this phase introduces or turns green, mapped to the AC(s) they cover
-- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-build`
+- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-do`
 - dependencies on earlier phases
 - completion criteria
 - evidence that the `advance` step should capture before advancing
@@ -311,7 +311,7 @@ closure_status: null
 last_updated: [today]
 ```
 
-Then enter phase 1 through the deterministic helper rather than hand-writing phase fields -- it parses the `phases.md` just written, builds `phase_index` from every phase in it (not just phase 1), and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `next_command` (`xoch-build`), and `current_step` (`implement`) together:
+Then enter phase 1 through the deterministic helper rather than hand-writing phase fields -- it parses the `phases.md` just written, builds `phase_index` from every phase in it (not just phase 1), and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `next_command` (`xoch-do`), and `current_step` (`implement`) together:
 
 ```bash
 xoch phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type "[implementation or checkpoint, from phase 1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
@@ -338,10 +338,10 @@ End with:
 ```text
 Implementation plan created.
 Current phase: Phase 1 - [title]
-{{xoch-partial:next-step.md command="xoch-build"}}
+{{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
-Unlike `spec`'s handoff into `plan`, this one really does stop: entering phase 1 is `xoch-build`'s job, not `xoch-open`'s, and it needs a fresh invocation per the phase boundary.
+Unlike `spec`'s handoff into `plan`, this one really does stop: entering phase 1 is `xoch-do`'s job, not `xoch-open`'s, and it needs a fresh invocation per the phase boundary.
 
 ## Rules
 

@@ -1,15 +1,15 @@
 ---
 name: xoch-advance-core
-description: Full reference workflow for xoch-build's advance step
+description: Full reference workflow for xoch-do's advance step
 ---
 
 # Xoch - Advance Core
 
-This is the full reference workflow for `xoch-build`'s `advance` step. It is rendered to `~/.xoch/prompts/core/advance-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-do`'s `advance` step. It is rendered to `~/.xoch/prompts/core/advance-core.md` and is not installed as a command.
 
 Review the current phase, capture a snapshot, and advance when the engineer confirms the phase is complete.
 
-`advance` is Xoch's phase-review-and-advance step, reached when `xoch-build` finds `current_step: advance` -- normally right after its own `implement` step, in the same response. It replaces the old standalone `xoch-next` command and uses phase language instead of milestone language.
+`advance` is Xoch's phase-review-and-advance step, reached when `xoch-do` finds `current_step: advance` -- normally right after its own `implement` step, in the same response. It replaces the old standalone `xoch-next` command and uses phase language instead of milestone language.
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Compare the current phase plan against the working tree, gather implementation a
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -259,7 +259,7 @@ phase_index:
     title: [next title]
     status: not_started
     type: [implementation or checkpoint]
-next_command: xoch-build
+next_command: xoch-do
 current_step: implement
 last_updated: [today]
 ```
@@ -275,7 +275,7 @@ current_phase_type: null
 current_phase_files: []
 current_phase_acceptance_criteria: []
 current_phase_validation: []
-next_command: xoch-build
+next_command: xoch-do
 current_step: final_review
 last_updated: [today]
 ```
@@ -293,19 +293,19 @@ If more phases remain:
 ```text
 Phase [N] complete.
 Next phase: [N+1] - [title]
-{{xoch-partial:next-step.md command="xoch-build"}}
+{{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
-Stop here. Do not begin the next phase's `implement` step in this response -- a fresh `xoch-build` invocation is required, per the phase boundary.
+Stop here. Do not begin the next phase's `implement` step in this response -- a fresh `xoch-do` invocation is required, per the phase boundary.
 
 If implementation is complete:
 
 ```text
 All phases complete.
-{{xoch-partial:next-step.md command="xoch-build"}}
+{{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
-Stop here too -- entering `final_review` is a new step, not a continuation of the phase that just finished, so it also waits for a fresh `xoch-build` invocation.
+Stop here too -- entering `final_review` is a new step, not a continuation of the phase that just finished, so it also waits for a fresh `xoch-do` invocation.
 
 ## Rules
 

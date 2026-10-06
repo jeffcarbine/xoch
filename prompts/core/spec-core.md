@@ -18,7 +18,7 @@ The `spec` step normally runs right after `title`, continuing in the same `xoch-
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model

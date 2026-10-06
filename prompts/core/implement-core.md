@@ -1,15 +1,15 @@
 ---
 name: xoch-implement-core
-description: Full reference workflow for xoch-build's implement step
+description: Full reference workflow for xoch-do's implement step
 ---
 
 # Xoch - Implement Core
 
-This is the full reference workflow for `xoch-build`'s `implement` step. It is rendered to `~/.xoch/prompts/core/implement-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-do`'s `implement` step. It is rendered to `~/.xoch/prompts/core/implement-core.md` and is not installed as a command.
 
 Implement, guide, or collaborate on the current phase of the active job.
 
-`implement` is Xoch's implementation step, reached when `xoch-build` finds `current_step: implement`. It replaces the old standalone `xoch-make` command and uses phase language instead of milestone language.
+`implement` is Xoch's implementation step, reached when `xoch-do` finds `current_step: implement`. It replaces the old standalone `xoch-make` command and uses phase language instead of milestone language.
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Load the active job, understand the current phase, choose an ownership mode with
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -93,7 +93,7 @@ After the briefing, stop and ask:
 
 {{xoch-partial:action-choice.md agent_action="builds" engineer_action="builds"}}
 
-Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-build`.
+Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-do`.
 
 Interpret the choices as:
 
@@ -218,7 +218,7 @@ last_validation:
 last_updated: [today]
 ```
 
-`next_command` is left untouched here -- it stays `xoch-build` throughout the `implement`/`advance` cycle within a phase; only crossing a phase boundary changes it, and that's `phase advance`'s job.
+`next_command` is left untouched here -- it stays `xoch-do` throughout the `implement`/`advance` cycle within a phase; only crossing a phase boundary changes it, and that's `phase advance`'s job.
 
 Keep `last_validation` compact; detailed validation history belongs in phase snapshots or notes.
 
@@ -246,7 +246,7 @@ Job: [job-id]
 Current phase: [N] - [title]
 ```
 
-Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-build` owns both steps.
+Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-do` owns both steps.
 
 ## Rules
 
@@ -257,7 +257,7 @@ Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `i
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Do not start implementation without enough phase context.
-- Do not start or complete the next *phase* during the current `xoch-build` run. Moving from the `implement` step to the `advance` step within the same phase is expected and required, not a new phase.
+- Do not start or complete the next *phase* during the current `xoch-do` run. Moving from the `implement` step to the `advance` step within the same phase is expected and required, not a new phase.
 - Do not silently change spec scope; use `xoch-revise-spec`.
 - Do not silently reshape remaining phases; use `xoch-revise-plan`.
 - Keep phase work focused.

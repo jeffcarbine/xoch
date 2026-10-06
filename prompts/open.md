@@ -22,17 +22,17 @@ The workflow boundary check above already ran `job current --json`. Decide what 
   - `plan` -- `~/.xoch/prompts/core/plan-core.md`
 
   If the message instead describes different work entirely, summarize the active job (ID, title, status, current step) and ask whether to keep working on it or set it aside -- recommend `xoch-pause` before starting something else. Do not silently abandon it.
-- **Active job exists, `current_step` is anything else** (`implement`, `advance`, `final_review`, or missing/`null` on a job already past planning). This job is past `xoch-open`'s territory. Summarize its state and recommend `xoch-build` (or `xoch-close` if it looks done) instead of continuing here.
+- **Active job exists, `current_step` is anything else** (`implement`, `advance`, `final_review`, or missing/`null` on a job already past planning). This job is past `xoch-open`'s territory. Summarize its state and recommend `xoch-do` (or `xoch-close` if it looks done) instead of continuing here.
 
 Do not read a core file for a step you are not currently on.
 
 ## Moving between steps
 
-Unlike `xoch-build`'s phases, `title` -> `spec` -> `plan` happens once per job, not in a repeating loop, and each of `spec`/`plan` already has its own engineer-facing accept/modify gate. So these three steps flow continuously in one `xoch-open` invocation's conversation -- no re-invocation between them:
+Unlike `xoch-do`'s phases, `title` -> `spec` -> `plan` happens once per job, not in a repeating loop, and each of `spec`/`plan` already has its own engineer-facing accept/modify gate. So these three steps flow continuously in one `xoch-open` invocation's conversation -- no re-invocation between them:
 
 - `title` -> `spec`: once the job is open (or reopened, or resumed to a point before spec exists), continue straight into gathering source requirements in this same response.
 - `spec` -> `plan`: `spec-core.md`'s own ending runs `job step-advance` and continues directly into `plan-core.md`. Follow it as written.
-- `plan` -> entering phase 1 (`xoch-build`'s `implement` step): this is the one real stop. `plan-core.md`'s own ending uses `phase advance --phase 0 --next-phase 1 ...` and then prints `Ready for next step: \`xoch-build\`` and stops -- a fresh invocation is required, per `xoch-build`'s own phase boundary.
+- `plan` -> entering phase 1 (`xoch-do`'s `implement` step): this is the one real stop. `plan-core.md`'s own ending uses `phase advance --phase 0 --next-phase 1 ...` and then prints `Ready for next step: \`xoch-do\`` and stops -- a fresh invocation is required, per `xoch-do`'s own phase boundary.
 
 Every step transition is decided by a deterministic helper (`job step-advance` for `title`->`spec` and `spec`->`plan`; `phase advance` for entering phase 1), never guessed or written directly by the agent.
 

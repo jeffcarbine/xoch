@@ -12,10 +12,10 @@ This is the recovery reference for agents that do not already know Xoch's job mo
 Xoch tracks focused software work as jobs. The normal flow is:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
-`xoch-build` covers implementation, phase review/advance, and the final job-level review as three internal steps (`implement`, `advance`, `final_review`) rather than three separate commands -- see Step Tracking below.
+`xoch-do` covers implementation, phase review/advance, and the final job-level review as three internal steps (`implement`, `advance`, `final_review`) rather than three separate commands -- see Step Tracking below.
 
 When a material unknown blocks honest specification, use the optional loop:
 
@@ -46,7 +46,7 @@ Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's
 - `plan.md`: accepted implementation approach, risks, files, and acceptance coverage.
 - `phases.md`: authoritative phase list.
 - `phases/phase-[N].md`: optional detailed phase body.
-- `snapshots/phase-[N].md`: completion evidence captured by `xoch-build`'s `advance` step.
+- `snapshots/phase-[N].md`: completion evidence captured by `xoch-do`'s `advance` step.
 - `notes/`: implementation, trace, or sidebar notes.
 - `revisions/`: spec, plan, or arc revision history.
 
@@ -58,14 +58,14 @@ Use `state.md` first on repeated commands. It should include current phase title
 
 ## Step Tracking
 
-A bundled multi-step command (`xoch-open`, `xoch-build`) can span several internal steps across one or more invocations without a fresh command each time. `state.md`'s `next_command` and `current_step` track exactly where a job is; `current.json` projects both, so `job current --json` -- the call every command already makes for the workflow boundary -- is enough to know the current step without a separate `state.md` read.
+A bundled multi-step command (`xoch-open`, `xoch-do`) can span several internal steps across one or more invocations without a fresh command each time. `state.md`'s `next_command` and `current_step` track exactly where a job is; `current.json` projects both, so `job current --json` -- the call every command already makes for the workflow boundary -- is enough to know the current step without a separate `state.md` read.
 
 These two fields are distinct from the managed side-workflow fields above (`active_workflow`, `workflow_stage`, ...): a side workflow is a temporary diversion from the main flow that returns to it when done (`xoch-discovery`, `xoch-pause`); `next_command`/`current_step` describe position in the main flow itself.
 
 Step vocabulary:
 
 - `xoch-open`: `title` -> `spec` -> `plan`
-- `xoch-build`: `implement` -> `advance` -> (loops to `implement` for the next phase, or falls through to `final_review` once every phase is done)
+- `xoch-do`: `implement` -> `advance` -> (loops to `implement` for the next phase, or falls through to `final_review` once every phase is done)
 - `xoch-close`: `job` or `arc`, chosen by argument or context, not advanced through
 
 A bundled skill never decides or writes a step name itself for a mechanical transition. It invokes the right deterministic helper and reports whatever step came back:

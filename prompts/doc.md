@@ -11,7 +11,7 @@ description: Create, refresh, repair, or validate Xoch project and feature docum
 
 Use this token-light wrapper for normal `xoch-doc` work.
 
-`xoch-doc` is a required stop after `xoch-build`'s `final_review` step passes, not only an on-demand command.
+`xoch-doc` is a required stop after `xoch-do`'s `final_review` step passes, not only an on-demand command.
 
 ### Drift Check First
 

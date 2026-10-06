@@ -1,11 +1,11 @@
 ---
 name: xoch-review-core
-description: Full reference workflow for xoch-build's final_review step
+description: Full reference workflow for xoch-do's final_review step
 ---
 
 # Xoch - Review Core
 
-This is the full reference workflow for `xoch-build`'s `final_review` step. It is rendered to `~/.xoch/prompts/core/review-core.md` and is not installed as a command.
+This is the full reference workflow for `xoch-do`'s `final_review` step. It is rendered to `~/.xoch/prompts/core/review-core.md` and is not installed as a command.
 
 Review completed implementation before job closure.
 
@@ -18,7 +18,7 @@ Verify that completed work satisfies the spec, matches the plan, has adequate va
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -67,7 +67,7 @@ Confirm one of these is true:
 - the engineer explicitly asks for an early review
 - the job is small enough that phase tracking was intentionally skipped
 
-If implementation is plainly incomplete, say so and route back into `xoch-build`'s `implement`/`advance` flow rather than continuing this step.
+If implementation is plainly incomplete, say so and route back into `xoch-do`'s `implement`/`advance` flow rather than continuing this step.
 
 ### Step 3: Acceptance Coverage
 
@@ -118,7 +118,7 @@ xoch project-commands detect --json
 
 Re-run the project's full test suite (using the test command detected or already known from Step 4) and record whether it passes. A failure unrelated to this job's work may be explicitly waived by the engineer; record the waiver and what makes it unrelated. A failure caused by or related to this job's work blocks `pass`/`pass_with_waivers` until fixed.
 
-{{xoch-config:coverage.strictness required="Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-build`'s `implement` step to close any gap that doesn't qualify." recommended="Separately, confirm coverage on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. If coverage is incomplete, report the specific gap to the engineer and ask whether to close it now (route back to `xoch-build`'s `implement` step) or accept it and proceed -- record the engineer's answer in the review. A gap the engineer accepts does not block `pass` or `pass_with_waivers`; a documented exception per `coverage-gate.md` still applies the same way it does under `required`." default="Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-build`'s `implement` step to close any gap that doesn't qualify."}}
+{{xoch-config:coverage.strictness required="Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-do`'s `implement` step to close any gap that doesn't qualify." recommended="Separately, confirm coverage on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. If coverage is incomplete, report the specific gap to the engineer and ask whether to close it now (route back to `xoch-do`'s `implement` step) or accept it and proceed -- record the engineer's answer in the review. A gap the engineer accepts does not block `pass` or `pass_with_waivers`; a documented exception per `coverage-gate.md` still applies the same way it does under `required`." default="Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per `coverage-gate.md` (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-do`'s `implement` step to close any gap that doesn't qualify."}}
 
 ### Step 6: Documentation Freshness
 
@@ -187,7 +187,7 @@ Use this structure:
 
 ## Recommendation
 
-{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-build when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
+{{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-do when needs_work | xoch-revise-plan when scope changed | more investigation when blocked]"}}
 ```
 
 Update `state.md`, setting `current_step` from the same outcome rather than leaving it at `final_review`:
@@ -195,7 +195,7 @@ Update `state.md`, setting `current_step` from the same outcome rather than leav
 ```yaml
 review_status: [status]
 next_command: [recommended next command]
-current_step: [null when pass or pass_with_waivers -- next_command is xoch-doc; implement when needs_work -- next_command is xoch-build; final_review when blocked -- still stuck here]
+current_step: [null when pass or pass_with_waivers -- next_command is xoch-doc; implement when needs_work -- next_command is xoch-do; final_review when blocked -- still stuck here]
 last_updated: [today]
 ```
 

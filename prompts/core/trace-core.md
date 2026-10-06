@@ -13,7 +13,7 @@ Investigate a defect, failure, or unclear symptom before changing code.
 
 Create a focused investigation trail that identifies likely root cause, evidence, risks, and recommended next steps.
 
-Use `xoch-trace` when the problem is not yet clear enough for `xoch-build` or when a bug needs disciplined investigation before a patch.
+Use `xoch-trace` when the problem is not yet clear enough for `xoch-do` or when a bug needs disciplined investigation before a patch.
 
 ## Work Model
 
@@ -155,7 +155,7 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-open | xoch-revise-plan | xoch-build | more trace]
+[xoch-patch | xoch-open | xoch-revise-plan | xoch-do | more trace]
 ```
 
 For legacy migration jobs, write the note in the legacy job folder.
@@ -167,7 +167,7 @@ Recommend:
 - `xoch-patch` for a focused urgent fix
 - `xoch-open` for a new normal job
 - `xoch-revise-plan` if the active job plan needs adjustment
-- `xoch-build` if the current phase can implement the fix
+- `xoch-do` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
 
 ## Output

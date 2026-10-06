@@ -18,7 +18,7 @@ Verify review, coverage, and documentation status, record final job history, cle
 Target flow:
 
 ```text
-xoch-open -> xoch-build -> xoch-doc -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
 ## Work Model
@@ -64,7 +64,7 @@ Confirm one of these is true:
 - `state.md` says `implementation_complete`
 - the engineer explicitly wants to close a small or manually tracked job
 
-If implementation is incomplete, recommend returning to `xoch-build`.
+If implementation is incomplete, recommend returning to `xoch-do`.
 
 ### Step 3: Check Review Status
 
@@ -78,7 +78,7 @@ Review may be:
 
 If review is missing or not passing, ask whether to:
 
-1. Continue `xoch-build` to run its `final_review` step
+1. Continue `xoch-do` to run its `final_review` step
 2. Record an explicit review waiver and continue closing
 3. Stop and keep the job active
 
@@ -90,7 +90,7 @@ Only continue without a passing review when the engineer explicitly chooses a wa
 
 {{xoch-config:coverage.strictness required="Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise." recommended="Confirm coverage on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise. If a gap wasn't already reported and decided at review time, report it now and ask the engineer whether to close it or accept it and proceed." default="Confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code — use the review's recorded coverage evidence when it already covered this, or check directly with the project's coverage command otherwise."}}
 
-{{xoch-config:coverage.strictness required="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely." recommended="A remaining gap may stand here without being a documented exception, as long as the engineer explicitly accepted it (at review time, or just now) — record which. If coverage is incomplete and the engineer has not accepted the gap, do not close the job — route to `xoch-build` to close the gap or get an explicit decision." default="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-build` to close the gap, even when review was waived or skipped entirely."}}
+{{xoch-config:coverage.strictness required="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-do` to close the gap, even when review was waived or skipped entirely." recommended="A remaining gap may stand here without being a documented exception, as long as the engineer explicitly accepted it (at review time, or just now) — record which. If coverage is incomplete and the engineer has not accepted the gap, do not close the job — route to `xoch-do` to close the gap or get an explicit decision." default="This cannot be waived by engineer preference or urgency, and a review waiver from Step 3 does not cover it. A gap may only stand if it's a documented exception per `coverage-gate.md` — verified investigation, not an assertion, plus the required source/test comment pair. If coverage is incomplete on any job-touched file and doesn't qualify as a documented exception, do not close the job — route to `xoch-do` to close the gap, even when review was waived or skipped entirely."}}
 
 ### Step 5: Check Documentation Freshness
 

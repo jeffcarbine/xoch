@@ -166,7 +166,7 @@ If the engineer invokes `xoch-open` with no job description at all and no active
 
 5. **Present the summary:** job goal, current phase, completed phases, remaining phases, risks/unresolved questions, and where `current_step` (or the legacy equivalent) lands:
    - `title`, `spec`, or `plan` -- continue that step in this same response, exactly as a fresh entry into that step would.
-   - anything else -- this job is past `xoch-open`'s territory. Report the summary and end with `Ready for next step: \`xoch-build\`` (or `` `xoch-close` `` if it looks done) rather than continuing here.
+   - anything else -- this job is past `xoch-open`'s territory. Report the summary and end with `Ready for next step: \`xoch-do\`` (or `` `xoch-close` `` if it looks done) rather than continuing here.
 
 ### Fresh Job
 

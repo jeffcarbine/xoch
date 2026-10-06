@@ -7,7 +7,7 @@ description: Close a completed job or an arc, forking on which one applies
 
 {{xoch-partial:workflow-boundary.md}}
 
-`xoch-close` replaces `xoch-close-job` and `xoch-close-arc`. Unlike `xoch-build`'s phase cycle or `xoch-open`'s `title`/`spec`/`plan` chain, closing isn't a sequence of steps -- it's exactly one of two modes, chosen once per invocation and never advanced through.
+`xoch-close` replaces `xoch-close-job` and `xoch-close-arc`. Unlike `xoch-do`'s phase cycle or `xoch-open`'s `title`/`spec`/`plan` chain, closing isn't a sequence of steps -- it's exactly one of two modes, chosen once per invocation and never advanced through.
 
 Decide which mode applies from the engineer's message and `job current --json`:
 
