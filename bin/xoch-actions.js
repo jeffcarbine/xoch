@@ -130,6 +130,20 @@ function nullable(value) {
   return value === undefined || value === null || value === '' || value === 'null' ? null : value;
 }
 
+// Job types `job open --type` accepts. A job whose state.md predates the
+// job_type field is read as 'standard'.
+const JOB_TYPES = ['standard', 'qa'];
+
+/**
+ * Reads a job's type from its scalar state, defaulting to 'standard' for
+ * jobs written before job_type existed.
+ * @param {Object<string, string>} state - Scalar state from state.md.
+ * @returns {string} The job's type.
+ */
+function jobTypeOf(state) {
+  return nullable(state.job_type) || 'standard';
+}
+
 function workflowFromState(state, existing = null) {
   const active = nullable(state.active_workflow);
   if (!active) return null;
@@ -214,13 +228,16 @@ function resolveCurrentPointer() {
       const projectedWorkflow = workflowFromState(state, data.workflow);
       const projectedNextCommand = nullable(state.next_command);
       const projectedCurrentStep = nullable(state.current_step);
+      const projectedJobType = jobTypeOf(state);
       const changed = JSON.stringify(projectedWorkflow) !== JSON.stringify(data.workflow)
         || projectedNextCommand !== nullable(data.next_command)
-        || projectedCurrentStep !== nullable(data.current_step);
+        || projectedCurrentStep !== nullable(data.current_step)
+        || projectedJobType !== data.job_type;
       if (changed) {
         data.workflow = projectedWorkflow;
         data.next_command = projectedNextCommand;
         data.current_step = projectedCurrentStep;
+        data.job_type = projectedJobType;
         data.updated_at = utcIso8601();
         writeAtomicJson(jsonPath, data);
       }
@@ -243,6 +260,7 @@ function resolveCurrentPointer() {
       workflow,
       next_command: nullable(state.next_command),
       current_step: nullable(state.current_step),
+      job_type: jobTypeOf(state),
       updated_at: utcIso8601(),
     };
     writeAtomicJson(jsonPath, data);
@@ -253,6 +271,7 @@ function resolveCurrentPointer() {
     data = {
       version: 1,
       legacy: true,
+      job_type: 'standard',
       job: {
         id: fields.job_id || fields.task_id,
         title: fields.title,
@@ -283,6 +302,7 @@ function jobCurrent(argv) {
     console.log(`workflow_stage: ${(data.workflow && data.workflow.stage) || 'none'}`);
     console.log(`next_command: ${data.next_command || 'none'}`);
     console.log(`current_step: ${data.current_step || 'none'}`);
+    console.log(`job_type: ${data.job_type}`);
     console.log(`pointer: ${pointer}`);
   }
 }
@@ -376,6 +396,7 @@ function syncCurrentPointer(jobId) {
     workflow: workflowFromState(state),
     next_command: nullable(state.next_command),
     current_step: nullable(state.current_step),
+    job_type: jobTypeOf(state),
     started_at: started,
     updated_at: utcIso8601(),
   });
@@ -387,6 +408,8 @@ function jobOpen(argv) {
   const flags = parseFlags(argv, []);
   const { title } = flags;
   if (!title) die('job open requires --title');
+  const jobType = flags.type || 'standard';
+  if (!JOB_TYPES.includes(jobType)) die(`job open --type must be one of: ${JOB_TYPES.join(', ')}`);
   const arc = flags.arc || 'standalone';
   const docScope = flags['doc-scope'] || 'unknown';
   const docPath = flags['doc-path'] || 'unknown';
@@ -403,6 +426,7 @@ function jobOpen(argv) {
 title: ${title}
 description: ${description}
 status: active
+job_type: ${jobType}
 arc: ${arc}
 current_phase: null
 phase_count: 0
@@ -426,7 +450,7 @@ return_command: null
 workflow_started_at: null
 review_status: null
 closure_status: null
-next_command: xoch-open
+next_command: ${jobType === 'qa' ? 'xoch-qa' : 'xoch-open'}
 current_step: title
 started: ${started}
 last_updated: ${started}
@@ -1063,10 +1087,19 @@ function phaseAdvance(argv) {
 //     implementation, and review-core.md's own state.md write already
 //     carries that judgment -- it sets current_step directly as part of the
 //     same update, rather than asking this helper to guess it.
+// Per job type: a QA job's open sequence runs through `intake` instead of
+// `spec`; the xoch-do steps are shared so `phase advance` is type-agnostic.
 const STEP_TRANSITIONS = {
-  title: 'spec',
-  spec: 'plan',
-  implement: 'advance',
+  standard: {
+    title: 'spec',
+    spec: 'plan',
+    implement: 'advance',
+  },
+  qa: {
+    title: 'intake',
+    intake: 'plan',
+    implement: 'advance',
+  },
 };
 
 function stepAdvance(argv) {
@@ -1080,11 +1113,17 @@ function stepAdvance(argv) {
   const currentStep = nullable(state.current_step);
   if (!currentStep) die(`job ${jobId} has no current_step set`);
 
-  if (!Object.prototype.hasOwnProperty.call(STEP_TRANSITIONS, currentStep)) {
+  const jobType = jobTypeOf(state);
+  if (!Object.prototype.hasOwnProperty.call(STEP_TRANSITIONS, jobType)) {
+    die(`job ${jobId} has unknown job_type '${jobType}' -- expected one of: ${JOB_TYPES.join(', ')}`);
+  }
+  const transitions = STEP_TRANSITIONS[jobType];
+
+  if (!Object.prototype.hasOwnProperty.call(transitions, currentStep)) {
     die(`step-advance has no deterministic follow-up for '${currentStep}' -- phase-crossing transitions go through 'phase advance', and leaving final_review is written directly to state.md by review's own outcome`);
   }
 
-  const updates = { current_step: STEP_TRANSITIONS[currentStep], last_updated: today() };
+  const updates = { current_step: transitions[currentStep], last_updated: today() };
   updateStateFields(statePath, updates);
   console.log(`Step advanced for job ${jobId}: ${currentStep} -> ${updates.current_step}`);
 }
@@ -1182,7 +1221,7 @@ function discoveryRead(argv) {
 function usage() {
   process.stdout.write(`Usage:
   xoch-actions.js job current [--json]
-  xoch-actions.js job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH]
+  xoch-actions.js job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
   xoch-actions.js job set-current --job ID
   xoch-actions.js state set --job ID --field FIELD --value VALUE
   xoch-actions.js pointer clear --job ID

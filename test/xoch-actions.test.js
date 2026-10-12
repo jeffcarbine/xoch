@@ -351,6 +351,59 @@ test('job open sets current_step to title in state.md and projects it into the p
   }
 });
 
+test('job open --type qa records a qa job type, routes to xoch-qa, and projects the type into the pointer', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['job', 'open', '--title', 'Checkout QA', '--id', 'qa1', '--type', 'qa'], ctx);
+    assert.strictEqual(result.status, 0);
+    const dir = jobDirOf(ctx, 'qa1');
+    assert.strictEqual(fieldValue(dir, 'job_type'), 'qa');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-qa');
+    const pointer = readJsonFile(pointerPath(ctx));
+    assert.strictEqual(pointer.job_type, 'qa');
+    assert.strictEqual(pointer.next_command, 'xoch-qa');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job open without --type records a standard job type', () => {
+  const ctx = scratch();
+  try {
+    run(['job', 'open', '--title', 'Plain Job', '--id', 'plain'], ctx);
+    assert.strictEqual(fieldValue(jobDirOf(ctx, 'plain'), 'job_type'), 'standard');
+    assert.strictEqual(readJsonFile(pointerPath(ctx)).job_type, 'standard');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job open rejects a job type other than standard or qa and creates nothing', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['job', 'open', '--title', 'Odd', '--id', 'odd', '--type', 'bogus'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /job open --type must be one of: standard, qa/);
+    assert.ok(!fs.existsSync(jobDirOf(ctx, 'odd')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job current treats a job whose state has no job_type as a standard job', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'old');
+    seedPointer(ctx, { id: 'old' });
+    const json = JSON.parse(run(['job', 'current', '--json'], ctx).stdout);
+    assert.strictEqual(json.job_type, 'standard');
+    const text = run(['job', 'current'], ctx);
+    assert.match(text.stdout, /job_type: standard/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 // ---------------------------------------------------------------------
 // job set-current
 // ---------------------------------------------------------------------
@@ -642,13 +695,14 @@ test('job current preserves the existing workflow\'s started_at when the job sta
   }
 });
 
-test('job current does not rewrite the pointer when the projected workflow, next_command, and current_step are all unchanged', () => {
+test('job current does not rewrite the pointer when the projected workflow, next_command, current_step, and job_type are all unchanged', () => {
   const ctx = scratch();
   try {
     seedJob(ctx, 'j1');
     seedPointer(ctx, { id: 'j1' }, null, {
       next_command: 'xoch-make',
       current_step: null,
+      job_type: 'standard',
       updated_at: '2020-01-01T00:00:00Z',
     });
     run(['job', 'current'], ctx);
@@ -2139,6 +2193,50 @@ test('job step-advance moves implement -> advance without touching next_command'
     assert.match(result.stdout, /Step advanced for job j1: implement -> advance/);
     assert.strictEqual(fieldValue(dir, 'current_step'), 'advance');
     assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance on a qa job moves title -> intake -> plan instead of through spec', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa', current_step: 'title', next_command: 'xoch-qa' });
+    let result = run(['job', 'step-advance', '--job', 'q1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job q1: title -> intake/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'intake');
+
+    result = run(['job', 'step-advance', '--job', 'q1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Step advanced for job q1: intake -> plan/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'plan');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-qa');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance on an explicitly standard job still moves title -> spec', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 's1', { job_type: 'standard', current_step: 'title', next_command: 'xoch-open' });
+    const result = run(['job', 'step-advance', '--job', 's1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'spec');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job step-advance refuses a job whose job_type it does not recognize', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'w1', { job_type: 'weird', current_step: 'title' });
+    const result = run(['job', 'step-advance', '--job', 'w1'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /unknown job_type 'weird'/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'title');
   } finally {
     cleanup(ctx);
   }
