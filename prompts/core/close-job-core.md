@@ -66,6 +66,13 @@ Confirm one of these is true:
 
 If implementation is incomplete, recommend returning to `xoch-do`.
 
+**QA jobs only (`job_type: qa`).** A QA job changed no source, so Steps 3-5 (review, coverage, documentation) do not apply -- skip them and use this gate instead:
+
+- `qa-report.md` exists in the job directory, and
+- `state.md` records a `qa_decision` (`patch`, `open_job`, or `none`).
+
+If either is missing, do not close: route to `xoch-do` to run the QA report step. Then continue at Step 6. In Step 6, any change outside `.xoch/` is an observe-only violation to report before closing. In Step 7's closure notes, replace the Coverage and Documentation sections with `QA report: qa-report.md` and `Decision: [qa_decision]`, and summarize case results under Validation.
+
 ### Step 3: Check Review Status
 
 Review may be:
@@ -232,11 +239,14 @@ Otherwise, for an arc job, add what Step 9 found and end with the matching next 
 
 For a standalone job, the closure summary is the final output.
 
+For a QA job, report `QA report: [path]` and `Decision: [qa_decision]` in place of the Review, Coverage, and Documentation lines, then end with the follow-up the decision calls for -- `none` needs nothing further; `patch` ends with `Ready for next step: \`xoch-patch\``, and `open_job` ends with `Ready for next step: \`xoch-open\``, each noting that the report's Recommended Follow-Up is its source input. For a QA job inside an arc, report the arc's remaining work as above but end with the QA decision's next step.
+
 ## Rules
 
 {{xoch-partial:response-ending.md}}
 
 - Closing requires either passing review or an explicit review waiver.
+- A QA job (`job_type: qa`) instead requires `qa-report.md` and a recorded `qa_decision`; the review, coverage, and `xoch-doc` gates do not apply to it.
 - {{xoch-config:coverage.strictness required="Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`." recommended="Closing requires coverage to be complete, a documented exception per `coverage-gate.md`, or an explicitly engineer-accepted gap on every job-touched file with code — an unaddressed, undecided gap still blocks closing." default="Closing requires 100% coverage on every job-touched file with code. This cannot be waived, regardless of any review or documentation waiver — the only exception is a documented exception per `coverage-gate.md`."}}
 - `xoch-doc` must have run for this job before closing; do not offer to skip invoking it. A documentation waiver may exist, but only as something `xoch-doc` recorded.
 - Do not hide skipped validation.

@@ -69,6 +69,8 @@ Review the diff against the current phase only. Note unrelated changes as out of
 
 If the diff contains next-phase work, call it out separately. Do not expand the current review into implementing or validating that next phase.
 
+**QA jobs only (`job_type: qa`).** A QA job must not change source. Any changed, staged, or untracked path outside `.xoch/` is an observe-only violation, whoever made it: report each path, do not advance, and ask the engineer to revert it or move it into a separate job. Only `.xoch/` changes (results notes, snapshots, state) are expected.
+
 ### Step 3: Check Phase Requirements
 
 For the current phase, assess:
@@ -84,6 +86,8 @@ For the current phase, assess:
 If requirements changed, recommend `xoch-revise` instead of advancing blindly.
 
 For a completed checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the standard files/tests/coverage checklist above: what the engineer exercised live, what was found, and what was corrected.
+
+**QA jobs only (`job_type: qa`).** Replace the files/tests/coverage checklist above with the phase's `notes/qa-phase-[N].md`: every planned case has a status (`pass`, `fail`, `blocked`, `skipped`), every `fail` has reproduction values, expected vs. actual, and a proposed severity, and every `blocked`/`skipped` case has a reason. A failing case does not block advancing -- failures are the QA job's output, not a defect in the phase. A case with no recorded result does. The snapshot's Files Changed section lists only `.xoch/` artifacts, and its Validation section summarizes case status counts.
 
 ### Step 4: Provide Phase Review
 

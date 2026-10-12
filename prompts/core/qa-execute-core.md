@@ -1,0 +1,136 @@
+---
+name: xoch-qa-execute-core
+description: Full reference workflow for xoch-do's implement step on a QA job
+---
+
+# Xoch - QA Execute Core
+
+This is the full reference workflow for `xoch-do`'s `implement` step on a QA job. It is rendered to `~/.xoch/prompts/core/qa-execute-core.md` and is not installed as a command.
+
+## Purpose
+
+Run -- or hand to the engineer -- every case in the current QA phase exactly as planned, against the confirmed target only, and record what actually happened. Nothing is fixed here.
+
+{{xoch-partial:context-economy.md}}
+
+## Process
+
+### Step 1: Load The Phase
+
+Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read `state` (for `qa_environment`, `qa_target`, `qa_environment_confirmed`, `qa_capabilities`) and the current phase section of `phases.md` -- its required capability, allowed owners, case table, and engineer instructions.
+
+If `qa_environment_confirmed` is not `true`, stop: do not send any input. Report the gap and route back to `xoch-qa` for intake.
+
+{{xoch-partial:phase-boundary.md}}
+
+### Step 2: Brief The Phase
+
+Before running anything, tell the engineer:
+
+- phase title and what it exercises
+- the target and environment, restated: `[dev | staging] - [target]`
+- the required capability and whether the agent has it
+- every case ID with a one-line summary, and how many cases there are
+- anything the cases will create (accounts, records, uploads) and whether it needs cleaning up afterward
+
+### Step 3: Ask Who Runs It
+
+Offer only the owners the phase allows:
+
+- capability available -> `How would you like to proceed? [E]ngineer does, [A]gent does, or [C]ollaborate?`
+- capability not available -> `I can't run this phase's cases myself ([capability] isn't available). How would you like to proceed? [E]ngineer does, or [C]ollaborate?`
+
+Do not run any case until the engineer chooses, unless they already chose in the message that invoked `xoch-do`.
+
+- `[A]` Agent runs every case, in order, and records results.
+- `[E]` Engineer runs every case. Print the case table and the numbered engineer instructions with every exact value, then wait for the engineer's results.
+- `[C]` Split the cases with the engineer as you go -- the agent runs what its capabilities allow and the engineer runs the rest -- and record who ran each.
+
+### Step 4: Run Or Hand Off Cases
+
+For every case:
+
+- Use the planned input **exactly** -- same characters, same encoding, same steps. If a case cannot be run as written (the field no longer exists, a precondition fails), mark it `blocked` with the reason instead of improvising a different case.
+- Send input only to the confirmed target. If a step would leave it (a redirect to production, a third-party call, a real email or payment), stop that case and mark it `blocked`.
+- Capture evidence sized to the case: HTTP status and a short response excerpt, the message shown on screen, console or network errors, a screenshot or GIF path when a browser tool supports it, or the exact command output.
+- Compare the actual result with the planned expected result and assign a status:
+  - `pass` -- matches the expected result
+  - `fail` -- does not match
+  - `blocked` -- could not be run as written
+  - `skipped` -- intentionally not run, with the engineer's reason
+
+For every `fail`, also record:
+
+- exact reproduction: target, the literal input, and the steps
+- expected vs. actual
+- proposed severity -- `critical` (security exposure, data loss, crash of a core flow), `high` (core flow broken or wrong), `medium` (secondary flow or poor handling of bad input), `low` (cosmetic or message wording). This is a proposal the engineer can change.
+
+Never edit source, configuration, or data to make a case pass, and never retry a failing case with different input to "see if it works" without recording that as a separate, labeled exploratory note.
+
+### Step 5: Record Results
+
+Write the phase's results:
+
+```bash
+xoch file write --job "[job-id]" --path "notes/qa-phase-[N].md" <<'XOCHEOF'
+# QA Phase [N] Results - [title]
+
+**Run**: [today]
+**Environment**: [dev | staging] - [target]
+**Ran by**: [[A] | [E] | [C]]
+
+| ID | Status | Actual result | Evidence | Ran by |
+|---|---|---|---|---|
+
+## Failures
+
+### [case ID] - [short title]
+
+- Severity (proposed): [critical | high | medium | low]
+- Reproduction: [target, literal input, steps]
+- Expected: [..]
+- Actual: [..]
+- Evidence: [..]
+
+## Blocked / Skipped
+
+- [case ID] - [reason]
+
+## Notes
+
+[anything created that needs cleanup, exploratory notes, environment hiccups]
+XOCHEOF
+```
+
+Summarize for the engineer: counts per status, each failure in one line with its proposed severity, and any blocked or skipped cases.
+
+Update `state.md`:
+
+```bash
+xoch state set --job "[job-id]" --field status --value phase_in_progress
+xoch state set --job "[job-id]" --field last_make_summary --value "[N] cases: [x] pass, [y] fail, [z] blocked, [w] skipped"
+```
+
+## Output
+
+Report:
+
+```text
+QA phase results recorded.
+Job: [job-id]
+Current phase: [N] - [title]
+```
+
+Then run `xoch job step-advance --job "[job-id]"` to move `implement` -> `advance` and continue directly into `advance-core.md`, following its **QA jobs** branches, in this same response. Do not print a `Ready for next step` line for this transition.
+
+## Rules
+
+{{xoch-partial:response-ending.md}}
+
+{{xoch-partial:xoch-file-helper-rule.md}}
+
+{{xoch-partial:engineer-git-rule.md}}
+
+- Never edit source files. Record failures; do not fix them.
+- Never change a planned case's input while running it. Blocked is an honest result.
+- Never send input to anything other than the confirmed target.
