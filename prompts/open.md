@@ -16,6 +16,7 @@ The workflow boundary check above already ran `job current --json`. Decide what 
   - signals that this is really several related jobs -- set up an arc first
   - a bare invocation with no job description at all -- search for something to resume (paused, active-elsewhere, or archived)
   - otherwise -- open a fresh job
+- **Active QA job (`job_type: qa`) at `title`, `intake`, or `plan`.** This job's open sequence belongs to `xoch-qa`, not `xoch-open`. Summarize its state and end with `Ready for next step: \`xoch-qa\``. Do not run its steps here.
 - **Active job exists, `current_step` is `title`, `spec`, or `plan`.** If the engineer's message is answering or continuing that step, continue it -- if you already know the flow from this conversation, continue from context; otherwise read:
   - `title` -- `open-core.md`
   - `spec` -- `~/.xoch/prompts/core/spec-core.md`
