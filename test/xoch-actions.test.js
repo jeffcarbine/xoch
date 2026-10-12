@@ -2126,6 +2126,125 @@ test('an indented sub-list under a non-skipped key passes through phase advance 
 });
 
 // ---------------------------------------------------------------------
+// qa confirm-env / qa capabilities / QA phase-1 environment guard
+// ---------------------------------------------------------------------
+
+test('qa confirm-env records a dev or staging environment and its target as confirmed', () => {
+  for (const env of ['dev', 'staging']) {
+    const ctx = scratch();
+    try {
+      const dir = seedJob(ctx, 'q1', { job_type: 'qa' });
+      const result = run(['qa', 'confirm-env', '--job', 'q1', '--env', env, '--target', 'http://localhost:3000'], ctx);
+      assert.strictEqual(result.status, 0);
+      assert.match(result.stdout, new RegExp(`QA environment confirmed for job q1: ${env}`));
+      assert.strictEqual(fieldValue(dir, 'qa_environment'), env);
+      assert.strictEqual(fieldValue(dir, 'qa_target'), 'http://localhost:3000');
+      assert.strictEqual(fieldValue(dir, 'qa_environment_confirmed'), 'true');
+    } finally {
+      cleanup(ctx);
+    }
+  }
+});
+
+test('qa confirm-env refuses production or any environment other than dev or staging, and records nothing', () => {
+  for (const env of ['production', 'prod', 'local']) {
+    const ctx = scratch();
+    try {
+      const dir = seedJob(ctx, 'q1', { job_type: 'qa' });
+      const result = run(['qa', 'confirm-env', '--job', 'q1', '--env', env, '--target', 'https://example.com'], ctx);
+      assert.strictEqual(result.status, 1);
+      assert.match(result.stderr, /qa confirm-env --env must be one of: dev, staging/);
+      assert.strictEqual(fieldValue(dir, 'qa_environment_confirmed'), undefined);
+    } finally {
+      cleanup(ctx);
+    }
+  }
+});
+
+test('qa confirm-env requires --job, --env, and --target, and an existing job', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'q1', { job_type: 'qa' });
+    assert.match(run(['qa', 'confirm-env', '--env', 'dev', '--target', 't'], ctx).stderr, /qa confirm-env requires --job/);
+    assert.match(run(['qa', 'confirm-env', '--job', 'q1', '--target', 't'], ctx).stderr, /qa confirm-env requires --env/);
+    assert.match(run(['qa', 'confirm-env', '--job', 'q1', '--env', 'dev'], ctx).stderr, /qa confirm-env requires --target/);
+    const missing = run(['qa', 'confirm-env', '--job', 'nope', '--env', 'dev', '--target', 't'], ctx);
+    assert.strictEqual(missing.status, 1);
+    assert.match(missing.stderr, /state not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('qa capabilities records browser, http, and shell as yes or no', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa' });
+    const result = run(['qa', 'capabilities', '--job', 'q1', '--browser', 'no', '--http', 'yes', '--shell', 'yes'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /QA capabilities recorded for job q1: browser=no, http=yes, shell=yes/);
+    assert.strictEqual(fieldValue(dir, 'qa_capabilities'), 'browser=no, http=yes, shell=yes');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('qa capabilities requires every capability flag and an existing job, and rejects values other than yes or no', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa' });
+    assert.match(run(['qa', 'capabilities', '--browser', 'yes', '--http', 'yes', '--shell', 'yes'], ctx).stderr, /qa capabilities requires --job/);
+    assert.match(run(['qa', 'capabilities', '--job', 'q1', '--http', 'yes', '--shell', 'yes'], ctx).stderr, /qa capabilities --browser must be yes or no/);
+    assert.match(run(['qa', 'capabilities', '--job', 'q1', '--browser', 'maybe', '--http', 'yes', '--shell', 'yes'], ctx).stderr, /qa capabilities --browser must be yes or no/);
+    assert.match(run(['qa', 'capabilities', '--job', 'q1', '--browser', 'yes', '--http', 'yes'], ctx).stderr, /qa capabilities --shell must be yes or no/);
+    assert.strictEqual(fieldValue(dir, 'qa_capabilities'), undefined);
+    const missing = run(['qa', 'capabilities', '--job', 'nope', '--browser', 'yes', '--http', 'yes', '--shell', 'yes'], ctx);
+    assert.strictEqual(missing.status, 1);
+    assert.match(missing.stderr, /state not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance refuses to enter phase 1 of a qa job until a dev or staging environment is confirmed', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa', current_phase: 'null', current_step: 'plan' });
+    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0', '--next-phase', '1', '--next-title', 'Forms'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /QA job q1 cannot enter phase 1 until its environment is confirmed/);
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'plan');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance enters phase 1 of a qa job once its environment is confirmed', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa', current_phase: 'null', current_step: 'plan', qa_environment_confirmed: 'true' });
+    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0', '--next-phase', '1', '--next-title', 'Forms'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), '1');
+    assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance into phase 1 of a standard job needs no environment confirmation', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 's1', { job_type: 'standard', current_phase: 'null', current_step: 'plan' });
+    const result = run(['phase', 'advance', '--job', 's1', '--phase', '0', '--next-phase', '1', '--next-title', 'Build'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), '1');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
 // job step-advance
 // ---------------------------------------------------------------------
 

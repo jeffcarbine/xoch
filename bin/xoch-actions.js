@@ -965,6 +965,15 @@ function phaseAdvance(argv) {
   const phasesPath = path.join(jobDir, 'phases.md');
   if (!fs.existsSync(statePath)) die(`state not found: ${statePath}`);
 
+  // A QA job sends real test input at a real target, so it cannot enter
+  // phase 1 until `qa confirm-env` has recorded a dev or staging target.
+  if (phase === '0') {
+    const entryState = scalarState(statePath);
+    if (jobTypeOf(entryState) === 'qa' && entryState.qa_environment_confirmed !== 'true') {
+      die(`QA job ${jobId} cannot enter phase 1 until its environment is confirmed -- run 'qa confirm-env' with a dev or staging target first`);
+    }
+  }
+
   const todayStr = today();
   const phaseEntries = [];
 
@@ -1102,6 +1111,58 @@ const STEP_TRANSITIONS = {
   },
 };
 
+// Environments a QA job may run against. Anything else -- production
+// included -- is refused outright rather than confirmed twice.
+const QA_ENVIRONMENTS = ['dev', 'staging'];
+
+/**
+ * Records the engineer's confirmation that a QA job targets a dev or
+ * staging environment, which `phase advance` requires before phase 1.
+ * @param {string[]} argv - `--job ID --env dev|staging --target TEXT`.
+ */
+function qaConfirmEnv(argv) {
+  const flags = parseFlags(argv, []);
+  const jobId = flags.job;
+  if (!jobId) die('qa confirm-env requires --job');
+  if (!flags.env) die('qa confirm-env requires --env');
+  if (!flags.target) die('qa confirm-env requires --target');
+  if (!QA_ENVIRONMENTS.includes(flags.env)) {
+    die(`qa confirm-env --env must be one of: ${QA_ENVIRONMENTS.join(', ')}`);
+  }
+  const statePath = path.join(xochRoot(), 'work', 'jobs', jobId, 'state.md');
+  if (!fs.existsSync(statePath)) die(`state not found: ${statePath}`);
+
+  updateStateFields(statePath, {
+    qa_environment: flags.env,
+    qa_target: flags.target,
+    qa_environment_confirmed: 'true',
+    last_updated: today(),
+  });
+  console.log(`QA environment confirmed for job ${jobId}: ${flags.env} (${flags.target})`);
+}
+
+/**
+ * Records which QA capabilities the agent has (browser automation, HTTP
+ * requests, shell), as one scalar `qa_capabilities` line in state.md.
+ * @param {string[]} argv - `--job ID --browser yes|no --http yes|no --shell yes|no`.
+ */
+function qaCapabilities(argv) {
+  const flags = parseFlags(argv, []);
+  const jobId = flags.job;
+  if (!jobId) die('qa capabilities requires --job');
+  const parts = [];
+  for (const name of ['browser', 'http', 'shell']) {
+    if (!['yes', 'no'].includes(flags[name])) die(`qa capabilities --${name} must be yes or no`);
+    parts.push(`${name}=${flags[name]}`);
+  }
+  const statePath = path.join(xochRoot(), 'work', 'jobs', jobId, 'state.md');
+  if (!fs.existsSync(statePath)) die(`state not found: ${statePath}`);
+
+  const value = parts.join(', ');
+  updateStateFields(statePath, { qa_capabilities: value, last_updated: today() });
+  console.log(`QA capabilities recorded for job ${jobId}: ${value}`);
+}
+
 function stepAdvance(argv) {
   const flags = parseFlags(argv, []);
   const jobId = flags.job;
@@ -1223,6 +1284,8 @@ function usage() {
   xoch-actions.js job current [--json]
   xoch-actions.js job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
   xoch-actions.js job set-current --job ID
+  xoch-actions.js qa confirm-env --job ID --env dev|staging --target TEXT
+  xoch-actions.js qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
   xoch-actions.js state set --job ID --field FIELD --value VALUE
   xoch-actions.js pointer clear --job ID
   xoch-actions.js workflow begin --job ID --name NAME [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
@@ -1312,6 +1375,12 @@ function main(argv) {
       break;
     case 'job:step-advance':
       stepAdvance(rest);
+      break;
+    case 'qa:confirm-env':
+      qaConfirmEnv(rest);
+      break;
+    case 'qa:capabilities':
+      qaCapabilities(rest);
       break;
     case 'file:write':
       fileWrite(rest);

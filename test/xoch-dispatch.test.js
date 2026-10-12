@@ -88,6 +88,20 @@ test('xoch job current --json produces the same output as invoking xoch-actions.
   }
 });
 
+test('xoch qa capabilities produces the same output as invoking xoch-actions.js directly', () => {
+  const ctx = scratch();
+  try {
+    const args = ['qa', 'capabilities', '--job', 'missing', '--browser', 'yes', '--http', 'yes', '--shell', 'yes'];
+    const viaDispatcher = run(args, ctx);
+    const direct = runScript(XOCH_ACTIONS, args, ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+    assert.strictEqual(viaDispatcher.stderr, direct.stderr);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('xoch arc job-move produces the same output as invoking xoch-actions.js directly', () => {
   const ctxA = scratch();
   const ctxB = scratch();
@@ -246,7 +260,7 @@ test('xoch git-state with no arguments produces the same output as git-state.js 
 });
 
 test('every xoch-actions.js group namespace reaches xoch-actions.js without a dispatcher wiring error', () => {
-  const groups = ['job', 'state', 'arc', 'pointer', 'workflow', 'snapshot', 'phase', 'file'];
+  const groups = ['job', 'state', 'arc', 'pointer', 'workflow', 'snapshot', 'phase', 'file', 'qa'];
   for (const group of groups) {
     const ctx = scratch();
     try {
