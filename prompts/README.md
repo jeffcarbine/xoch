@@ -30,7 +30,7 @@ open -> do -> doc -> close
 | Command | Purpose | Primary Output |
 |---|---|---|
 | `open` | Open a fresh job, reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.md`, `spec.md`, `plan.md`, `phases.md` |
-| `do` | Do whatever the current step calls for: implement the current phase, review and advance it, and run the final quality-gate review once every phase is done. | source changes, test evidence, phase snapshots, job `review.md` |
+| `do` | Do whatever the current step calls for: implement the current phase, review and advance it, and run the final quality-gate review once every phase is done. Routes by `job_type` to `standard-job-core.md` or `qa-job-core.md`. | standard: source changes, test evidence, phase snapshots, job `review.md`; QA: case results, triaged patches, `qa-report.md` |
 | `doc` | Create, refresh, repair, or validate docs; a required stop after a passing review. | updated docs, recorded documentation status |
 | `close` | Close a completed job or an arc. | job `closure.md`, cleared current pointer |
 
@@ -42,6 +42,8 @@ Bundled commands track their position with `current_step` in job state, not with
 Run `do` repeatedly until every phase is complete and the final review passes.
 
 `plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `do` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise` ceremony and no amending already-completed phase snapshots. `xoch phase advance --next-type` is what carries the type from `phases.md` into job state.
+
+`do.md` itself is a thin router: it reads `job_type` from `job current --json` and loads exactly one job-type core -- `core/standard-job-core.md` for `standard` (or a job with no `job_type`), `core/qa-job-core.md` for `qa` -- and stops to ask on any other value. Each job-type core owns that type's step routing.
 
 `do`'s `final_review` step is the expected gate before `close`. A passing review always routes to `doc` next — documentation is a required stop, not an optional detour — and `doc` may route onward to `pr` or directly to `close`. `close` confirms `doc` has run before proceeding; a documentation waiver may still exist, but only as something `doc` itself recorded. `close` can continue with an explicit engineer waiver for review, and any such waiver must be recorded.
 
@@ -78,6 +80,7 @@ Arcs reference job IDs. They do not contain nested job folders. `xoch arc job-mo
 
 | Command | Purpose |
 |---|---|
+| `qa` | Open a QA job (`job_type: qa`) and carry it through `title` -> `intake` -> `plan`. See [QA Jobs](#qa-jobs). |
 | `pr` | Generate an evidence-backed pull request title and body for the active job. |
 | `map` | Maintain the local workspace map and resolve project dependencies. |
 | `roadmap` | Show active workflow, current progress, and upcoming phase contents without changing state. |
@@ -110,6 +113,7 @@ open.md
 patch.md
 pause.md
 pr.md
+qa.md
 revise.md
 roadmap.md
 sidebar.md
@@ -155,11 +159,17 @@ core/foundation-core.md
 core/implement-core.md        do: implement step
 core/open-core.md             open: entry modes and title step (also run by next)
 core/plan-core.md             open: plan step
+core/qa-execute-core.md       do: implement step on a QA job (run cases, triage, patch, re-test)
+core/qa-intake-core.md        qa: intake step
+core/qa-job-core.md           do: step routing for QA jobs
+core/qa-plan-core.md          qa: plan step
+core/qa-report-core.md        do: final_review step on a QA job
 core/review-core.md           do: final_review step
 core/revise-arc-core.md       revise: arc step
 core/revise-plan-core.md      revise: plan step
 core/revise-spec-core.md      revise: spec step
 core/spec-core.md             open: spec step
+core/standard-job-core.md     do: step routing for standard jobs
 core/trace-core.md
 core/workflow-boundary-core.md
 ```
@@ -251,6 +261,18 @@ Prefer concise imperative instructions. Keep command prompts focused on what the
 Prefer installed helpers for deterministic mechanics. Use `xoch` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
 
 Helper filenames use kebab-case consistently. Deterministic helpers cover core state mechanics, README assembly, archives, acceptance coverage, project commands, git state, documentation routing, prompt validation, workspace mapping, dependency resolution, multi-project routing, and guarded context synchronization. See the root README helper inventory.
+
+---
+
+## QA Jobs
+
+A QA job (`job_type: qa`) tests a running feature against planned cases instead of building one. `qa` opens it through `title` -> `intake` -> `plan`; `do` then runs one QA phase per invocation and writes the QA report; `close` finishes it.
+
+- **Intake** records the target, requires engineer confirmation that the environment is `dev` or `staging` (`xoch qa confirm-env`), and records the agent's checked capabilities (`xoch qa capabilities`). `phase advance` refuses to enter phase 1 of a QA job without the confirmation.
+- **Cases** carry an ID (`QA-P[n]-[nnn]`), target, exact input values and steps, expected result, and rationale. A phase needing a capability the agent lacks is limited to `[E]`/`[C]` ownership.
+- **Results** for each phase go in `notes/qa-phase-[N].md`: per-case status (`pass`, `fail`, `blocked`, `skipped`), evidence, and for each failure its reproduction, expected vs. actual, and proposed severity.
+- **Triage** follows each phase's results: failures are grouped into patch-now and defer, the engineer accepts or regroups, and patch-now failures are fixed and re-tested by re-running the original case with its exact input plus any affected passing cases. Source changes are allowed only for these recorded patches; `advance` and `close` flag anything else.
+- **Report** (`qa-report.md`) covers per-phase results, failures patched during QA, deferred failures, and coverage gaps, then records a `[P]atch` / `[O]pen a job` / `[N]othing needed` decision for the deferred failures. QA jobs never route to `doc`; `close` requires the report and decision instead of the review, coverage, and documentation gates.
 
 ---
 

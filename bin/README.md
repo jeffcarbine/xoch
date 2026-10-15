@@ -49,7 +49,7 @@ Job, arc, pointer, state, snapshot, and phase mechanics -- the helper prompts re
 
 ```text
 xoch job current [--json]
-xoch job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH]
+xoch job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
 xoch job set-current --job ID
 xoch state set --job ID --field FIELD --value VALUE
 xoch pointer clear --job ID
@@ -70,7 +70,21 @@ xoch file read --job ID --path PATH
 xoch file edit --job ID --path PATH [--replace-all]
 xoch discovery write --topic TOPIC
 xoch discovery read --path PATH
+xoch qa confirm-env --job ID --env dev|staging --target TEXT
+xoch qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
 ```
+
+`job open --type` sets the job's `job_type` (default `standard`; any other value is rejected). A
+`qa` job starts with `next_command: xoch-qa`. `job_type` is projected into `current.json` alongside
+`next_command` and `current_step`, and a job whose `state.md` has no `job_type` is read as
+`standard`.
+
+`qa confirm-env` records `qa_environment`, `qa_target`, and `qa_environment_confirmed: true` for a
+QA job, and refuses any `--env` other than `dev` or `staging`. `phase advance` refuses to enter
+phase 1 of a QA job until this confirmation is recorded. `qa capabilities` records what the agent
+checked it can do -- drive a browser, send HTTP requests, run shell commands -- as a single
+`qa_capabilities` line, so planning can limit phases the agent cannot run to engineer or
+collaborative ownership.
 
 `phase advance`'s `--next-type` marks the phase being advanced *into* as `implementation`
 (default) or `checkpoint` -- a checkpoint phase carries no implementation of its own; it's where
@@ -94,7 +108,8 @@ Both also rename retired command names in `next_command`/`return_command` (`xoch
 `xoch-do`; `xoch-revise-spec`, `xoch-revise-plan`, `xoch-revise-arc` -> `xoch-revise`), rewriting
 the job's `state.md` too so state and pointer agree.
 `job step-advance` moves `current_step` forward for a transition with no phase-index bookkeeping
-and no outcome to judge (`title`->`spec`, `spec`->`plan`, `implement`->`advance`) -- it refuses to
+and no outcome to judge, following the job type's step table: `title`->`spec`->`plan` for a
+standard job, `title`->`intake`->`plan` for a QA job, and `implement`->`advance` for both -- it refuses to
 move past `plan` or `advance` (those cross a phase boundary; use `phase advance`, which sets
 `current_step` too) or past `final_review` (leaving it depends on the review's own pass/fail
 outcome, not a fixed lookup).

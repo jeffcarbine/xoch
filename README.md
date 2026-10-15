@@ -110,12 +110,26 @@ In an arc, `xoch-next` replaces the `xoch-close` -> `xoch-open` hop between jobs
 - **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-do` invocation.
 - **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch-close` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
 
+### QA Jobs
+
+A QA job exercises a running feature against a planned set of test cases instead of building one. It is an ordinary job with `job_type: qa`, opened by `xoch-qa` rather than `xoch-open`:
+
+```text
+xoch-qa -> xoch-do (once per QA phase, then the QA report) -> xoch-close
+```
+
+- **Open (`xoch-qa`).** `title` -> `intake` -> `plan`. Intake records what is being QA'd, requires the engineer to confirm the target is `dev` or `staging` (production is refused, and phase 1 cannot start without this confirmation), and records which capabilities the agent actually has -- browser, HTTP requests, shell. The plan lays out ordered phases of cases, each with an ID (`QA-P[n]-[nnn]`), the exact input values, the expected result, and why the case is worth running. Phases that need a capability the agent lacks can only be run by the engineer or collaboratively, with step-by-step instructions.
+- **Each phase (`xoch-do`).** The agent runs or hands off every case exactly as planned and records `pass`, `fail`, `blocked`, or `skipped` with evidence in `notes/qa-phase-[N].md`. It then sorts the failures into **patch now** (narrow, clearly understood fixes) and **defer** (anything larger), and the engineer confirms the grouping. Patch-now failures are fixed and re-tested on the spot by re-running the original case with the same input; the original failure stays on record. `advance` refuses to move on if any source change is not tied to a recorded patch.
+- **Report (`xoch-do`'s `final_review`).** The agent writes `qa-report.md` -- results per phase, failures patched during QA, deferred failures with reproduction steps and severity, and coverage gaps -- then asks `[P]atch`, `[O]pen a job`, or `[N]othing needed` for the deferred failures. A QA job never routes to `xoch-doc`.
+- **Close (`xoch-close`).** Requires `qa-report.md` and the recorded decision, and skips the review, coverage, and documentation gates. A `[P]` or `[O]` decision then hands the deferred failures to `xoch-patch` or `xoch-open` as their starting requirements, so the follow-up never overlaps an open QA job.
+
 ---
 
 ## Supporting Commands
 
 | Command | Purpose |
 |---|---|
+| `xoch-qa` | Open a QA job: confirm a dev or staging target and the agent's capabilities, then plan explicit QA phases. See [QA Jobs](#qa-jobs). |
 | `xoch-next` | Close the active arc job and open the arc's next planned job in one pass. |
 | `xoch-revise` | Revise a job's spec, its plan, both, or an arc -- inferring which, then flowing through each step behind its own accept/modify gate. |
 | `xoch-doc` | Create, refresh, or repair project and feature documentation. |
@@ -250,7 +264,7 @@ Each job has a `state.md` file that records the active workflow state:
 .xoch/work/jobs/[job-id]/state.md
 ```
 
-Typical state includes the job ID, title, optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
+Typical state includes the job ID, title, job type (`standard` or `qa`; jobs created before job types existed are read as `standard`), optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
 
 New work should use the resolved Xoch storage root's `work/` directory (see [Storage Location](#storage-location)). Older migration-era jobs may still exist under `.xoch/context/` (always repository-local, unaffected by the storage-location setting); Xoch prompts should not move those legacy jobs unless the engineer explicitly asks.
 
