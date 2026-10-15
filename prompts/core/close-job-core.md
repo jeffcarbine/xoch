@@ -66,12 +66,12 @@ Confirm one of these is true:
 
 If implementation is incomplete, recommend returning to `xoch-do`.
 
-**QA jobs only (`job_type: qa`).** A QA job changed no source, so Steps 3-5 (review, coverage, documentation) do not apply -- skip them and use this gate instead:
+**QA jobs only (`job_type: qa`).** A QA job's only source changes are small, re-tested patches recorded per phase, so Steps 3-5 (review, coverage, documentation) do not apply -- skip them and use this gate instead:
 
 - `qa-report.md` exists in the job directory, and
 - `state.md` records a `qa_decision` (`patch`, `open_job`, or `none`).
 
-If either is missing, do not close: route to `xoch-do` to run the QA report step. Then continue at Step 6. In Step 6, any change outside `.xoch/` is an observe-only violation to report before closing. In Step 7's closure notes, replace the Coverage and Documentation sections with `QA report: qa-report.md` and `Decision: [qa_decision]`, and summarize case results under Validation.
+If either is missing, do not close: route to `xoch-do` to run the QA report step. Then continue at Step 6. In Step 6, any change outside `.xoch/` that is not listed under Patches in `qa-report.md` is a violation to report before closing. In Step 7's closure notes, replace the Coverage and Documentation sections with `QA report: qa-report.md` and `Decision: [qa_decision]`, and summarize case results under Validation.
 
 ### Step 3: Check Review Status
 

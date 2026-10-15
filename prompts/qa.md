@@ -7,7 +7,7 @@ description: Open a QA job, confirm a safe target and the agent's capabilities, 
 
 {{xoch-partial:workflow-boundary.md}}
 
-`xoch-qa` opens a **QA job**: an ordinary Xoch job with `job_type: qa`, so every other command recognizes it as the active job. A QA job observes and records -- it never changes source code. Its lifecycle mirrors a standard job's:
+`xoch-qa` opens a **QA job**: an ordinary Xoch job with `job_type: qa`, so every other command recognizes it as the active job. A QA job observes and records. After each phase, the engineer can patch and re-test small, well-understood failures on the spot; larger findings are deferred to a follow-up job. Its lifecycle mirrors a standard job's:
 
 ```text
 xoch-qa -> xoch-do (once per QA phase, then the QA report) -> xoch-close
@@ -72,5 +72,5 @@ Follow each step's own ending as written in its core file. The response only sto
 
 {{xoch-partial:engineer-git-rule.md}}
 
-- QA jobs never edit source files. Findings are recorded and routed to `xoch-patch` or `xoch-open` from the QA report.
+- QA jobs change source only to patch failures accepted as patch-now during a phase's triage. Deferred findings are routed to `xoch-patch` or `xoch-open` from the QA report.
 - Never send test input at a target the engineer has not confirmed as dev or staging.

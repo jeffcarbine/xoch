@@ -69,7 +69,7 @@ Review the diff against the current phase only. Note unrelated changes as out of
 
 If the diff contains next-phase work, call it out separately. Do not expand the current review into implementing or validating that next phase.
 
-**QA jobs only (`job_type: qa`).** A QA job must not change source. Any changed, staged, or untracked path outside `.xoch/` is an observe-only violation, whoever made it: report each path, do not advance, and ask the engineer to revert it or move it into a separate job. Only `.xoch/` changes (results notes, snapshots, state) are expected.
+**QA jobs only (`job_type: qa`).** A QA job changes source only to apply patches the engineer accepted during triage. Compare every changed, staged, or untracked path outside `.xoch/` with the Files listed under Patches in `notes/qa-phase-[N].md`. Any path not tied to a recorded patch is a violation, whoever made it: report each path, do not advance, and ask the engineer to revert it, record it as a patch, or move it into a separate job. Review each recorded patch's diff for scope -- it fixes its failure and nothing else.
 
 ### Step 3: Check Phase Requirements
 
@@ -87,7 +87,7 @@ If requirements changed, recommend `xoch-revise` instead of advancing blindly.
 
 For a completed checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the standard files/tests/coverage checklist above: what the engineer exercised live, what was found, and what was corrected.
 
-**QA jobs only (`job_type: qa`).** Replace the files/tests/coverage checklist above with the phase's `notes/qa-phase-[N].md`: every planned case has a status (`pass`, `fail`, `blocked`, `skipped`), every `fail` has reproduction values, expected vs. actual, and a proposed severity, and every `blocked`/`skipped` case has a reason. A failing case does not block advancing -- failures are the QA job's output, not a defect in the phase. A case with no recorded result does. The snapshot's Files Changed section lists only `.xoch/` artifacts, and its Validation section summarizes case status counts.
+**QA jobs only (`job_type: qa`).** Replace the files/tests/coverage checklist above with the phase's `notes/qa-phase-[N].md`: every planned case has a status (`pass`, `fail`, `blocked`, `skipped`), every `fail` has reproduction values, expected vs. actual, and a proposed severity, and every `blocked`/`skipped` case has a reason. Every `fail` also has a resolution: `patched` with a passing re-test recorded under Patches, or `deferred` with a reason under Deferred. A deferred failure does not block advancing -- deferred failures are the QA job's output, not a defect in the phase. A case with no recorded result, a failure with no resolution, or a `patched` failure with no passing re-test does. The snapshot's Files Changed section lists `.xoch/` artifacts plus each patch's files, and its Validation section summarizes case status counts and patched/deferred counts.
 
 ### Step 4: Provide Phase Review
 

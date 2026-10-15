@@ -9,7 +9,7 @@ This is the full reference workflow for `xoch-do`'s `final_review` step on a QA 
 
 ## Purpose
 
-Turn every phase's recorded results into one QA report the engineer can act on, then ask what happens next: patch, open a job, or nothing.
+Turn every phase's recorded results into one QA report the engineer can act on, then ask what happens next for the failures that were deferred: patch, open a job, or nothing. Failures already patched and re-tested during their phase are reported but need no follow-up.
 
 Expected files after this step:
 
@@ -43,11 +43,15 @@ xoch file write --job "[job-id]" --path qa-report.md <<'XOCHEOF'
 
 [One paragraph: what was QA'd, overall result, the most important finding.]
 
-| Phase | Cases | Pass | Fail | Blocked | Skipped | Not run |
-|---|---|---|---|---|---|---|
-| **Total** | | | | | | |
+| Phase | Cases | Pass | Fail | Patched | Deferred | Blocked | Skipped | Not run |
+|---|---|---|---|---|---|---|---|---|
+| **Total** | | | | | | | | |
 
-## Failures
+## Patched During QA
+
+- [case ID] - [short title] - [severity] - [change] - [files] - re-test passed
+
+## Deferred Failures
 
 Ordered by severity (proposed by the agent; engineer may adjust).
 
@@ -72,19 +76,19 @@ Ordered by severity (proposed by the agent; engineer may adjust).
 
 - Recommendation: [patch | open a job | nothing needed]
 - Rationale: [why this scope]
-- Suggested source requirements: [the failures to address, as they would be handed to xoch-patch or xoch-open]
+- Suggested source requirements: [the deferred failures to address, as they would be handed to xoch-patch or xoch-open]
 XOCHEOF
 ```
 
 ### Step 3: Recommend And Ask
 
-Recommend one option from the results:
+Recommend one option from the deferred failures only -- patched failures are already resolved:
 
-- **Nothing needed** -- no failures, and no blocked or not-run cases the engineer considers important.
+- **Nothing needed** -- no deferred failures, and no blocked or not-run cases the engineer considers important.
 - **Patch** -- one or two failures, narrow and well understood, likely confined to a few files, no security exposure, and clear expected behavior.
 - **Open a job** -- anything broader: several failures, a security-relevant failure (injection, escaping, authorization), unclear expected behavior, or a fix likely to span components.
 
-Present the summary table, the failures in one line each, and the recommendation with its reason. Then ask exactly:
+Present the summary table, the patched failures in one line each, the deferred failures in one line each, and the recommendation with its reason. Then ask exactly:
 
 ```text
 What would you like to do next? [P]atch, [O]pen a job, or [N]othing needed?
@@ -118,8 +122,8 @@ Decision: [patch | open a job | nothing needed]
 Then end with the next step. A QA job is closed before follow-up work starts, so there is never a second active job:
 
 - `[N]` -- `Ready for next step: \`xoch-close\``
-- `[P]` -- say that after closing, `xoch-patch` should be given the report's failures (`qa-report.md` -> Recommended Follow-Up) as its issue, then end with `Ready for next step: \`xoch-close\``
-- `[O]` -- say that after closing, `xoch-open` should be given the report's failures as its source requirements, then end with `Ready for next step: \`xoch-close\``
+- `[P]` -- say that after closing, `xoch-patch` should be given the report's deferred failures (`qa-report.md` -> Recommended Follow-Up) as its issue, then end with `Ready for next step: \`xoch-close\``
+- `[O]` -- say that after closing, `xoch-open` should be given the report's deferred failures as its source requirements, then end with `Ready for next step: \`xoch-close\``
 
 ## Rules
 
@@ -127,6 +131,6 @@ Then end with the next step. A QA job is closed before follow-up work starts, so
 
 {{xoch-partial:xoch-file-helper-rule.md}}
 
-- Never edit source files, and never start the patch or new job from here.
+- Never edit source files here, and never start the patch or new job from here. Patching happens only during a phase's triage step.
 - Never report a case as passing without a recorded result.
 - Never route a QA job to `xoch-doc`.

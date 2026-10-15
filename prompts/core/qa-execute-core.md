@@ -9,7 +9,7 @@ This is the full reference workflow for `xoch-do`'s `implement` step on a QA job
 
 ## Purpose
 
-Run -- or hand to the engineer -- every case in the current QA phase exactly as planned, against the confirmed target only, and record what actually happened. Nothing is fixed here.
+Run -- or hand to the engineer -- every case in the current QA phase exactly as planned, against the confirmed target only, and record what actually happened. Then triage the phase's failures with the engineer: patch and re-test the small, well-understood ones now, and defer the rest to a follow-up job. By the end of the QA job, only deferred failures should survive into the report.
 
 {{xoch-partial:context-economy.md}}
 
@@ -65,7 +65,7 @@ For every `fail`, also record:
 - expected vs. actual
 - proposed severity -- `critical` (security exposure, data loss, crash of a core flow), `high` (core flow broken or wrong), `medium` (secondary flow or poor handling of bad input), `low` (cosmetic or message wording). This is a proposal the engineer can change.
 
-Never edit source, configuration, or data to make a case pass, and never retry a failing case with different input to "see if it works" without recording that as a separate, labeled exploratory note.
+While running cases, never edit source, configuration, or data -- fixes happen only in Step 6, after the phase's results are recorded and triaged. Never retry a failing case with different input to "see if it works" without recording that as a separate, labeled exploratory note.
 
 ### Step 5: Record Results
 
@@ -79,8 +79,8 @@ xoch file write --job "[job-id]" --path "notes/qa-phase-[N].md" <<'XOCHEOF'
 **Environment**: [dev | staging] - [target]
 **Ran by**: [[A] | [E] | [C]]
 
-| ID | Status | Actual result | Evidence | Ran by |
-|---|---|---|---|---|
+| ID | Status | Actual result | Evidence | Ran by | Resolution |
+|---|---|---|---|---|---|
 
 ## Failures
 
@@ -91,6 +91,21 @@ xoch file write --job "[job-id]" --path "notes/qa-phase-[N].md" <<'XOCHEOF'
 - Expected: [..]
 - Actual: [..]
 - Evidence: [..]
+- Resolution: [patch now | defer]
+
+## Patches
+
+### [case ID] - [short title]
+
+- Change: [what was fixed, in one or two lines]
+- Files: [paths]
+- Patched by: [[A] | [E] | [C]]
+- Re-test: [original case, exact same input] -> [pass | fail], plus [affected passing cases re-run] -> [results]
+- Evidence: [..]
+
+## Deferred
+
+- [case ID] - [severity] - [why it needs a follow-up job]
 
 ## Blocked / Skipped
 
@@ -102,13 +117,45 @@ xoch file write --job "[job-id]" --path "notes/qa-phase-[N].md" <<'XOCHEOF'
 XOCHEOF
 ```
 
+Leave the Resolution column, Patches, and Deferred sections empty until Step 6.
+
 Summarize for the engineer: counts per status, each failure in one line with its proposed severity, and any blocked or skipped cases.
+
+If the phase has no failures, skip Step 6.
+
+### Step 6: Triage, Patch, And Re-Test
+
+Sort every `fail` into one of two groups and propose the grouping to the engineer:
+
+- **Patch now** -- narrow and well understood: clear expected behavior, a fix likely confined to a few files, and no design decision or open question about intent.
+- **Defer** -- anything larger: several related failures with a shared cause, unclear expected behavior, a fix spanning components, or a security failure whose fix is a design question rather than a one-line correction.
+
+Present both groups with a one-line reason per failure, then ask:
+
+```text
+Do you want to [A]ccept this grouping, or [M]ove items between groups?
+```
+
+On `[M]`, regroup as the engineer directs and ask again. Do not patch anything until the engineer chooses `[A]`.
+
+Then, for each patch-now failure, ask once for the whole group: `Who patches? [E]ngineer does, [A]gent does, or [C]ollaborate?` For each patch:
+
+1. Make the smallest fix that addresses the recorded failure. Do not fold in refactors, unrelated fixes, or work for other failures.
+2. Make sure the patched code is what the confirmed target is running (restart the local server, rebuild, or wait for the engineer to confirm a staging deploy) before re-testing.
+3. Re-run the original case with its exact planned input, and re-run any of this phase's passing cases the patch could plausibly affect. Re-testing is the bar: no new regression test is required.
+4. If the re-test passes, mark the failure `patched`. If it fails, try one more fix or move the failure to the defer group -- do not keep iterating inside QA.
+
+A patch that cannot be re-tested this session is deferred, not patched.
+
+Update `notes/qa-phase-[N].md`: fill the Resolution column (`patched` or `deferred`; leave it blank for non-failures), add a Patches entry per patched failure, and list deferred failures under Deferred. Keep each original `fail` row and its reproduction details -- a patched failure is still a finding, not a pass.
+
+Summarize: failures patched (with files changed), failures deferred.
 
 Update `state.md`:
 
 ```bash
 xoch state set --job "[job-id]" --field status --value phase_in_progress
-xoch state set --job "[job-id]" --field last_make_summary --value "[N] cases: [x] pass, [y] fail, [z] blocked, [w] skipped"
+xoch state set --job "[job-id]" --field last_make_summary --value "[N] cases: [x] pass, [y] fail ([p] patched, [d] deferred), [z] blocked, [w] skipped"
 ```
 
 ## Output
@@ -131,6 +178,7 @@ Then run `xoch job step-advance --job "[job-id]"` to move `implement` -> `advanc
 
 {{xoch-partial:engineer-git-rule.md}}
 
-- Never edit source files. Record failures; do not fix them.
+- Change source only in Step 6, only to patch a failure the engineer accepted as patch-now, and only as much as that failure needs.
+- Never edit source, configuration, or data to make a case pass while it is being run.
 - Never change a planned case's input while running it. Blocked is an honest result.
 - Never send input to anything other than the confirmed target.
