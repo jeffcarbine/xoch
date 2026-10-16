@@ -49,6 +49,12 @@ If there is no active job, ask the engineer to run `xoch-open` or provide the jo
 
 {{xoch-partial:phase-boundary.md}}
 
+Mark the phase started before any other work. This records the commit the phase begins from -- after the previous phase's changes were committed -- so the phase's snapshot lists only its own changes. It does nothing for a phase already started:
+
+```bash
+xoch phase start --job "[job-id]"
+```
+
 If the current phase's `current_phase_type` (from Step 1's state read) is `checkpoint`, stop here and follow `## Checkpoint Flow` below instead of Steps 2-8.
 
 ### Step 2: Validate Readiness

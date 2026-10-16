@@ -66,7 +66,7 @@ test('show prints the resolved config with defaults applied when no file exists'
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.version, 1);
-    assert.strictEqual(data.storage.mode, 'in-repo');
+    assert.strictEqual(data.storage.mode, 'centralized');
     assert.strictEqual(data.documentation.commentMode, 'follow-convention');
     assert.strictEqual(data.coverage.strictness, 'recommended');
     assert.strictEqual(data.git.behavior, 'ask');
@@ -185,7 +185,7 @@ test('set documentation.commentMode also re-renders and reinstalls the prompts',
 test('interactive mode also re-renders and reinstalls the prompts once it finishes', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n2\n2\n\n');
+    const result = runWithStdin([], ctx, '1\n2\n2\n\n');
     assert.strictEqual(result.status, 0);
     const claudeSkillsDir = path.join(ctx.home, '.claude', 'skills');
     assert.ok(fs.existsSync(claudeSkillsDir));
@@ -224,7 +224,7 @@ test('get storage.mode prints the default when unset', () => {
   try {
     const result = runScript(SCRIPT, ['get', 'storage.mode'], ctx);
     assert.strictEqual(result.status, 0);
-    assert.strictEqual(result.stdout.trim(), 'in-repo');
+    assert.strictEqual(result.stdout.trim(), 'centralized');
   } finally {
     cleanup(ctx);
   }
@@ -274,18 +274,126 @@ test('set rejects an invalid storage.mode value', () => {
   }
 });
 
-test('set storage.mode writes the config and prints the migration warning', () => {
+function repoWithXoch(ctx, name) {
+  const repo = path.join(ctx.home, 'dev', name);
+  fs.mkdirSync(path.join(repo, '.xoch', 'work', 'jobs', 'j1'), { recursive: true });
+  fs.writeFileSync(path.join(repo, '.xoch', 'work', 'jobs', 'j1', 'state.json'), '{}');
+  return repo;
+}
+
+function pinMode(ctx, mode) {
+  fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+  fs.writeFileSync(configPath(ctx), JSON.stringify({ storage: { mode } }));
+}
+
+test('set storage.mode with nothing to move just sets the mode, without asking', () => {
   const ctx = scratch();
   try {
+    pinMode(ctx, 'in-repo');
     const result = runScript(SCRIPT, ['set', 'storage.mode', 'centralized'], ctx);
-    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Nothing to move\./);
     assert.match(result.stdout, /storage\.mode set to centralized/);
-    assert.match(result.stdout, /does not migrate existing job\/arc data/);
-    const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
-    assert.strictEqual(data.storage.mode, 'centralized');
+    assert.doesNotMatch(result.stdout, /Move files manually|Proceed\?/);
+    assert.strictEqual(runScript(SCRIPT, ['get', 'storage.mode'], ctx).stdout.trim(), 'centralized');
+  } finally {
+    cleanup(ctx);
+  }
+});
 
-    const getResult = runScript(SCRIPT, ['get', 'storage.mode'], ctx);
-    assert.strictEqual(getResult.stdout.trim(), 'centralized');
+test('set storage.mode previews the move, and moves every scanned repo only after confirmation', () => {
+  const ctx = scratch();
+  try {
+    pinMode(ctx, 'in-repo');
+    const repo = repoWithXoch(ctx, 'alpha');
+    const result = runWithStdin(['set', 'storage.mode', 'centralized', '--scan', path.join(ctx.home, 'dev')], ctx, 'y\n');
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.match(result.stdout, /alpha: work -> .*projects\/alpha/);
+    assert.match(result.stdout, /Proceed\? \[Y\]es \/ \[N\]o/);
+    assert.match(result.stdout, /Moved 1 repo/);
+    assert.ok(fs.existsSync(path.join(ctx.home, '.xoch', 'projects', 'alpha', 'work', 'jobs', 'j1', 'state.json')));
+    assert.ok(!fs.existsSync(path.join(repo, '.xoch')));
+    assert.strictEqual(JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).storage.mode, 'centralized');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('declining the storage move, or a dry run, moves nothing and leaves the mode unchanged', () => {
+  const ctx = scratch();
+  try {
+    pinMode(ctx, 'in-repo');
+    const repo = repoWithXoch(ctx, 'alpha');
+    const scan = ['--scan', path.join(ctx.home, 'dev')];
+    const declined = runWithStdin(['set', 'storage.mode', 'centralized', ...scan], ctx, 'n\n');
+    assert.strictEqual(declined.status, 0);
+    assert.match(declined.stdout, /Cancelled; nothing moved\./);
+    const noAnswer = runWithStdin(['set', 'storage.mode', 'centralized', ...scan], ctx, null);
+    assert.strictEqual(noAnswer.status, 1);
+    const dry = runScript(SCRIPT, ['set', 'storage.mode', 'centralized', ...scan, '--dry-run'], ctx);
+    assert.strictEqual(dry.status, 0);
+    assert.match(dry.stdout, /alpha: work ->/);
+    assert.match(dry.stdout, /Dry run: nothing moved\./);
+    assert.ok(fs.existsSync(path.join(repo, '.xoch', 'work')));
+    assert.strictEqual(JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).storage.mode, 'in-repo');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('--yes moves without asking, and a refused plan moves nothing and keeps the mode', () => {
+  const ctx = scratch();
+  try {
+    pinMode(ctx, 'in-repo');
+    repoWithXoch(ctx, 'alpha');
+    const scan = ['--scan', path.join(ctx.home, 'dev')];
+    fs.mkdirSync(path.join(ctx.home, '.xoch', 'projects', 'alpha', 'work'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'projects', 'alpha', 'work', 'other'), '');
+    const refused = runScript(SCRIPT, ['set', 'storage.mode', 'centralized', ...scan, '--yes'], ctx);
+    assert.strictEqual(refused.status, 1);
+    assert.match(refused.stdout, /Refused/);
+    assert.match(refused.stderr, /storage\.mode not changed/);
+    assert.strictEqual(JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).storage.mode, 'in-repo');
+    fs.rmSync(path.join(ctx.home, '.xoch', 'projects', 'alpha'), { recursive: true });
+    repoWithXoch(ctx, 'beta');
+    const yes = runScript(SCRIPT, ['set', 'storage.mode', 'centralized', ...scan, '--yes'], ctx);
+    assert.strictEqual(yes.status, 0, yes.stderr);
+    assert.doesNotMatch(yes.stdout, /Proceed\?/);
+    assert.match(yes.stdout, /Moved 2 repos\./);
+    assert.match(yes.stdout, /storage\.mode set to centralized/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a storage move that fails partway is undone and leaves the mode unchanged', () => {
+  const ctx = scratch();
+  try {
+    pinMode(ctx, 'in-repo');
+    const repo = repoWithXoch(ctx, 'alpha');
+    const projects = path.join(ctx.home, '.xoch', 'projects');
+    fs.mkdirSync(projects, { recursive: true });
+    fs.chmodSync(projects, 0o555);
+    try {
+      const result = runScript(SCRIPT, ['set', 'storage.mode', 'centralized', '--scan', path.join(ctx.home, 'dev'), '--yes'], ctx);
+      assert.strictEqual(result.status, 1);
+      assert.match(result.stderr, /Storage move failed and was undone: .*storage\.mode not changed/);
+    } finally {
+      fs.chmodSync(projects, 0o755);
+    }
+    assert.ok(fs.existsSync(path.join(repo, '.xoch', 'work', 'jobs', 'j1', 'state.json')));
+    assert.strictEqual(JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).storage.mode, 'in-repo');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set storage.mode refuses an unknown option', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'storage.mode', 'centralized', '--bogus'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /unknown option: --bogus/);
   } finally {
     cleanup(ctx);
   }
@@ -475,6 +583,7 @@ test('interactive selection 1 sets storage.mode to in-repo', () => {
 test('interactive selection 2 sets storage.mode to centralized', () => {
   const ctx = scratch();
   try {
+    pinMode(ctx, 'in-repo');
     const result = runWithStdin([], ctx, '2\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /storage\.mode set to centralized/);
@@ -509,9 +618,9 @@ test('interactive empty selection leaves the mode unchanged', () => {
 test('interactive selection choosing the already-current mode reports no change', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '1\n3\n3\n\n');
+    const result = runWithStdin([], ctx, '2\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Already in-repo; nothing changed\./);
+    assert.match(result.stdout, /Already centralized; nothing changed\./);
     assert.ok(!fs.existsSync(configPath(ctx)));
   } finally {
     cleanup(ctx);
@@ -533,7 +642,7 @@ test('interactive mode prints the current mode and prompt lines', () => {
   const ctx = scratch();
   try {
     const result = runWithStdin([], ctx, '3\n3\n3\n\n');
-    assert.match(result.stdout, /Current storage\.mode: in-repo/);
+    assert.match(result.stdout, /Current storage\.mode: centralized/);
     assert.match(result.stdout, /Choose storage mode:/);
   } finally {
     cleanup(ctx);
@@ -729,10 +838,10 @@ test('interactive mode prints the current coverage.strictness and prompt lines',
 test('interactive mode walks through storage.mode, documentation.commentMode, coverage.strictness, and git.behavior in one invocation', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n1\n1\n4\n');
+    const result = runWithStdin([], ctx, '1\n1\n1\n4\n');
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
-    assert.strictEqual(data.storage.mode, 'centralized');
+    assert.strictEqual(data.storage.mode, 'in-repo');
     assert.strictEqual(data.documentation.commentMode, 'always');
     assert.strictEqual(data.coverage.strictness, 'required');
     assert.strictEqual(data.git.behavior, 'push');

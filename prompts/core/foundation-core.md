@@ -37,7 +37,7 @@ The active job pointer is:
 
 Query the active pointer with `xoch job current --json`; do not read or edit `current.json` directly unless the helper is unavailable. The helper migrates target-model `current.md` pointers and reports legacy `.xoch/context/current.md` metadata without moving legacy jobs.
 
-Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's resolved Xoch storage root, not literally `<repo>/.xoch`. By default the root is `.xoch` inside the repository. When `~/.xoch/config.json` sets `storage.mode` to `centralized`, the root instead resolves to `~/.xoch/projects/<project-slug>/`, entirely outside the repository — nothing gets written under the repo in that mode. Get the active job's real directory from `job current --json`'s `directory` field; get the root directly (e.g. before any job exists) with `xoch config root`. Never assume `.xoch/work/...` is literally relative to the repo root.
+Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's resolved Xoch storage root, not literally `<repo>/.xoch`. By default the root is `~/.xoch/projects/<project-slug>/`, entirely outside the repository — nothing gets written under the repo in that mode. When `~/.xoch/config.json` sets `storage.mode` to `in-repo`, the root is `.xoch` inside the repository instead. Get the active job's real directory from `job current --json`'s `directory` field; get the root directly (e.g. before any job exists) with `xoch config root`. Never assume `.xoch/work/...` is literally relative to the repo root.
 
 ## Job Files
 
@@ -115,6 +115,7 @@ xoch state update --job ID
 xoch phase get --job ID [--phase N] --json
 xoch phase show --job ID [--phase N]
 xoch phase write --job ID
+xoch phase start --job ID
 xoch arc get --arc ID --json
 xoch arc update --arc ID
 xoch job close --job ID

@@ -211,9 +211,11 @@ Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and refer
 
 ### Storage Location
 
-By default, Xoch job/arc state lives inside the repository under `.xoch/work/`. Set `storage.mode` to `centralized` to move it entirely outside the repository instead, under `~/.xoch/projects/<project-slug>/work/` (the slug is derived from the repository's directory name). See [bin/README.md](bin/README.md#configjs) for the `xoch config` commands that set it, and for `~/.xoch/config.json`'s full shape.
+By default, Xoch keeps job/arc state outside the repository, under `~/.xoch/projects/<project-slug>/` (the slug is derived from the repository's directory name, and the root records its repo in `repo.json`). Set `storage.mode` to `in-repo` to keep it inside each repository under `.xoch/` instead. See [bin/README.md](bin/README.md#configjs) for the `xoch config` commands that set it, and for `~/.xoch/config.json`'s full shape.
 
-Centralized mode leaves zero files in the repo — not even a gitignored `.xoch/` folder. The setting is global and applies to every project; there is no per-project override, and no automatic migration when switching modes. Missing or invalid config falls back to the default in-repo behavior.
+Centralized mode leaves zero files in the repo — not even a gitignored `.xoch/` folder. The setting is global and applies to every project; there is no per-project override. Missing or invalid config falls back to the default centralized behavior.
+
+Switching modes with `xoch config set storage.mode` moves every known repo's Xoch data to where the new mode looks for it — repos from the workspace map, from centralized roots' `repo.json`, and from `--scan DIR`. It previews every move, refuses (changing nothing) on any collision, asks before moving unless `--yes`, undoes a move that fails partway, and changes the setting only once every move succeeded. A repo's legacy `.xoch/context/` always stays in the repo. Files git tracked under a moved `.xoch/` show as deleted in that repo; commit the removal.
 
 Resolve the active root directly with `xoch config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
 

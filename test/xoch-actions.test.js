@@ -12,7 +12,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'xoch-actions.js');
 
+// Storage now defaults to centralized. These tests seed in-repo fixtures
+// under <cwd>/.xoch, so pin in-repo unless a test wrote its own config.
+function pinInRepo(ctx) {
+  const config = path.join(ctx.home, '.xoch', 'config.json');
+  if (fs.existsSync(config)) return;
+  fs.mkdirSync(path.dirname(config), { recursive: true });
+  fs.writeFileSync(config, JSON.stringify({ storage: { mode: 'in-repo' } }));
+}
+
 function run(args, ctx, input) {
+  pinInRepo(ctx);
   return runScript(SCRIPT, args, ctx, input);
 }
 
@@ -22,6 +32,7 @@ function run(args, ctx, input) {
 // passes the literal 'begin'/'update'/'complete'/'abandon' strings) but is
 // still reachable through the exported function itself.
 function callExported(fnName, args, ctx) {
+  pinInRepo(ctx);
   const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
   const script = `import(${specifier}).then((m) => m.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')}));`;
   return spawnSync(process.execPath, ['-e', script], {
@@ -214,12 +225,14 @@ test('a group with no action at all exits 1 with a trailing-space error', () => 
 // config root
 // ---------------------------------------------------------------------
 
-test('config root defaults to the relative .xoch path', () => {
+test('config root defaults to the centralized path for this project when storage.mode is unset', () => {
   const ctx = scratch();
   try {
+    fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), '{}');
     const result = run(['config', 'root'], ctx);
     assert.strictEqual(result.status, 0);
-    assert.strictEqual(result.stdout.trim(), '.xoch');
+    assert.strictEqual(result.stdout.trim(), path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)));
   } finally {
     cleanup(ctx);
   }
@@ -240,27 +253,27 @@ test('config root resolves to an absolute centralized path when configured', () 
   }
 });
 
-test('an invalid storage.mode value falls back to in-repo', () => {
+test('an invalid storage.mode value falls back to centralized', () => {
   const ctx = scratch();
   try {
     const configPath = path.join(ctx.home, '.xoch', 'config.json');
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, JSON.stringify({ storage: { mode: 'bogus' } }));
     const result = run(['config', 'root'], ctx);
-    assert.strictEqual(result.stdout.trim(), '.xoch');
+    assert.strictEqual(result.stdout.trim(), path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)));
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a config file with no storage key at all falls back to in-repo', () => {
+test('a config file with no storage key at all falls back to centralized', () => {
   const ctx = scratch();
   try {
     const configPath = path.join(ctx.home, '.xoch', 'config.json');
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, JSON.stringify({ version: 1 }));
     const result = run(['config', 'root'], ctx);
-    assert.strictEqual(result.stdout.trim(), '.xoch');
+    assert.strictEqual(result.stdout.trim(), path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)));
   } finally {
     cleanup(ctx);
   }
@@ -2979,6 +2992,7 @@ test('phase helpers and state update require --job, and phase numbers must be nu
 // Runs the real command in a child whose stdin claims to be an interactive
 // terminal -- the situation where reading stdin used to block forever.
 function runAsTerminal(args, ctx) {
+  pinInRepo(ctx);
   const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
   const script = `process.stdin.isTTY = true; import(${specifier}).then((m) => m.main(${JSON.stringify(args)}));`;
   return spawnSync(process.execPath, ['-e', script], {
@@ -3579,6 +3593,134 @@ test('closing an arc\'s last planned-free job reports the move with nothing left
     const r = run(['job', 'close', '--job', 'j1'], ctx);
     assert.match(r.stdout, /Arc a1: j1 -> Complete\n/);
     assert.doesNotMatch(r.stdout, /still planned/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// centralized roots record their repo; phase start; stdin retry
+// ---------------------------------------------------------------------
+
+test('a centralized root records which repo it belongs to the first time Xoch uses it', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'centralized' } }));
+    run(['config', 'root'], ctx);
+    const recorded = path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd), 'repo.json');
+    assert.deepStrictEqual(readJsonFile(recorded), { path: fs.realpathSync(ctx.cwd) });
+    fs.writeFileSync(recorded, JSON.stringify({ path: '/kept' }));
+    run(['config', 'root'], ctx);
+    assert.deepStrictEqual(readJsonFile(recorded), { path: '/kept' });
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase start marks the current phase in progress and records the commit work begins from', () => {
+  const ctx = scratch();
+  try {
+    const g = initRepo(ctx.cwd);
+    fs.writeFileSync(path.join(ctx.cwd, '.gitignore'), '.xoch/\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'one');
+    const dir = seedJob(ctx, 'j1', { current_phase: null });
+    seedPhases(ctx, 'j1', threePhases());
+    run(['phase', 'advance', '--job', 'j1', '--phase', '0'], ctx);
+    fs.writeFileSync(path.join(ctx.cwd, 'previous-phase.js'), 'x\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'previous phase work, committed after advancing');
+    const r = run(['phase', 'start', '--job', 'j1'], ctx);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Phase 1 started for job j1 at [0-9a-f]{7}/);
+    const phase = readJsonFile(path.join(dir, 'phases.json')).phases[0];
+    assert.strictEqual(phase.status, 'in_progress');
+    assert.strictEqual(phase.start_ref, headOf(ctx.cwd));
+    assert.strictEqual(readState(dir).phase_index[0].status, 'in_progress');
+    run(['snapshot', 'create', '--job', 'j1', '--phase', '1'], ctx, '');
+    assert.match(fs.readFileSync(path.join(dir, 'snapshots', 'phase-1.md'), 'utf8'), /## Files Changed\n\n- None\n/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase start leaves a phase that is already started alone', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: 1 });
+    const doc = threePhases();
+    doc.phases[0].status = 'in_progress';
+    doc.phases[0].start_ref = 'abc123';
+    seedPhases(ctx, 'j1', { ...doc, current_phase: 1 });
+    const r = run(['phase', 'start', '--job', 'j1'], ctx);
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stdout, /Phase 1 already started for job j1/);
+    assert.strictEqual(readJsonFile(path.join(dir, 'phases.json')).phases[0].start_ref, 'abc123');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase start outside git records no start commit, and refuses a job with no current phase', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1', { current_phase: 1 });
+    seedPhases(ctx, 'j1', { ...threePhases(), current_phase: 1 });
+    assert.match(run(['phase', 'start', '--job', 'j1'], ctx).stdout, /Phase 1 started for job j1 \(no git commit to record\)/);
+    seedJob(ctx, 'j2', { current_phase: null });
+    seedPhases(ctx, 'j2', threePhases());
+    assert.match(run(['phase', 'start', '--job', 'j2'], ctx).stderr, /job j2 has no current phase/);
+    assert.match(run(['phase', 'start'], ctx).stderr, /phase start requires --job/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reading stdin retries when the input is not ready yet instead of crashing', () => {
+  const ctx = scratch();
+  try {
+    pinInRepo(ctx);
+    seedJob(ctx, 'j1');
+    const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+    const script = `
+      import fs from 'fs';
+      const real = fs.readSync;
+      let busy = 2;
+      fs.readSync = (fd, ...rest) => {
+        if (fd === 0 && busy > 0) { busy -= 1; const e = new Error('EAGAIN: resource temporarily unavailable'); e.code = 'EAGAIN'; throw e; }
+        return real(fd, ...rest);
+      };
+      import(${specifier}).then((m) => { m.main(['state', 'update', '--job', 'j1']); process.stdout.write('not-ready reads left: ' + busy); });
+    `;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      cwd: ctx.cwd, env: { ...process.env, HOME: ctx.home }, encoding: 'utf8', input: '{"status": "spec_complete"}', timeout: 10000,
+    });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.match(r.stdout, /not-ready reads left: 0/);
+    assert.strictEqual(fieldValue(jobDirOf(ctx, 'j1'), 'status'), 'spec_complete');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('reading stdin still fails on an error other than input-not-ready', () => {
+  const ctx = scratch();
+  try {
+    pinInRepo(ctx);
+    seedJob(ctx, 'j1');
+    const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+    const script = `
+      import fs from 'fs';
+      fs.readSync = (fd) => { const e = new Error('EIO: i/o error'); e.code = 'EIO'; throw e; };
+      import(${specifier}).then((m) => m.main(['state', 'update', '--job', 'j1']));
+    `;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      cwd: ctx.cwd, env: { ...process.env, HOME: ctx.home }, encoding: 'utf8', input: '{}', timeout: 10000,
+    });
+    assert.notStrictEqual(r.status, 0);
+    assert.match(r.stderr, /EIO/);
   } finally {
     cleanup(ctx);
   }

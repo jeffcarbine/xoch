@@ -58,7 +58,7 @@ Target-model job files live under the resolved Xoch storage root:
 [xoch-root]/work/jobs/[job-id]/
 ```
 
-`[xoch-root]` is `.xoch` by default (in-repo), or `~/.xoch/projects/<slug>` when centralized storage is enabled — see `bin/xoch-actions.js`'s `xochRoot()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch config root` instead.
+`[xoch-root]` is `~/.xoch/projects/<slug>` by default (centralized), or `.xoch` inside the repo when `storage.mode` is `in-repo` — see `bin/xoch-actions.js`'s `xochRoot()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch config root` instead.
 
 Common files:
 

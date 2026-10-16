@@ -107,6 +107,8 @@ test('xoch arc job-move produces the same output as invoking xoch-actions.js dir
   const ctxB = scratch();
   try {
     for (const ctx of [ctxA, ctxB]) {
+      fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+      fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
       const arcDir = path.join(ctx.cwd, '.xoch', 'work', 'arcs', 'a1');
       fs.mkdirSync(arcDir, { recursive: true });
       fs.writeFileSync(path.join(arcDir, 'state.json'), JSON.stringify({ arc_id: 'a1', title: 'A1' }));
@@ -128,6 +130,10 @@ test('xoch discovery write produces the same output as invoking xoch-actions.js 
   const ctxA = scratch();
   const ctxB = scratch();
   try {
+    for (const ctx of [ctxA, ctxB]) {
+      fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+      fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+    }
     const viaDispatcher = run(['discovery', 'write', '--topic', 'Dispatch Check'], ctxA, 'content\n');
     const direct = runScript(XOCH_ACTIONS, ['discovery', 'write', '--topic', 'Dispatch Check'], ctxB, 'content\n');
     assert.strictEqual(viaDispatcher.status, direct.status);

@@ -76,6 +76,7 @@ xoch snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next 
 xoch phase write --job ID                        # phases JSON on stdin
 xoch phase get --job ID [--phase N] [--json]
 xoch phase show --job ID [--phase N]
+xoch phase start --job ID
 xoch phase advance --job ID --phase N
 xoch job step-advance --job ID
 xoch config root
@@ -118,7 +119,9 @@ the remaining phases. A phase's number is always its position in the list. `phas
 document, or one phase (with its position as `phase`), as JSON; `phase show` renders it as readable
 text with the current phase marked.
 
-`phase advance --phase N` marks phase N complete and makes phase N+1 current, taking its title,
+`phase start` marks the current phase `in_progress` and records the commit work begins from as its
+`start_ref` (implementation calls it first, after the previous phase was committed); a phase already
+started is left alone. `phase advance --phase N` marks phase N complete and makes phase N+1 current, taking its title,
 goal, type, files, acceptance criteria, and validation (a QA phase's case IDs) from the phases
 document; `phase_index` is rebuilt from the document, so it always matches it. `--phase 0` enters
 phase 1 without marking anything. Advancing past the last phase sets `status:
@@ -223,7 +226,8 @@ config.js` or `./config.js`).
 xoch config                          Interactive mode
 xoch config show                     Print resolved config
 xoch config get storage.mode         Print current storage.mode
-xoch config set storage.mode VALUE   Set storage.mode (in-repo|centralized)
+xoch config set storage.mode VALUE [--scan DIR] [--dry-run] [--yes]
+                                     Move every known repo's Xoch data, then set storage.mode (in-repo|centralized)
 xoch config get documentation.commentMode       Print documentation.commentMode
 xoch config set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
 xoch config get coverage.strictness       Print coverage.strictness
@@ -237,8 +241,11 @@ xoch config budgets                      Interactively review/update token budge
 
 Keys:
 
-- **`storage.mode`** (`in-repo` default | `centralized`) -- where job/arc state lives. See
-  [Storage Location](../README.md#storage-location) in the root README.
+- **`storage.mode`** (`in-repo` | `centralized` default) -- where job/arc state lives. Setting it
+  first moves every known repo's data (`bin/storage-migrate.js`): a preview, refusal on any
+  collision, confirmation unless `--yes`, undo on a failed move, and the setting changes only after
+  every move succeeded. `--dry-run` only previews; `--scan DIR` adds repos found directly under
+  `DIR`. See [Storage Location](../README.md#storage-location) in the root README.
 - **`documentation.commentMode`** (`always` | `follow-convention` default) -- whether `xoch-do`'s
   `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,

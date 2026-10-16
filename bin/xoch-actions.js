@@ -61,7 +61,7 @@ function xochRoot() {
   const config = readJson(configPath);
   const mode = config && config.storage && ['in-repo', 'centralized'].includes(config.storage.mode)
     ? config.storage.mode
-    : 'in-repo';
+    : 'centralized';
 
   if (mode === 'centralized') {
     const slug = slugify(path.basename(process.cwd()));
@@ -70,8 +70,15 @@ function xochRoot() {
   return '.xoch';
 }
 
+// Creates the storage root. A centralized root also records which repo it
+// belongs to (repo.json), so a later storage move can return it there.
 function ensureRoot() {
-  fs.mkdirSync(xochRoot(), { recursive: true });
+  const root = xochRoot();
+  fs.mkdirSync(root, { recursive: true });
+  const recorded = path.join(root, 'repo.json');
+  if (path.isAbsolute(root) && !fs.existsSync(recorded)) {
+    writeJson(recorded, { path: fs.realpathSync(process.cwd()) });
+  }
 }
 
 // Parses a legacy markdown pointer's "**Key**: value" lines into
@@ -192,7 +199,23 @@ function applyOrDie(change) {
  */
 function readStdin(usage) {
   if (process.stdin.isTTY) die(`${usage}; nothing was piped in`);
-  return fs.readFileSync(0, 'utf8');
+  // Read in a loop rather than readFileSync(0): a pipe whose writer hasn't
+  // produced output yet can report EAGAIN, which readFileSync throws.
+  const chunks = [];
+  const buf = Buffer.alloc(65536);
+  for (;;) {
+    let n;
+    try {
+      n = fs.readSync(0, buf, 0, buf.length, null);
+    } catch (e) {
+      if (e.code !== 'EAGAIN') throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+      continue;
+    }
+    if (n === 0) break;
+    chunks.push(Buffer.from(buf.subarray(0, n)));
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 /**
@@ -1060,6 +1083,33 @@ function phaseAdvance(argv) {
 }
 
 /**
+ * Marks the current phase in progress and records the commit work on it
+ * begins from -- called when implementation starts, after the engineer
+ * has committed the previous phase, so the phase's snapshot lists only its
+ * own changes. A phase already started is left alone.
+ * @param {string[]} argv - `--job ID`.
+ */
+function phaseStart(argv) {
+  const flags = parseFlags(argv, []);
+  if (!flags.job) die('phase start requires --job');
+  const { dir, state } = loadJob(flags.job);
+  const phases = requirePhases(flags.job, dir);
+  const n = phases.toJSON().current_phase;
+  if (n === null) die(`job ${flags.job} has no current phase`);
+  if (phases.at(n).status !== 'not_started') {
+    console.log(`Phase ${n} already started for job ${flags.job}`);
+    return;
+  }
+  const ref = headRef();
+  phases.setStatus(n, 'in_progress');
+  phases.setStartRef(n, ref);
+  phases.save(dir);
+  state.update({ phase_index: phases.phaseIndex(), last_updated: today() });
+  state.save(dir);
+  console.log(`Phase ${n} started for job ${flags.job} ${ref ? `at ${ref.slice(0, 7)}` : '(no git commit to record)'}`);
+}
+
+/**
  * Writes a whole phases document from stdin after validating it, then
  * refreshes job state's phase_count and phase_index -- and, when the
  * document names a current phase, its current-phase fields.
@@ -1635,6 +1685,7 @@ function usage() {
   xoch-actions.js arc close --arc ID
   xoch-actions.js arc update --arc ID              (JSON object on stdin)
   xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
+  xoch-actions.js phase start --job ID
   xoch-actions.js phase advance --job ID --phase N
   xoch-actions.js phase write --job ID             (phases JSON on stdin)
   xoch-actions.js phase get --job ID [--phase N] [--json]
@@ -1719,6 +1770,9 @@ function main(argv) {
       break;
     case 'phase:write':
       phaseWrite(rest);
+      break;
+    case 'phase:start':
+      phaseStart(rest);
       break;
     case 'phase:get':
       phaseGet(rest);
@@ -1823,6 +1877,7 @@ export {
   resolveCurrentPointer,
   snapshotCreate,
   phaseAdvance,
+  phaseStart,
   phaseWrite,
   phaseGet,
   phaseShow,

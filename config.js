@@ -11,6 +11,9 @@ import os from 'os';
 import { isMainModule } from './bin/lib/is-main.js';
 import { readJson, updateJson } from './bin/lib/json-store.js';
 import { reinstall } from './bin/init.js';
+import {
+  findRepos, planMigration, executeMigration, describePlan,
+} from './bin/storage-migrate.js';
 
 const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
@@ -25,7 +28,6 @@ const DEFAULT_SKILL_BUDGETS = { spec: 5000, plan: 7000 };
 const FALLBACK_SKILL_BUDGET = 5000;
 
 const GREEN = '\x1b[0;32m';
-const YELLOW = '\x1b[1;33m';
 const RED = '\x1b[0;31m';
 const NC = '\x1b[0m';
 
@@ -71,7 +73,7 @@ function writeTokenBudget(skill, value) {
 function readStorageMode() {
   const data = readJson(CONFIG_PATH);
   const mode = data.storage && data.storage.mode;
-  return isValidStorageMode(mode) ? mode : 'in-repo';
+  return isValidStorageMode(mode) ? mode : 'centralized';
 }
 
 function readCommentMode() {
@@ -149,11 +151,71 @@ function writeGitBehavior(value) {
   });
 }
 
-function printMigrationWarning() {
-  console.log(
-    `${YELLOW}Note: switching storage.mode does not migrate existing job/arc data between `
-      + `.xoch/work/ (in-repo) and ~/.xoch/projects/<slug>/work/ (centralized). Move files manually if needed.${NC}`,
-  );
+/**
+ * Switches storage.mode, first moving every known repo's Xoch data to where
+ * the new mode looks for it. Shows the plan, refuses (changing nothing) when
+ * any move is unsafe, asks before moving unless --yes, and sets the mode only
+ * after every move succeeded -- a failed move is undone.
+ * @param {string} target - 'in-repo' or 'centralized'.
+ * @param {Object} [options]
+ * @param {string} [options.scanDir] - Also look for repos directly under this folder.
+ * @param {boolean} [options.yes] - Move without asking.
+ * @param {boolean} [options.dryRun] - Show the plan and stop.
+ */
+function applyStorageMode(target, { scanDir, yes = false, dryRun = false } = {}) {
+  const home = os.homedir();
+  const plan = planMigration({ to: target, home, repos: findRepos({ home, scanDir }) });
+  for (const line of describePlan(plan)) console.log(line);
+  if (plan.refusals.length) {
+    process.stderr.write(`${RED}Error: storage move refused; storage.mode not changed${NC}\n`);
+    process.exit(1);
+  }
+  if (dryRun) {
+    console.log('Dry run: nothing moved.');
+    return;
+  }
+  if (plan.moves.length && !yes) {
+    console.log('Proceed? [Y]es / [N]o');
+    const answer = readLine();
+    if (answer === null) process.exit(1);
+    if (!/^y(es)?$/i.test(answer.trim())) {
+      console.log('Cancelled; nothing moved.');
+      return;
+    }
+  }
+  try {
+    executeMigration(plan);
+  } catch (e) {
+    process.stderr.write(`${RED}Error: Storage move failed and was undone: ${e.message}; storage.mode not changed${NC}\n`);
+    process.exit(1);
+  }
+  if (plan.moves.length) console.log(`Moved ${plan.moves.length} repo${plan.moves.length === 1 ? '' : 's'}.`);
+  writeStorageMode(target);
+  console.log(`${GREEN}✓${NC} storage.mode set to ${target}`);
+  reinstall();
+}
+
+/**
+ * Parses `set storage.mode` options.
+ * @param {string[]} args - Arguments after the value.
+ * @returns {{scanDir?: string, yes: boolean, dryRun: boolean}}
+ */
+function storageOptions(args) {
+  const options = { yes: false, dryRun: false };
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === '--scan') {
+      options.scanDir = args[i + 1];
+      i += 1;
+    } else if (args[i] === '--yes') {
+      options.yes = true;
+    } else if (args[i] === '--dry-run') {
+      options.dryRun = true;
+    } else {
+      process.stderr.write(`${RED}Error: unknown option: ${args[i]}${NC}\n`);
+      process.exit(1);
+    }
+  }
+  return options;
 }
 
 function cmdGet(key) {
@@ -181,16 +243,13 @@ function cmdGet(key) {
   process.exit(1);
 }
 
-function cmdSet(key, value) {
+function cmdSet(key, value, options = []) {
   if (key === 'storage.mode') {
     if (!isValidStorageMode(value)) {
       process.stderr.write(`${RED}Error: invalid storage.mode value '${value}'. Expected one of: ${VALID_STORAGE_MODES.join(' ')}${NC}\n`);
       process.exit(1);
     }
-    writeStorageMode(value);
-    console.log(`${GREEN}✓${NC} storage.mode set to ${value}`);
-    printMigrationWarning();
-    reinstall();
+    applyStorageMode(value, storageOptions(options));
     return;
   }
   if (key === 'documentation.commentMode') {
@@ -269,8 +328,8 @@ function runStorageModeInteractive() {
   console.log(`Current storage.mode: ${current}`);
   console.log('');
   console.log('Choose storage mode:');
-  console.log('  1) in-repo — job/arc state lives in .xoch/work/ inside each repo (default)');
-  console.log('  2) centralized — job/arc state lives under ~/.xoch/projects/<slug>/work/');
+  console.log('  1) in-repo — job/arc state lives in .xoch/work/ inside each repo');
+  console.log('  2) centralized — job/arc state lives under ~/.xoch/projects/<slug>/work/ (default)');
   console.log('  3) leave unchanged');
   console.log('');
   // Matches bash's `read -p`: the prompt is only displayed when input is
@@ -305,10 +364,7 @@ function runStorageModeInteractive() {
     return;
   }
 
-  writeStorageMode(target);
-  console.log(`${GREEN}✓${NC} storage.mode set to ${target}`);
-  printMigrationWarning();
-  reinstall();
+  applyStorageMode(target);
 }
 
 function runCommentModeInteractive() {
@@ -487,7 +543,9 @@ function usage() {
   node config.js                          Interactive mode (storage mode, documentation comment mode, coverage strictness, git behavior)
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
-  node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
+  node config.js set storage.mode VALUE [--scan DIR] [--dry-run] [--yes]
+                                          Set storage.mode (in-repo|centralized), first moving every known
+                                          repo's Xoch data (workspace map, centralized roots, --scan DIR)
   node config.js get documentation.commentMode       Print documentation.commentMode
   node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
   node config.js get coverage.strictness       Print coverage.strictness
@@ -506,7 +564,7 @@ Every config-writing command re-renders and reinstalls prompts for Copilot, Code
 // namespace token already stripped, instead of this reading process.argv
 // itself and seeing the dispatcher's own argv shape.
 function main(argv) {
-  const [cmd, arg2, arg3] = argv;
+  const [cmd, arg2, arg3, ...rest] = argv;
 
   switch (cmd || '') {
     case '':
@@ -527,7 +585,7 @@ function main(argv) {
         usage();
         process.exit(1);
       }
-      cmdSet(arg2, arg3);
+      cmdSet(arg2, arg3, rest);
       break;
     case 'budgets':
       runBudgetsInteractive();
@@ -571,7 +629,8 @@ export {
   writeCommentMode,
   writeCoverageStrictness,
   writeGitBehavior,
-  printMigrationWarning,
+  applyStorageMode,
+  storageOptions,
   cmdGet,
   cmdSet,
   cmdShow,
