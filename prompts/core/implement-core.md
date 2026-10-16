@@ -156,7 +156,7 @@ When editing:
 - add proper inline documentation on new code -- JSDoc for JavaScript/TypeScript, docstrings for Python, or the equivalent convention for the language being written
 - implement until this phase's behavior tests pass (green), then continue to Step 8
 
-{{xoch-config:documentation.commentMode always="Apply the inline-documentation bullet above unconditionally." follow-convention="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention." default="Apply the inline-documentation bullet above unconditionally."}}
+{{xoch-config:documentation.commentMode always="Apply the inline-documentation bullet above unconditionally." follow-convention="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention." default="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention."}}
 
 If the job is target-model, append useful implementation notes with:
 

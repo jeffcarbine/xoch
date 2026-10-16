@@ -193,7 +193,7 @@ Inside a partial, variables use `{{label}}`. The installer fails if a partial pa
 A prompt file may also select text by the engineer's own config, resolved once at render time instead of the agent reading `~/.xoch/config.json` itself mid-conversation:
 
 ```text
-{{xoch-config:documentation.commentMode always="Apply inline documentation unconditionally." follow-convention="Match the target project's existing convention." default="Apply inline documentation unconditionally."}}
+{{xoch-config:documentation.commentMode always="Apply inline documentation unconditionally." follow-convention="Match the target project's existing convention." default="Match the target project's existing convention."}}
 ```
 
 `key` is a dotted path into `~/.xoch/config.json` (e.g. `coverage.strictness`); each other assignment names one possible resolved value and the text to substitute for it, with an optional `default="..."` used when the key is unset or doesn't match any listed value. The installer fails on a malformed marker, an invalid key, or a resolved value with no matching text and no `default=`. `{{xoch-config:...}}` runs after `{{xoch-partial:...}}` substitution, over the whole partial-expanded string, so a config marker nested inside a partial's own body still resolves.

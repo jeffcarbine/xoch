@@ -67,7 +67,9 @@ test('show prints the resolved config with defaults applied when no file exists'
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.version, 1);
     assert.strictEqual(data.storage.mode, 'in-repo');
-    assert.strictEqual(data.documentation.commentMode, 'always');
+    assert.strictEqual(data.documentation.commentMode, 'follow-convention');
+    assert.strictEqual(data.coverage.strictness, 'recommended');
+    assert.strictEqual(data.git.behavior, 'ask');
     assert.ok(!fs.existsSync(configPath(ctx)));
   } finally {
     cleanup(ctx);
@@ -79,7 +81,7 @@ test('get documentation.commentMode prints the default when unset', () => {
   try {
     const result = runScript(SCRIPT, ['get', 'documentation.commentMode'], ctx);
     assert.strictEqual(result.status, 0);
-    assert.strictEqual(result.stdout.trim(), 'always');
+    assert.strictEqual(result.stdout.trim(), 'follow-convention');
   } finally {
     cleanup(ctx);
   }
@@ -118,7 +120,7 @@ test('get coverage.strictness prints the default when unset', () => {
   try {
     const result = runScript(SCRIPT, ['get', 'coverage.strictness'], ctx);
     assert.strictEqual(result.status, 0);
-    assert.strictEqual(result.stdout.trim(), 'required');
+    assert.strictEqual(result.stdout.trim(), 'recommended');
   } finally {
     cleanup(ctx);
   }
@@ -158,7 +160,7 @@ test('show includes the resolved coverage.strictness', () => {
     const result = runScript(SCRIPT, ['show'], ctx);
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.coverage.strictness, 'required');
+    assert.strictEqual(data.coverage.strictness, 'recommended');
   } finally {
     cleanup(ctx);
   }
@@ -183,7 +185,7 @@ test('set documentation.commentMode also re-renders and reinstalls the prompts',
 test('interactive mode also re-renders and reinstalls the prompts once it finishes', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n2\n2\n');
+    const result = runWithStdin([], ctx, '2\n2\n2\n\n');
     assert.strictEqual(result.status, 0);
     const claudeSkillsDir = path.join(ctx.home, '.claude', 'skills');
     assert.ok(fs.existsSync(claudeSkillsDir));
@@ -460,7 +462,7 @@ test('interactive selection 1 sets storage.mode to in-repo', () => {
   const ctx = scratch();
   try {
     runScript(SCRIPT, ['set', 'storage.mode', 'centralized'], ctx);
-    const result = runWithStdin([], ctx, '1\n3\n3\n');
+    const result = runWithStdin([], ctx, '1\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /storage\.mode set to in-repo/);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
@@ -473,7 +475,7 @@ test('interactive selection 1 sets storage.mode to in-repo', () => {
 test('interactive selection 2 sets storage.mode to centralized', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n3\n3\n');
+    const result = runWithStdin([], ctx, '2\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /storage\.mode set to centralized/);
   } finally {
@@ -484,7 +486,7 @@ test('interactive selection 2 sets storage.mode to centralized', () => {
 test('interactive selection 3 leaves the mode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Left unchanged\./);
     assert.ok(!fs.existsSync(configPath(ctx)));
@@ -496,7 +498,7 @@ test('interactive selection 3 leaves the mode unchanged', () => {
 test('interactive empty selection leaves the mode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '\n\n\n');
+    const result = runWithStdin([], ctx, '\n\n\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Left unchanged\./);
   } finally {
@@ -507,7 +509,7 @@ test('interactive empty selection leaves the mode unchanged', () => {
 test('interactive selection choosing the already-current mode reports no change', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '1\n3\n3\n');
+    const result = runWithStdin([], ctx, '1\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Already in-repo; nothing changed\./);
     assert.ok(!fs.existsSync(configPath(ctx)));
@@ -530,7 +532,7 @@ test('an invalid interactive selection exits 1', () => {
 test('interactive mode prints the current mode and prompt lines', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
     assert.match(result.stdout, /Current storage\.mode: in-repo/);
     assert.match(result.stdout, /Choose storage mode:/);
   } finally {
@@ -552,7 +554,7 @@ test('interactive selection 1 sets documentation.commentMode to always', () => {
   const ctx = scratch();
   try {
     runScript(SCRIPT, ['set', 'documentation.commentMode', 'follow-convention'], ctx);
-    const result = runWithStdin([], ctx, '3\n1\n3\n');
+    const result = runWithStdin([], ctx, '3\n1\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /documentation\.commentMode set to always/);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
@@ -565,7 +567,8 @@ test('interactive selection 1 sets documentation.commentMode to always', () => {
 test('interactive selection 2 sets documentation.commentMode to follow-convention', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n2\n3\n');
+    runScript(SCRIPT, ['set', 'documentation.commentMode', 'always'], ctx);
+    const result = runWithStdin([], ctx, '3\n2\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /documentation\.commentMode set to follow-convention/);
   } finally {
@@ -576,10 +579,10 @@ test('interactive selection 2 sets documentation.commentMode to follow-conventio
 test('interactive selection 3 leaves documentation.commentMode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Choose documentation comment mode:/);
-    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 3);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 4);
   } finally {
     cleanup(ctx);
   }
@@ -588,10 +591,10 @@ test('interactive selection 3 leaves documentation.commentMode unchanged', () =>
 test('interactive empty selection leaves documentation.commentMode unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n\n3\n');
+    const result = runWithStdin([], ctx, '3\n\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Choose documentation comment mode:/);
-    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 3);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 4);
   } finally {
     cleanup(ctx);
   }
@@ -600,9 +603,9 @@ test('interactive empty selection leaves documentation.commentMode unchanged', (
 test('interactive selection choosing the already-current documentation.commentMode reports no change', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n1\n3\n');
+    const result = runWithStdin([], ctx, '3\n2\n3\n\n');
     assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Already always; nothing changed\./);
+    assert.match(result.stdout, /Already follow-convention; nothing changed\./);
   } finally {
     cleanup(ctx);
   }
@@ -622,8 +625,8 @@ test('an invalid documentation.commentMode interactive selection exits 1', () =>
 test('interactive mode prints the current documentation.commentMode and prompt lines', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
-    assert.match(result.stdout, /Current documentation\.commentMode: always/);
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
+    assert.match(result.stdout, /Current documentation\.commentMode: follow-convention/);
     assert.match(result.stdout, /Choose documentation comment mode:/);
   } finally {
     cleanup(ctx);
@@ -644,7 +647,7 @@ test('interactive selection 1 sets coverage.strictness to required', () => {
   const ctx = scratch();
   try {
     runScript(SCRIPT, ['set', 'coverage.strictness', 'recommended'], ctx);
-    const result = runWithStdin([], ctx, '3\n3\n1\n');
+    const result = runWithStdin([], ctx, '3\n3\n1\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /coverage\.strictness set to required/);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
@@ -657,7 +660,8 @@ test('interactive selection 1 sets coverage.strictness to required', () => {
 test('interactive selection 2 sets coverage.strictness to recommended', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n2\n');
+    runScript(SCRIPT, ['set', 'coverage.strictness', 'required'], ctx);
+    const result = runWithStdin([], ctx, '3\n3\n2\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /coverage\.strictness set to recommended/);
   } finally {
@@ -668,10 +672,10 @@ test('interactive selection 2 sets coverage.strictness to recommended', () => {
 test('interactive selection 3 leaves coverage.strictness unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Choose coverage strictness:/);
-    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 3);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 4);
   } finally {
     cleanup(ctx);
   }
@@ -680,10 +684,10 @@ test('interactive selection 3 leaves coverage.strictness unchanged', () => {
 test('interactive empty selection leaves coverage.strictness unchanged', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n\n');
+    const result = runWithStdin([], ctx, '3\n3\n\n\n');
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Choose coverage strictness:/);
-    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 3);
+    assert.strictEqual((result.stdout.match(/Left unchanged\./g) || []).length, 4);
   } finally {
     cleanup(ctx);
   }
@@ -692,9 +696,9 @@ test('interactive empty selection leaves coverage.strictness unchanged', () => {
 test('interactive selection choosing the already-current coverage.strictness reports no change', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n1\n');
+    const result = runWithStdin([], ctx, '3\n3\n2\n\n');
     assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Already required; nothing changed\./);
+    assert.match(result.stdout, /Already recommended; nothing changed\./);
   } finally {
     cleanup(ctx);
   }
@@ -703,7 +707,7 @@ test('interactive selection choosing the already-current coverage.strictness rep
 test('an invalid coverage.strictness interactive selection exits 1', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n9\n');
+    const result = runWithStdin([], ctx, '3\n3\n9\n\n');
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /invalid selection: 9/);
   } finally {
@@ -714,23 +718,24 @@ test('an invalid coverage.strictness interactive selection exits 1', () => {
 test('interactive mode prints the current coverage.strictness and prompt lines', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '3\n3\n3\n');
-    assert.match(result.stdout, /Current coverage\.strictness: required/);
+    const result = runWithStdin([], ctx, '3\n3\n3\n\n');
+    assert.match(result.stdout, /Current coverage\.strictness: recommended/);
     assert.match(result.stdout, /Choose coverage strictness:/);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('interactive mode walks through storage.mode, documentation.commentMode, and coverage.strictness in one invocation', () => {
+test('interactive mode walks through storage.mode, documentation.commentMode, coverage.strictness, and git.behavior in one invocation', () => {
   const ctx = scratch();
   try {
-    const result = runWithStdin([], ctx, '2\n2\n2\n');
+    const result = runWithStdin([], ctx, '2\n1\n1\n4\n');
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
     assert.strictEqual(data.storage.mode, 'centralized');
-    assert.strictEqual(data.documentation.commentMode, 'follow-convention');
-    assert.strictEqual(data.coverage.strictness, 'recommended');
+    assert.strictEqual(data.documentation.commentMode, 'always');
+    assert.strictEqual(data.coverage.strictness, 'required');
+    assert.strictEqual(data.git.behavior, 'push');
   } finally {
     cleanup(ctx);
   }
@@ -754,7 +759,7 @@ test('a real TTY gets the inline selection prompt', async () => {
     // scratch home before this first (and only, per test process) import.
     const config = await import(CONFIG_MODULE_URL);
     process.stdin.isTTY = true;
-    const answer = Buffer.from('3\n3\n3\n', 'utf8');
+    const answer = Buffer.from('3\n3\n3\n6\n', 'utf8');
     let offset = 0;
     fs.readSync = (fd, buf) => {
       if (fd !== 0) return originalReadSync.apply(fs, arguments);
@@ -778,6 +783,7 @@ test('a real TTY gets the inline selection prompt', async () => {
   assert.match(wrote, /Selection \[1\/2\/3\]: /);
   assert.match(wrote, /Choose documentation comment mode:/);
   assert.match(wrote, /Choose coverage strictness:/);
+  assert.match(wrote, /Selection \[1-6\]: /);
 });
 
 // Isolated in its own subprocess (matching callExported()-style helpers
@@ -869,6 +875,67 @@ test('readLine propagates a non-EAGAIN error from the stdin read', async () => {
     assert.throws(() => config.readLine(), /I\/O error/);
   } finally {
     fs.readSync = originalReadSync;
+  }
+});
+
+test('get git.behavior prints ask when unset, and set accepts each behavior and reinstalls', () => {
+  const ctx = scratch();
+  try {
+    assert.strictEqual(runScript(SCRIPT, ['get', 'git.behavior'], ctx).stdout.trim(), 'ask');
+    for (const value of ['ask', 'generate', 'commit', 'push', 'none']) {
+      const result = runScript(SCRIPT, ['set', 'git.behavior', value], ctx);
+      assert.strictEqual(result.status, 0, result.stderr);
+      assert.match(result.stdout, new RegExp(`git\\.behavior set to ${value}`));
+      assert.strictEqual(runScript(SCRIPT, ['get', 'git.behavior'], ctx).stdout.trim(), value);
+    }
+    assert.strictEqual(JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).git.behavior, 'none');
+    assert.ok(fs.existsSync(path.join(ctx.home, '.xoch', 'prompts')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set rejects an invalid git.behavior value', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'git.behavior', 'amend'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid git\.behavior value 'amend'. Expected one of: ask generate commit push none/);
+    assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('interactive mode asks about git.behavior last, and each selection sets that behavior', () => {
+  const values = ['ask', 'generate', 'commit', 'push', 'none'];
+  values.forEach((value, i) => {
+    const ctx = scratch();
+    try {
+      if (value === 'ask') runScript(SCRIPT, ['set', 'git.behavior', 'none'], ctx);
+      const result = runWithStdin([], ctx, `3\n3\n3\n${i + 1}\n`);
+      assert.strictEqual(result.status, 0, result.stderr);
+      assert.match(result.stdout, /Current git\.behavior: /);
+      assert.match(result.stdout, new RegExp(`git\\.behavior set to ${value}`));
+    } finally {
+      cleanup(ctx);
+    }
+  });
+});
+
+test('interactive git.behavior: leave-unchanged, empty, already-current, invalid, and running out of input', () => {
+  const ctx = scratch();
+  try {
+    assert.match(runWithStdin([], ctx, '3\n3\n3\n6\n').stdout, /Left unchanged\.\n*$/);
+    assert.match(runWithStdin([], ctx, '3\n3\n3\n\n').stdout, /Left unchanged\.\n*$/);
+    assert.match(runWithStdin([], ctx, '3\n3\n3\n1\n').stdout, /Already ask; nothing changed\./);
+    const invalid = runWithStdin([], ctx, '3\n3\n3\n9\n');
+    assert.strictEqual(invalid.status, 1);
+    assert.match(invalid.stderr, /invalid selection: 9/);
+    assert.strictEqual(runWithStdin([], ctx, '3\n3\n3\n').status, 1);
+    assert.ok(!fs.existsSync(configPath(ctx)) || !JSON.parse(fs.readFileSync(configPath(ctx), 'utf8')).git);
+  } finally {
+    cleanup(ctx);
   }
 });
 

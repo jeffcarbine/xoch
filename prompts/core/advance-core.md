@@ -135,48 +135,38 @@ git status --branch --short
 git log --oneline @{u}..HEAD
 ```
 
-If there are uncommitted changes, staged changes, or local commits that have not been pushed, say:
+If there are uncommitted changes, staged changes, or local commits that have not been pushed:
+
+{{xoch-config:git.behavior ask="Ask the engineer, then act on the answer as described below: `Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?`" generate="Do not ask. The configured git.behavior is generate: act as `[G]` below." commit="Do not ask. The configured git.behavior is commit: act as `[C]` below." push="Do not ask. The configured git.behavior is push: act as `[P]` below." none="Do not ask. The configured git.behavior is none: act as `[N]` below." default="Ask the engineer, then act on the answer as described below: `Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?`"}}
+
+For a multi-project phase, report commit/push state per touched project but decide once. For `[C]` or `[P]`, create one focused commit in each repository that has phase changes (and push each, for `[P]`); never combine repository histories or claim one push covers another.
+
+Every commit message is distilled from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
+
+Shape:
 
 ```text
-Git changes detected. What would you like me to do? [C]ommit and push the changes, [G]enerate a commit message for you, or [N]othing?
+[imperative, present-tense summary of what changed]
+
+[optional body: what and why, distilled from spec/plan/phase text -- not a diff recap]
 ```
 
-For a multi-project phase, report commit/push state per touched project but ask this choice once. If the engineer chooses `[C]`, create and push one focused commit in each repository that has phase changes; never combine repository histories or claim one push covers another.
+Example:
 
-If the engineer chooses `[C]`:
+```text
+Add rate limiting to the webhook ingestion endpoint
 
-1. Create a focused commit for the current phase changes.
-2. Distill the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
+Bursts of retried webhooks from upstream were occasionally
+overwhelming the queue consumer. Cap accepted requests per source
+IP over a rolling window and return 429 past that limit.
+```
 
-   Shape:
+- `[G]` -- generate: print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
+- `[C]` -- commit: stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
+- `[P]` -- commit and push: as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
+- `[N]` -- nothing: do not commit or push.
 
-   ```text
-   [imperative, present-tense summary of what changed]
-
-   [optional body: what and why, distilled from spec/plan/phase text -- not a diff recap]
-   ```
-
-   Example:
-
-   ```text
-   Add rate limiting to the webhook ingestion endpoint
-
-   Bursts of retried webhooks from upstream were occasionally
-   overwhelming the queue consumer. Cap accepted requests per source
-   IP over a rolling window and return 429 past that limit.
-   ```
-
-3. Push the current branch to its configured upstream.
-4. Report the exact commit message and pushed branch to the engineer.
-5. Continue with snapshot and advancement.
-
-If the engineer chooses `[G]`:
-
-1. Draft a commit message the same way as `[C]`: distilled from the phase's own docs, with no job ID, phase number, or arc reference anywhere in it.
-2. Print the drafted message and stop. Do not run `git commit`, `git add`, or `git push` — the engineer commits manually.
-3. Continue with snapshot and advancement.
-
-If the engineer chooses `[N]`, do not commit or push. Continue with snapshot and advancement, and record in the snapshot that commit/push was deferred.
+Then continue with snapshot and advancement, recording the choice (and any commit or push) in the snapshot's Additional Notes.
 
 If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how they want to proceed.
 

@@ -16,6 +16,7 @@ const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
 const VALID_COMMENT_MODES = ['always', 'follow-convention'];
 const VALID_COVERAGE_STRICTNESS = ['required', 'recommended'];
+const VALID_GIT_BEHAVIORS = ['ask', 'generate', 'commit', 'push', 'none'];
 
 // Kept in sync by hand with bin/token-estimator.js's (and install.js's)
 // copy of this table -- the installed runtime can't require this
@@ -38,6 +39,10 @@ function isValidCommentMode(value) {
 
 function isValidCoverageStrictness(value) {
   return VALID_COVERAGE_STRICTNESS.includes(value);
+}
+
+function isValidGitBehavior(value) {
+  return VALID_GIT_BEHAVIORS.includes(value);
 }
 
 function isValidBudgetValue(value) {
@@ -72,13 +77,24 @@ function readStorageMode() {
 function readCommentMode() {
   const data = readJson(CONFIG_PATH);
   const mode = data.documentation && data.documentation.commentMode;
-  return isValidCommentMode(mode) ? mode : 'always';
+  return isValidCommentMode(mode) ? mode : 'follow-convention';
 }
 
 function readCoverageStrictness() {
   const data = readJson(CONFIG_PATH);
   const strictness = data.coverage && data.coverage.strictness;
-  return isValidCoverageStrictness(strictness) ? strictness : 'required';
+  return isValidCoverageStrictness(strictness) ? strictness : 'recommended';
+}
+
+/**
+ * What the advance step does with git changes: ask each time (default),
+ * generate a commit message, commit, commit and push, or nothing.
+ * @returns {string}
+ */
+function readGitBehavior() {
+  const data = readJson(CONFIG_PATH);
+  const behavior = data.git && data.git.behavior;
+  return isValidGitBehavior(behavior) ? behavior : 'ask';
 }
 
 function printConfig() {
@@ -92,6 +108,8 @@ function printConfig() {
   data.documentation.commentMode = readCommentMode();
   data.coverage = data.coverage || {};
   data.coverage.strictness = readCoverageStrictness();
+  data.git = data.git || {};
+  data.git.behavior = readGitBehavior();
   console.log(JSON.stringify(data, null, 2));
 }
 
@@ -122,6 +140,15 @@ function writeCoverageStrictness(value) {
   });
 }
 
+function writeGitBehavior(value) {
+  updateJson(CONFIG_PATH, (data) => {
+    data.version = data.version || 1;
+    data.git = data.git || {};
+    data.git.behavior = value;
+    return data;
+  });
+}
+
 function printMigrationWarning() {
   console.log(
     `${YELLOW}Note: switching storage.mode does not migrate existing job/arc data between `
@@ -140,6 +167,10 @@ function cmdGet(key) {
   }
   if (key === 'coverage.strictness') {
     console.log(readCoverageStrictness());
+    return;
+  }
+  if (key === 'git.behavior') {
+    console.log(readGitBehavior());
     return;
   }
   if (key.startsWith('tokenBudgets.')) {
@@ -179,6 +210,16 @@ function cmdSet(key, value) {
     }
     writeCoverageStrictness(value);
     console.log(`${GREEN}✓${NC} coverage.strictness set to ${value}`);
+    reinstall();
+    return;
+  }
+  if (key === 'git.behavior') {
+    if (!isValidGitBehavior(value)) {
+      process.stderr.write(`${RED}Error: invalid git.behavior value '${value}'. Expected one of: ${VALID_GIT_BEHAVIORS.join(' ')}${NC}\n`);
+      process.exit(1);
+    }
+    writeGitBehavior(value);
+    console.log(`${GREEN}✓${NC} git.behavior set to ${value}`);
     reinstall();
     return;
   }
@@ -275,8 +316,8 @@ function runCommentModeInteractive() {
   console.log(`Current documentation.commentMode: ${current}`);
   console.log('');
   console.log('Choose documentation comment mode:');
-  console.log('  1) always — add inline documentation (JSDoc/docstrings/etc.) unconditionally (default)');
-  console.log('  2) follow-convention — match whatever the target project/file already does');
+  console.log('  1) always — add inline documentation (JSDoc/docstrings/etc.) unconditionally');
+  console.log('  2) follow-convention — match whatever the target project/file already does (default)');
   console.log('  3) leave unchanged');
   console.log('');
   if (process.stdin.isTTY) process.stdout.write('Selection [1/2/3]: ');
@@ -317,8 +358,8 @@ function runCoverageStrictnessInteractive() {
   console.log(`Current coverage.strictness: ${current}`);
   console.log('');
   console.log('Choose coverage strictness:');
-  console.log('  1) required — every job-touched file with code must reach 100% coverage before the job can close (default)');
-  console.log('  2) recommended — coverage gaps are reported for the engineer to decide on, not auto-blocked');
+  console.log('  1) required — every job-touched file with code must reach 100% coverage before the job can close');
+  console.log('  2) recommended — coverage gaps are reported for the engineer to decide on, not auto-blocked (default)');
   console.log('  3) leave unchanged');
   console.log('');
   if (process.stdin.isTTY) process.stdout.write('Selection [1/2/3]: ');
@@ -354,6 +395,44 @@ function runCoverageStrictnessInteractive() {
   reinstall();
 }
 
+/**
+ * Asks what the advance step should do with git changes.
+ */
+function runGitBehaviorInteractive() {
+  const current = readGitBehavior();
+  console.log(`Current git.behavior: ${current}`);
+  console.log('');
+  console.log('Choose what happens to git changes at each phase\'s advance step:');
+  console.log('  1) ask — ask each time: [G]enerate a message, [C]ommit, commit and [P]ush, or [N]othing (default)');
+  console.log('  2) generate — draft a commit message; the engineer commits');
+  console.log('  3) commit — generate a message and commit');
+  console.log('  4) push — generate a message, commit, and push');
+  console.log('  5) none — leave git alone');
+  console.log('  6) leave unchanged');
+  console.log('');
+  if (process.stdin.isTTY) process.stdout.write('Selection [1-6]: ');
+
+  const choice = readLine();
+  if (choice === null) process.exit(1);
+  if (choice === '6' || choice === '') {
+    console.log('Left unchanged.');
+    return;
+  }
+  const target = VALID_GIT_BEHAVIORS[Number(choice) - 1];
+  if (!/^[1-5]$/.test(choice)) {
+    process.stderr.write(`${RED}Error: invalid selection: ${choice}${NC}\n`);
+    process.exit(1);
+    return;
+  }
+  if (target === current) {
+    console.log(`Already ${target}; nothing changed.`);
+    return;
+  }
+  writeGitBehavior(target);
+  console.log(`${GREEN}✓${NC} git.behavior set to ${target}`);
+  reinstall();
+}
+
 function runInteractive() {
   console.log('Xoch Config');
   console.log('===========');
@@ -364,6 +443,8 @@ function runInteractive() {
   runCommentModeInteractive();
   console.log('');
   runCoverageStrictnessInteractive();
+  console.log('');
+  runGitBehaviorInteractive();
 }
 
 function runBudgetsInteractive() {
@@ -403,7 +484,7 @@ function runBudgetsInteractive() {
 
 function usage() {
   console.log(`Usage:
-  node config.js                          Interactive mode (storage mode + documentation comment mode + coverage strictness)
+  node config.js                          Interactive mode (storage mode, documentation comment mode, coverage strictness, git behavior)
   node config.js show                     Print resolved config
   node config.js get storage.mode         Print current storage.mode
   node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
@@ -411,6 +492,8 @@ function usage() {
   node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
   node config.js get coverage.strictness       Print coverage.strictness
   node config.js set coverage.strictness VALUE Set coverage.strictness (required|recommended)
+  node config.js get git.behavior              Print git.behavior
+  node config.js set git.behavior VALUE        Set git.behavior (ask|generate|commit|push|none)
   node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
   node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
   node config.js budgets                      Interactively review/update token budgets
@@ -468,15 +551,18 @@ export {
   VALID_STORAGE_MODES,
   VALID_COMMENT_MODES,
   VALID_COVERAGE_STRICTNESS,
+  VALID_GIT_BEHAVIORS,
   DEFAULT_SKILL_BUDGETS,
   FALLBACK_SKILL_BUDGET,
   isValidStorageMode,
   isValidCommentMode,
   isValidCoverageStrictness,
+  isValidGitBehavior,
   isValidBudgetValue,
   readStorageMode,
   readCommentMode,
   readCoverageStrictness,
+  readGitBehavior,
   readTokenBudgets,
   resolvedBudget,
   writeTokenBudget,
@@ -484,6 +570,7 @@ export {
   writeStorageMode,
   writeCommentMode,
   writeCoverageStrictness,
+  writeGitBehavior,
   printMigrationWarning,
   cmdGet,
   cmdSet,
@@ -493,6 +580,7 @@ export {
   runStorageModeInteractive,
   runCommentModeInteractive,
   runCoverageStrictnessInteractive,
+  runGitBehaviorInteractive,
   runBudgetsInteractive,
   usage,
   main,

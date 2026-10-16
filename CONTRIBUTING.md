@@ -160,7 +160,7 @@ npm test
 
 This runs `node --test --experimental-test-coverage test/*.test.js` and prints a per-file coverage table. Any file a change modifies with executable code must reach 100% line, branch, and function coverage before that change is done — not just the lines touched, the whole file. This is not waivable outside an `xoch-patch` session. If a target file isn't already at 100%, add coverage-backfill test cases for its existing behavior alongside the change.
 
-This repository's own `coverage.strictness` config stays at its `required` default (see `bin/README.md#configjs`) — the rule above is unwaivable here regardless of what that setting allows other, downstream projects to opt into.
+The rule above is unwaivable in this repository regardless of `coverage.strictness`. That setting is global to your machine and now defaults to `recommended`, so set `xoch config set coverage.strictness required` while working on Xoch itself (see `bin/README.md#configjs`) so the rendered prompts enforce it too.
 
 To run a subset while iterating:
 

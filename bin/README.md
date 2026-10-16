@@ -228,6 +228,8 @@ xoch config get documentation.commentMode       Print documentation.commentMode
 xoch config set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
 xoch config get coverage.strictness       Print coverage.strictness
 xoch config set coverage.strictness VALUE Set coverage.strictness (required|recommended)
+xoch config get git.behavior              Print git.behavior
+xoch config set git.behavior VALUE        Set git.behavior (ask|generate|commit|push|none)
 xoch config get tokenBudgets.SKILL       Print SKILL's resolved read budget
 xoch config set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
 xoch config budgets                      Interactively review/update token budgets
@@ -237,17 +239,21 @@ Keys:
 
 - **`storage.mode`** (`in-repo` default | `centralized`) -- where job/arc state lives. See
   [Storage Location](../README.md#storage-location) in the root README.
-- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-do`'s
+- **`documentation.commentMode`** (`always` | `follow-convention` default) -- whether `xoch-do`'s
   `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,
   including having none.
-- **`coverage.strictness`** (`required` default | `recommended`) -- whether the 100%-coverage gate
+- **`coverage.strictness`** (`required` | `recommended` default) -- whether the 100%-coverage gate
   (`bin/init.js#coverage-gate`) is unwaivable before a job can close, or instead reports a gap and
   asks the engineer live whether to close it now or accept it and proceed.
+- **`git.behavior`** (`ask` default | `generate` | `commit` | `push` | `none`) -- what `xoch-do`'s
+  `advance` step does with git changes: ask each time (`[G]enerate a commit message, [C]ommit,
+  commit and [P]ush, or [N]othing?`), or always draft a message for the engineer to commit, commit,
+  commit and push, or leave git alone.
 - **`tokenBudgets.<skill>`** -- per-skill read-budget override in tokens (built-in defaults: spec
   5,000, plan 7,000; 5,000 for anything unlisted).
 
-All four are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
+All five are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
 available:
 
 ```json
@@ -256,6 +262,7 @@ available:
   "storage": { "mode": "centralized" },
   "documentation": { "commentMode": "follow-convention" },
   "coverage": { "strictness": "recommended" },
+  "git": { "behavior": "ask" },
   "tokenBudgets": { "spec": 6000 }
 }
 ```
