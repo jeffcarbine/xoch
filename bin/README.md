@@ -81,7 +81,7 @@ xoch job evidence --job ID [--json]
 xoch arc evidence --arc ID [--json]
 xoch file write --job ID --path PATH [--append]
 xoch file read --job ID --path PATH
-xoch file edit --job ID --path PATH [--replace-all]
+xoch file edit --job ID --path PATH [--old-string TEXT --new-string TEXT] [--replace-all]
 xoch discovery write --topic TOPIC
 xoch discovery read --path PATH
 xoch qa confirm-env --job ID --env dev|staging --target TEXT
@@ -123,7 +123,14 @@ collaborates on corrections.
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
 they reject path traversal outside it. `file write` and `file edit` also refuse `state.json` and
-`phases.json`, which only the state and phase helpers may change. `discovery write`/`discovery read` are the one exception to
+`phases.json`, which only the state and phase helpers may change. `file edit` takes the old and new
+text either from `--old-string`/`--new-string` (both required together, taken literally -- a `\n`
+stays two characters) or from stdin as old text, a `-----XOCH-EDIT-SEPARATOR-----` line, then new
+text.
+
+Every command that reads stdin (`file write`, `file edit`, `discovery write`, `state update`,
+`phase write`, `arc update`) fails at once with its usage when stdin is an interactive terminal,
+rather than waiting for input that was never piped in. `discovery write`/`discovery read` are the one exception to
 job-scoping in this file: they read and write `[xoch-root]/discoveries/`, a directory shared
 across every job (and reachable with no job active at all), so accepted discovery findings stay
 findable by a later, unrelated job instead of disappearing inside whichever job happened to be

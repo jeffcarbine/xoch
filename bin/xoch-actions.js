@@ -182,11 +182,24 @@ function applyOrDie(change) {
 }
 
 /**
- * Reads a JSON object from stdin, dying when it isn't valid JSON.
+ * Reads all of stdin. When stdin is an interactive terminal nothing was
+ * piped in, and reading would block forever, so this fails at once with
+ * the command's usage instead.
+ * @param {string} usage - What the command expects on stdin.
+ * @returns {string}
+ */
+function readStdin(usage) {
+  if (process.stdin.isTTY) die(`${usage}; nothing was piped in`);
+  return fs.readFileSync(0, 'utf8');
+}
+
+/**
+ * Reads a JSON value from stdin, dying when it isn't valid JSON.
+ * @param {string} usage - What the command expects on stdin.
  * @returns {*}
  */
-function readStdinJson() {
-  const text = fs.readFileSync(0, 'utf8');
+function readStdinJson(usage) {
+  const text = readStdin(usage);
   try {
     return JSON.parse(text);
   } catch (e) {
@@ -534,7 +547,7 @@ function stateUpdate(argv) {
   const flags = parseFlags(argv, []);
   if (!flags.job) die('state update requires --job');
   const { dir, state } = loadJob(flags.job);
-  const fields = readStdinJson();
+  const fields = readStdinJson('state update reads a JSON object from stdin');
   if (fields === null || typeof fields !== 'object' || Array.isArray(fields)) die('state update input must be a JSON object');
   applyOrDie(() => state.update({ last_updated: today(), ...fields }));
   state.save(dir);
@@ -643,7 +656,7 @@ function arcUpdate(argv) {
   const flags = parseFlags(argv, []);
   if (!flags.arc) die('arc update requires --arc');
   const { dir, state } = loadArc(flags.arc);
-  const fields = readStdinJson();
+  const fields = readStdinJson('arc update reads a JSON object from stdin');
   if (fields === null || typeof fields !== 'object' || Array.isArray(fields)) die('arc update input must be a JSON object');
   applyOrDie(() => state.update({ last_updated: today(), ...fields }));
   state.save(dir);
@@ -970,7 +983,7 @@ function phaseWrite(argv) {
   const flags = parseFlags(argv, []);
   if (!flags.job) die('phase write requires --job');
   const { dir, state } = loadJob(flags.job);
-  const input = readStdinJson();
+  const input = readStdinJson('phase write reads the phases JSON from stdin');
   let phases;
   applyOrDie(() => {
     phases = Phases.fromJSON(input);
@@ -1194,7 +1207,7 @@ const EDIT_SEPARATOR = '-----XOCH-EDIT-SEPARATOR-----';
 function fileWrite(argv) {
   const flags = parseFlags(argv, ['append']);
   const target = resolveJobFile(flags.job, flags.path, { write: true });
-  const content = fs.readFileSync(0, 'utf8');
+  const content = readStdin('file write reads the file content from stdin');
 
   if (flags.append && fs.existsSync(target)) {
     writeAtomicText(target, fs.readFileSync(target, 'utf8') + content);
@@ -1217,15 +1230,27 @@ function fileEdit(argv) {
   const target = resolveJobFile(flags.job, flags.path, { write: true });
   if (!fs.existsSync(target)) die(`file not found: ${target}`);
 
-  const stdin = fs.readFileSync(0, 'utf8');
-  const marker = `\n${EDIT_SEPARATOR}\n`;
-  const sepIndex = stdin.indexOf(marker);
-  if (sepIndex === -1) die(`file edit stdin must contain old text, a line with exactly "${EDIT_SEPARATOR}", then new text`);
-  // The marker consumes the newline terminating old text's last line; put
-  // it back, since that newline is part of the file content being matched,
-  // not part of the separator itself.
-  const oldText = `${stdin.slice(0, sepIndex)}\n`;
-  const newText = stdin.slice(sepIndex + marker.length);
+  let oldText;
+  let newText;
+  const hasOld = flags['old-string'] !== undefined;
+  const hasNew = flags['new-string'] !== undefined;
+  if (hasOld || hasNew) {
+    // Flag form: both strings taken literally (a "\n" stays two characters).
+    if (!hasOld || !hasNew) die('--old-string and --new-string must be given together');
+    if (flags['old-string'] === '') die('--old-string must not be empty');
+    oldText = flags['old-string'];
+    newText = flags['new-string'];
+  } else {
+    const stdin = readStdin(`file edit reads old text, a "${EDIT_SEPARATOR}" line, then new text from stdin -- or pass --old-string and --new-string`);
+    const marker = `\n${EDIT_SEPARATOR}\n`;
+    const sepIndex = stdin.indexOf(marker);
+    if (sepIndex === -1) die(`file edit stdin must contain old text, a line with exactly "${EDIT_SEPARATOR}", then new text`);
+    // The marker consumes the newline terminating old text's last line; put
+    // it back, since that newline is part of the file content being matched,
+    // not part of the separator itself.
+    oldText = `${stdin.slice(0, sepIndex)}\n`;
+    newText = stdin.slice(sepIndex + marker.length);
+  }
 
   const content = fs.readFileSync(target, 'utf8');
   const occurrences = content.split(oldText).length - 1;
@@ -1251,7 +1276,7 @@ function discoveryWrite(argv) {
   const topicSlug = slugify(topic);
   if (!topicSlug) die(`--topic produces an empty slug: '${topic}'`);
 
-  const content = fs.readFileSync(0, 'utf8');
+  const content = readStdin('discovery write reads the note from stdin');
   const discoveriesDir = path.join(xochRoot(), 'discoveries');
   const datePrefix = today();
   const base = `${datePrefix}-${topicSlug}`;
@@ -1307,7 +1332,7 @@ function usage() {
   xoch-actions.js arc evidence --arc ID [--json]
   xoch-actions.js file write --job ID --path PATH [--append]
   xoch-actions.js file read --job ID --path PATH
-  xoch-actions.js file edit --job ID --path PATH [--replace-all]
+  xoch-actions.js file edit --job ID --path PATH [--old-string TEXT --new-string TEXT] [--replace-all]
   xoch-actions.js discovery write --topic TOPIC
   xoch-actions.js discovery read --path PATH
 `);

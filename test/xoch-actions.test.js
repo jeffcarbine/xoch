@@ -2972,4 +2972,91 @@ test('phase helpers and state update require --job, and phase numbers must be nu
   }
 });
 
+// ---------------------------------------------------------------------
+// stdin input: terminal fail-fast, file edit flags
+// ---------------------------------------------------------------------
+
+// Runs the real command in a child whose stdin claims to be an interactive
+// terminal -- the situation where reading stdin used to block forever.
+function runAsTerminal(args, ctx) {
+  const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+  const script = `process.stdin.isTTY = true; import(${specifier}).then((m) => m.main(${JSON.stringify(args)}));`;
+  return spawnSync(process.execPath, ['-e', script], {
+    cwd: ctx.cwd,
+    env: { ...process.env, HOME: ctx.home },
+    encoding: 'utf8',
+    input: '',
+    timeout: 10000,
+  });
+}
+
+test('every command that reads stdin fails at once with its usage when stdin is a terminal', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    seedArc(ctx, 'a1');
+    fs.writeFileSync(path.join(dir, 'notes.md'), 'x\n');
+    const cases = [
+      [['file', 'write', '--job', 'j1', '--path', 'notes.md'], /file write reads the file content from stdin/],
+      [['file', 'edit', '--job', 'j1', '--path', 'notes.md'], /--old-string/],
+      [['discovery', 'write', '--topic', 'T'], /discovery write reads the note from stdin/],
+      [['state', 'update', '--job', 'j1'], /state update reads a JSON object from stdin/],
+      [['phase', 'write', '--job', 'j1'], /phase write reads the phases JSON from stdin/],
+      [['arc', 'update', '--arc', 'a1'], /arc update reads a JSON object from stdin/],
+    ];
+    for (const [args, message] of cases) {
+      const r = runAsTerminal(args, ctx);
+      assert.strictEqual(r.error, undefined, `${args.join(' ')} timed out`);
+      assert.strictEqual(r.status, 1, args.join(' '));
+      assert.match(r.stderr, message, args.join(' '));
+    }
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'notes.md'), 'utf8'), 'x\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit with --old-string and --new-string replaces the text literally, without reading stdin', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    fs.writeFileSync(path.join(dir, 'notes.md'), 'alpha\nbeta\n');
+    const r = runAsTerminal(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', 'beta', '--new-string', 'gamma\\ndelta'], ctx);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.match(r.stdout, /File edited: .*notes\.md \(1 replacement\)/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'notes.md'), 'utf8'), 'alpha\ngamma\\ndelta\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit flags can delete text with an empty --new-string, and honor --replace-all and the ambiguity check', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    fs.writeFileSync(path.join(dir, 'notes.md'), 'a-b-a\n');
+    assert.match(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', 'a', '--new-string', 'z'], ctx).stderr, /ambiguous/);
+    assert.strictEqual(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', 'a', '--new-string', 'z', '--replace-all'], ctx).status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'notes.md'), 'utf8'), 'z-b-z\n');
+    assert.strictEqual(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', '-b', '--new-string', ''], ctx).status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'notes.md'), 'utf8'), 'z-z\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file edit refuses only one of --old-string and --new-string, or an empty --old-string', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    fs.writeFileSync(path.join(dir, 'notes.md'), 'a\n');
+    assert.match(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', 'a'], ctx).stderr, /--old-string and --new-string must be given together/);
+    assert.match(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--new-string', 'b'], ctx).stderr, /--old-string and --new-string must be given together/);
+    assert.match(run(['file', 'edit', '--job', 'j1', '--path', 'notes.md', '--old-string', '', '--new-string', 'b'], ctx).stderr, /--old-string must not be empty/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'notes.md'), 'utf8'), 'a\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 runTests();
