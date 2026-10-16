@@ -47,6 +47,8 @@ xoch verify
 
 Job, arc, pointer, state, snapshot, and phase mechanics -- the helper prompts reach for most.
 
+Every helper resolves where Xoch data lives through `bin/lib/storage-root.js` -- `~/.xoch/projects/<slug>/` when centralized (the default), `<project>/.xoch/` when in-repo -- and `--root`, where a helper takes it, means the project directory, not the storage root.
+
 Job state (`state.json`), phases (`phases.json`), arc state (`state.json`), and arc membership
 (`jobs.json`) are JSON documents owned by these helpers. Each is read and validated through its
 shape class in `bin/lib/` (`JobState`, `Phases`, `ArcState`, `ArcJobs`, `CurrentPointer`); every
@@ -341,36 +343,6 @@ xoch git-state inspect [--root ROOT] [--json]
 
 ## Documentation
 
-### `readme-actions.js`
-
-Assemble approved root-README packets (from `.xoch/docs/`) in manifest order into the actual
-`README.md`.
-
-```text
-xoch readme assemble [options] [packet.md ...]
-
-Options:
-  --root ROOT         Project root. Default: current directory.
-  --manifest FILE     JSON manifest containing title, output, and ordered packets.
-  --output FILE       README output path, relative to root. Default: README.md.
-  --title TITLE       Top-level README title.
-  --stdout            Print assembled markdown instead of writing it.
-  --dry-run           Validate and report the assembly without writing.
-```
-
-Manifest shape:
-
-```json
-{
-  "title": "Project Name",
-  "output": "README.md",
-  "packets": [
-    ".xoch/docs/OVERVIEW.md",
-    { "path": ".xoch/docs/SETUP.md", "enabled": true }
-  ]
-}
-```
-
 ### `docs-drift.js`
 
 Report changed source paths that may affect durable docs, against a recorded baseline. A signal
@@ -383,16 +355,16 @@ xoch docs-drift check [--root ROOT] [--baseline FILE] [--since REF] [--json]
 
 ### `docs-target.js`
 
-Route a changed path to the nearest nested `README.md`, or the approved root-packet manifest when
-no nested README applies.
+Route a changed path to the nearest nested `README.md`, or the root `README.md` when no nested
+README applies.
 
 ```text
-xoch docs-target resolve --path PATH [--root ROOT] [--manifest FILE] [--json]
+xoch docs-target resolve --path PATH [--root ROOT] [--json]
 ```
 
 The JSON result's `sibling` field is `true` only when the resolved README sits directly beside the
 changed path -- `xoch-doc` asks the engineer to confirm before writing whenever it's `false`
-(an ancestor-directory match or a root-manifest fallback).
+(an ancestor-directory match or the root `README.md` fallback).
 
 ### `prompt-check.js`
 

@@ -4,11 +4,10 @@
 // Xoch deterministic helper actions.
 
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { isMainModule } from './lib/is-main.js';
 
-import { readJson, writeJson } from './lib/json-store.js';
+import { writeJson } from './lib/json-store.js';
 import { parseFlags } from './lib/args.js';
 import { prettyGenerate } from './lib/ruby-json.js';
 import { cleanId, generateJobId } from './generate-job-id.js';
@@ -19,6 +18,7 @@ import { ArcJobs, SECTIONS as ARC_SECTIONS } from './lib/arc-jobs.js';
 import { CurrentPointer } from './lib/current-pointer.js';
 import { Handoff, HANDOFF_SOURCES } from './lib/handoff.js';
 import { git } from './lib/git.js';
+import { xochRoot } from './lib/storage-root.js';
 
 function die(message) {
   process.stderr.write(`Error: ${message}\n`);
@@ -51,24 +51,7 @@ function utcIso8601(date = new Date()) {
 // re-deriving the same regex chain twice.
 const slugify = cleanId;
 
-// Resolve the Xoch storage root for the current project directory.
-// Prints ".xoch" (relative, in-repo mode) by default, or an absolute
-// "$HOME/.xoch/projects/<slug>" path when ~/.xoch/config.json sets
-// storage.mode to "centralized". Any missing/invalid config falls back
-// to in-repo so existing projects are unaffected.
-function xochRoot() {
-  const configPath = path.join(os.homedir(), '.xoch', 'config.json');
-  const config = readJson(configPath);
-  const mode = config && config.storage && ['in-repo', 'centralized'].includes(config.storage.mode)
-    ? config.storage.mode
-    : 'centralized';
-
-  if (mode === 'centralized') {
-    const slug = slugify(path.basename(process.cwd()));
-    return path.join(os.homedir(), '.xoch', 'projects', slug);
-  }
-  return '.xoch';
-}
+// The storage root resolver is shared with every other helper.
 
 // Creates the storage root. A centralized root also records which repo it
 // belongs to (repo.json), so a later storage move can return it there.

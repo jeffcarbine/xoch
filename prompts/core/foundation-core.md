@@ -37,7 +37,7 @@ The active job pointer is:
 
 Query the active pointer with `xoch job current --json`; do not read or edit `current.json` directly unless the helper is unavailable. The helper migrates target-model `current.md` pointers and reports legacy `.xoch/context/current.md` metadata without moving legacy jobs.
 
-Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's resolved Xoch storage root, not literally `<repo>/.xoch`. By default the root is `~/.xoch/projects/<project-slug>/`, entirely outside the repository — nothing gets written under the repo in that mode. When `~/.xoch/config.json` sets `storage.mode` to `in-repo`, the root is `.xoch` inside the repository instead. Get the active job's real directory from `job current --json`'s `directory` field; get the root directly (e.g. before any job exists) with `xoch config root`. Never assume `.xoch/work/...` is literally relative to the repo root.
+Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's Xoch storage root, `[xoch-root]`, not literally `<repo>/.xoch`. {{xoch-partial:storage-root.md}} The active job's real directory is also in `job current --json`'s `directory` field, and helpers resolve the root themselves, so there is no need to look it up; `xoch config root` prints the exact path only if a check is ever needed.
 
 ## Job Files
 
@@ -129,7 +129,6 @@ xoch workflow abandon ...
 xoch snapshot create ...
 xoch phase advance ...
 xoch job step-advance --job ID
-xoch readme assemble ...
 xoch archive archive ...
 xoch coverage compare ...
 xoch project-commands detect --json
@@ -150,7 +149,7 @@ Before every stateful Xoch command, enforce the shared workflow boundary. Finish
 - Ask before writing foundational artifacts when the prompt requires acceptance.
 - Specs require engineer-provided source requirements; never invent a spec from only a job name or project context.
 - Whenever you need a decision or selection from the engineer, ask it in text-game style — bracketed single-letter options, e.g. `[Y]es`/`[N]o`, `[A]ccept`/`[M]odify`. This applies to every engineer-input request, including ad hoc questions you construct yourself, not only choices a prompt already spells out verbatim.
-- Treat phase boundaries as hard stops: `make` implements only the current phase, `next` only reviews/advances it, and neither command starts the next phase.
+- Treat phase boundaries as hard stops: `xoch-do`'s `implement` step works only on the current phase, its `advance` step only reviews and advances it, and neither starts the next phase.
 - Put summaries, files, validation, caveats, and notes before the final command line.
 - The final line should be a text-game choice or `Ready for next step: ...`; after that final line, stop instead of executing the next command.
 - Do not commit, push, stash, reset, or otherwise manage git history unless the engineer explicitly asks or the active prompt asks and the engineer confirms.

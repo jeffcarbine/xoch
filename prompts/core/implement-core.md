@@ -130,7 +130,7 @@ For agent-owned or collaborative work:
 
 4. Note any risky operations that need engineer approval.
 
-{{xoch-partial:budget-check.md skill="make"}}
+{{xoch-partial:budget-check.md skill="do"}}
 
 ### Step 6: Write Behavior Tests First
 
@@ -167,7 +167,7 @@ When editing:
 If the job is target-model, append useful implementation notes with:
 
 ```bash
-xoch file write --job "[job-id]" --path "notes/make-[date].md" --append <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "notes/do-[date].md" --append <<'XOCHEOF'
 [implementation notes]
 XOCHEOF
 ```
@@ -206,7 +206,7 @@ For target-model jobs, update job state:
 
 ```bash
 xoch state update --job "[job-id]" <<'XOCHEOF'
-{"status": "phase_in_progress", "last_make_summary": "[short summary]", "last_validation": ["[latest check and result]"], "last_updated": "[today]"}
+{"status": "phase_in_progress", "last_do_summary": "[short summary]", "last_validation": ["[latest check and result]"], "last_updated": "[today]"}
 XOCHEOF
 ```
 

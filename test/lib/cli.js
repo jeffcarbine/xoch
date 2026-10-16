@@ -17,6 +17,16 @@ function scratch() {
   return { home, cwd };
 }
 
+// A scratch environment pinned to in-repo storage, for tests whose
+// fixtures live under <cwd>/.xoch (storage otherwise defaults to
+// centralized, under <home>/.xoch/projects/).
+function scratchInRepo() {
+  const ctx = scratch();
+  fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+  fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+  return ctx;
+}
+
 function cleanup(ctx) {
   fs.rmSync(ctx.home, { recursive: true, force: true });
 }
@@ -31,4 +41,6 @@ function runScript(scriptPath, args, ctx, input) {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-export { scratch, cleanup, runScript };
+export {
+  scratch, scratchInRepo, cleanup, runScript,
+};

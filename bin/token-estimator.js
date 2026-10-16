@@ -10,6 +10,7 @@ import os from 'os';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
 import { readJson, updateJson } from './lib/json-store.js';
+import { storageRoot } from './lib/storage-root.js';
 
 const LIMIT_TOKENS = 3000;
 
@@ -212,11 +213,11 @@ function runBudgetCheck(argv) {
 }
 
 function usageReportPath(root, job) {
-  return path.join(root, '.xoch', 'work', 'jobs', job, 'token-usage.json');
+  return path.join(storageRoot(root), 'work', 'jobs', job, 'token-usage.json');
 }
 
 function arcUsageReportPath(root, arc) {
-  return path.join(root, '.xoch', 'work', 'arcs', arc, 'token-usage.json');
+  return path.join(storageRoot(root), 'work', 'arcs', arc, 'token-usage.json');
 }
 
 function appendUsageEntry(reportPath, entry) {
@@ -261,7 +262,7 @@ function runBudgetRecord(argv) {
     return;
   }
 
-  const jobDir = path.join(root, '.xoch', 'work', 'jobs', job);
+  const jobDir = path.join(storageRoot(root), 'work', 'jobs', job);
   if (!fs.existsSync(jobDir) || !fs.statSync(jobDir).isDirectory()) {
     console.error(`Job folder not found: ${jobDir}`);
     process.exit(1);

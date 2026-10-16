@@ -1,6 +1,7 @@
 'use strict';
 
 import path from 'path';
+import { jobPathFor } from './storage-root.js';
 
 // Common multi-project scope validation logic, shared by project-scope.js
 // and context-sync.js. The two bash originals (project-scope.sh's
@@ -41,8 +42,6 @@ function scopeErrors(data, messages) {
   const names = {};
   const paths = {};
   let primaryCount = 0;
-  const expectedJobPath = path.join('.xoch', 'work', 'jobs', String(data.job_id || ''));
-
   projects.forEach((project, index) => {
     if (typeof project !== 'object' || project === null || Array.isArray(project)) {
       errors.push(messages.notObject(index));
@@ -64,6 +63,7 @@ function scopeErrors(data, messages) {
     const expandedPath = path.resolve(projectPath);
     if (paths[expandedPath]) errors.push(messages.duplicatePath(index, expandedPath, paths[expandedPath]));
     paths[expandedPath] = name || paths[expandedPath] || true;
+    const expectedJobPath = jobPathFor(expandedPath, String(data.job_id || ''));
     if (jobPath !== expectedJobPath) errors.push(messages.jobPathMismatch(index, expectedJobPath));
   });
 

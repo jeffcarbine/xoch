@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -33,12 +34,12 @@ function validId(id) {
 // bash original's Ruby JSON.parse also raises uncaught in that case, so
 // both crash rather than silently treating it as "not pointing to job".
 function pointsToJob(root, id) {
-  const jsonPointer = path.join(root, '.xoch', 'work', 'current.json');
+  const jsonPointer = path.join(storageRoot(root), 'work', 'current.json');
   if (fs.existsSync(jsonPointer)) {
     const data = JSON.parse(fs.readFileSync(jsonPointer, 'utf8'));
     return Boolean(data.job && data.job.id === id);
   }
-  const markdownPointer = path.join(root, '.xoch', 'work', 'current.md');
+  const markdownPointer = path.join(storageRoot(root), 'work', 'current.md');
   return fs.existsSync(markdownPointer) && fs.readFileSync(markdownPointer, 'utf8').includes(`**Job ID**: ${id}`);
 }
 
@@ -69,7 +70,7 @@ function run(argv) {
   }
 
   const plural = kind === 'job' ? 'jobs' : 'arcs';
-  const base = path.join(root, '.xoch', 'work', plural);
+  const base = path.join(storageRoot(root), 'work', plural);
   const archiveRoot = path.join(base, 'archive');
 
   if (command === 'archive') {

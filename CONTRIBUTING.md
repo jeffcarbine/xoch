@@ -58,7 +58,7 @@ Target-model job files live under the resolved Xoch storage root:
 [xoch-root]/work/jobs/[job-id]/
 ```
 
-`[xoch-root]` is `~/.xoch/projects/<slug>` by default (centralized), or `.xoch` inside the repo when `storage.mode` is `in-repo` — see `bin/xoch-actions.js`'s `xochRoot()` and `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; resolve it from `job current --json`'s `directory` field or `xoch config root` instead.
+`[xoch-root]` is `~/.xoch/projects/<slug>` by default (centralized), or `.xoch` inside the repo when `storage.mode` is `in-repo` — see `bin/lib/storage-root.js`, which every helper uses to resolve it (never build `<project>/.xoch` paths by hand), and the `config root` subcommand. When writing or editing prompts, never hardcode `.xoch/work/...` as if it were literally relative to the repo; refer to `[xoch-root]` and include `{{xoch-partial:storage-root.md}}`, which renders the configured location at install time.
 
 Common files:
 
@@ -96,7 +96,6 @@ Update docs when behavior changes:
 - `SYSTEM_DESIGN.md` for architecture and state model
 - `prompts/README.md` for command inventory and prompt behavior
 - `CONTRIBUTING.md` for contributor workflow
-- `.xoch/docs/` packet examples when relevant
 
 Use `xoch-doc` when documentation freshness is the work.
 

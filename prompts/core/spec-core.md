@@ -93,7 +93,9 @@ Ask for or extract:
 
 Handoffs chosen and claimed during `open` (`xoch handoff get --id "[id]"`) are source input: use what they say should change, and confirm it with the engineer like any other source.
 
-Read relevant accepted findings from `[xoch-root]/discoveries/*-discovery.md` (resolvable with `xoch config root`) when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
+{{xoch-partial:storage-root.md}}
+
+Read relevant accepted findings from `[xoch-root]/discoveries/*-discovery.md` when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
 
 If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
 
@@ -109,6 +111,7 @@ Ask targeted questions until these are clear:
 - documentation targets
 - constraints and non-goals
 - important edge cases
+- version impact: whether this change should bump the project's version (`none`, `patch`, `minor`, or `major`) and why, and whether the project keeps a changelog (`CHANGELOG.md` or equivalent). Decide it here, at open; `xoch-doc` applies it after review passes. Recommend a level from the change's nature (breaking -> major, new capability -> minor, fix -> patch, internal-only -> none) and let the engineer decide.
 
 Prefer a few high-signal questions over a long questionnaire.
 
@@ -259,6 +262,14 @@ Use this structure:
 ## Potential Impacts
 
 [Breaking changes, risks, affected docs/features]
+
+---
+
+## Version Impact
+
+- Level: [none | patch | minor | major]
+- Reason: [why this level]
+- Changelog: [path to the project's changelog, or none]
 
 ---
 

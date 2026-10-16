@@ -29,7 +29,7 @@ Arc membership is represented by job ID references. Job folders remain under `.x
 
 ### Step 1: Identify Arc
 
-If the engineer provides an arc ID, use it. Otherwise list arcs under `[xoch-root]/work/arcs/` (resolve `[xoch-root]` with `xoch config root`).
+If the engineer provides an arc ID, use it. Otherwise list arcs under `[xoch-root]/work/arcs/`. {{xoch-partial:storage-root.md}}
 
 {{xoch-partial:arc-evidence.md}}
 

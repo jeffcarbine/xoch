@@ -155,7 +155,7 @@ Update job state:
 
 ```bash
 xoch state set --job "[job-id]" --field status --value phase_in_progress
-xoch state set --job "[job-id]" --field last_make_summary --value "[N] cases: [x] pass, [y] fail ([p] patched, [d] deferred), [z] blocked, [w] skipped"
+xoch state set --job "[job-id]" --field last_do_summary --value "[N] cases: [x] pass, [y] fail ([p] patched, [d] deferred), [z] blocked, [w] skipped"
 ```
 
 ## Output

@@ -13,7 +13,7 @@ Decide whether a drifted change needs README-level documentation, and where. Whe
 
 ## Purpose
 
-Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before `xoch-do`'s `final_review` step or `xoch-close`, or maintain lightweight `.xoch/docs/` packets that compose into the root README.
+Keep README and Xoch documentation current-state oriented. `xoch-doc` may create missing docs, refresh stale docs, repair inaccurate docs, validate documentation freshness before `xoch-do`'s `final_review` step or `xoch-close`, or apply the version bump and changelog entry the spec's Version Impact calls for.
 
 ## Scope
 
@@ -21,7 +21,7 @@ Keep README and Xoch documentation current-state oriented. `xoch-doc` may create
 
 - root `README.md`
 - feature READMEs
-- `.xoch/docs/` packets
+- the project's version field and changelog, when the spec records a Version Impact
 - job documentation targets from the `state` file returned by `job evidence`
 
 It should not turn documentation into an append-only changelog.
@@ -46,7 +46,6 @@ Ask or infer whether the engineer wants to:
 - refresh docs after implementation
 - validate docs before `xoch-do`'s `final_review` step or `xoch-close`
 - repair stale or inaccurate docs
-- create or refresh `.xoch/docs/` packets and merge them into the root README
 
 If the goal is unclear, ask for the documentation target.
 
@@ -58,7 +57,6 @@ Read only what is needed:
 
 - relevant README files
 - job state/spec/plan/review when active
-- docs packets related to the target
 - source files needed to verify current behavior
 
 {{xoch-partial:budget-check.md skill="doc"}}
@@ -87,7 +85,7 @@ xoch docs-target resolve --path "[changed path]" --json
 
 When the result's `sibling` is `true`, the resolved README sits directly beside the changed path -- proceed without asking.
 
-When `sibling` is `false`, the resolution reached into an ancestor directory or fell back to the root packet manifest. This is ambiguous enough to need engineer confirmation before writing.
+When `sibling` is `false`, the resolution reached into an ancestor directory or fell back to the root `README.md`. This is ambiguous enough to need engineer confirmation before writing.
 
 For a single ambiguous resolution, ask:
 
@@ -118,7 +116,17 @@ If Steps 3-4 determined documentation writing is needed, read and follow:
 
 Return here once the write is complete (or was explicitly deferred) to record status and route. If no writing is needed, continue directly to Step 6.
 
-### Step 6: Record Documentation Status
+### Step 6: Apply Version Impact
+
+When a job is active, read the spec's `## Version Impact` section. If it is missing or `none`, skip this step. Otherwise, once documentation is settled:
+
+1. Bump the project's version by the recorded level (`patch`, `minor`, or `major`) in `package.json`, or the project's equivalent version source (`pyproject.toml`, `Cargo.toml`, a `VERSION` file, and so on). Edit the version field only; do not run publish or release commands.
+2. If the project has a changelog (`CHANGELOG.md` or the project's equivalent), add an entry for the new version at the top in the file's existing format, summarizing the job's user-visible changes from the spec. Do not create a changelog the project doesn't have.
+3. Note the new version, and the changelog entry when one was added, in the detail recorded in Step 7.
+
+If the version source is ambiguous (for example, several manifests with versions), ask the engineer which to bump before editing.
+
+### Step 7: Record Documentation Status
 
 When a job is active, record one of:
 
@@ -139,7 +147,7 @@ Then add any detail (which targets, what changed, why waived) to the relevant jo
 
 For legacy migration jobs, record equivalent notes in the legacy job folder when useful.
 
-### Step 7: Route
+### Step 8: Route
 
 Recommend:
 

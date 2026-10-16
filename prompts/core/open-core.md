@@ -19,7 +19,7 @@ When `job current --json` shows no active job, decide which of these applies fro
 
 ### Reopen A Closed Job
 
-If the engineer names an existing job ID (a directory already under `[xoch-root]/work/jobs/[job-id]/`, resolve `[xoch-root]` with `xoch config root`) that is not currently active, this is a reopen, not a fresh job.
+If the engineer names an existing job ID (a directory already under `[xoch-root]/work/jobs/[job-id]/`; {{xoch-partial:storage-root.md}}) that is not currently active, this is a reopen, not a fresh job.
 
 1. Read that job's state:
 

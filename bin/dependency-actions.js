@@ -7,13 +7,14 @@ import os from 'os';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
 import { prettyGenerate } from './lib/ruby-json.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
   console.log('  dependency-actions.js resolve [--dependencies PATH] [--map PATH] [--scope PATH]');
   console.log('');
   console.log('Defaults:');
-  console.log('  dependencies: .xoch/docs/dependencies.json');
+  console.log('  dependencies: <storage root>/docs/dependencies.json (see xoch config root)');
   console.log('  map:          ~/.xoch/workspace-map.json');
   console.log('');
   console.log('The command prints JSON and exits 1 when a declared project cannot be resolved.');
@@ -40,7 +41,7 @@ function readJsonSafe(filePath, result, label) {
 
 function resolve(argv) {
   const flags = parseFlags(argv, []);
-  const dependenciesPath = path.resolve(flags.dependencies || '.xoch/docs/dependencies.json');
+  const dependenciesPath = path.resolve(flags.dependencies || path.join(storageRoot(), 'docs', 'dependencies.json'));
   const mapPath = path.resolve(flags.map || path.join(os.homedir(), '.xoch', 'workspace-map.json'));
   const scopePath = flags.scope ? path.resolve(flags.scope) : '';
 
@@ -95,7 +96,7 @@ function resolve(argv) {
           name,
           path: resolvedPath,
           in_job_scope: scopeProjects.includes(name),
-          documentation: path.join(resolvedPath, '.xoch', 'docs'),
+          documentation: path.join(storageRoot(resolvedPath), 'docs'),
           declaration: dependency,
         });
       } else {

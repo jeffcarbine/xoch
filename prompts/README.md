@@ -29,10 +29,10 @@ open -> do -> doc -> close
 
 | Command | Purpose | Primary Output |
 |---|---|---|
-| `open` | Open a fresh job, reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.json`, `spec.md`, `plan.md`, `phases.json` |
+| `open` | Open a fresh job (offering pending handoffs from discovery, trace, or QA as source requirements), reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.json`, `spec.md`, `plan.md`, `phases.json` |
 | `do` | Do whatever the current step calls for: implement the current phase, review and advance it, and run the final quality-gate review once every phase is done. Routes by `job_type` to `standard-job-core.md` or `qa-job-core.md`. | standard: source changes, test evidence, phase snapshots, job `review.md`; QA: case results, triaged patches, `qa-report.md` |
-| `doc` | Create, refresh, repair, or validate docs; a required stop after a passing review. | updated docs, recorded documentation status |
-| `close` | Close a completed job or an arc. | job `closure.md`, cleared current pointer |
+| `doc` | Create, refresh, repair, or validate docs, and apply the spec's Version Impact (version bump and changelog entry); a required stop after a passing review. | updated docs, `documentation_status` in job state |
+| `close` | Close a completed job or an arc through the gated `xoch job close` / `xoch arc close` helpers. | job `closure.md`, cleared current pointer |
 
 Bundled commands track their position with `current_step` in job state, not with which command was last typed:
 
@@ -142,6 +142,7 @@ partials/phase-boundary.md
 partials/project-routing.md
 partials/response-ending.md
 partials/state-phase-index.md
+partials/storage-root.md
 partials/workflow-boundary.md
 partials/xoch-file-helper-rule.md
 ```
@@ -228,6 +229,8 @@ Use `phase-boundary.md` in phase commands. It tells agents that `Ready for next 
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
 
 Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps job state (read with `xoch state get`) useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.json` on every `do` loop.
+
+Use `storage-root.md` wherever a prompt names `[xoch-root]`. It renders the configured storage location (`~/.xoch/projects/[repo-slug]/` when centralized, `.xoch/` in-repo) at install time, so the agent never has to look it up. Likewise `do.md` and `advance-core.md` render only the configured `git.behavior`'s instructions, so a setting changed mid-session still reaches an agent working from memory.
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 

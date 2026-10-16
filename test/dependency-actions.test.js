@@ -4,7 +4,7 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 import { test, run } from './lib/runner.js';
-import { scratch, cleanup, runScript } from './lib/cli.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,7 +24,7 @@ function writeHome(ctx, relPath, content) {
 }
 
 test('no command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 2);
@@ -34,7 +34,7 @@ test('no command prints usage and exits 2', () => {
 });
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -45,7 +45,7 @@ test('--help prints usage', () => {
 });
 
 test('-h also prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['-h'], ctx);
     assert.strictEqual(result.status, 0);
@@ -56,7 +56,7 @@ test('-h also prints usage', () => {
 });
 
 test('an unknown command exits 2 with an error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -67,7 +67,7 @@ test('an unknown command exits 2 with an error', () => {
 });
 
 test('a missing dependencies file fails with JSON and exit code 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['resolve'], ctx);
     assert.strictEqual(result.status, 1);
@@ -79,7 +79,7 @@ test('a missing dependencies file fails with JSON and exit code 1', () => {
 });
 
 test('invalid JSON in the dependencies file fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', 'not json');
     const result = runScript(SCRIPT, ['resolve'], ctx);
@@ -92,7 +92,7 @@ test('invalid JSON in the dependencies file fails with exit code 2', () => {
 });
 
 test('a dependencies file whose "dependencies" key is not an array fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: 'nope' }));
     const result = runScript(SCRIPT, ['resolve'], ctx);
@@ -105,7 +105,7 @@ test('a dependencies file whose "dependencies" key is not an array fails with ex
 });
 
 test('a non-object dependency entry fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: ['bogus'] }));
     const result = runScript(SCRIPT, ['resolve'], ctx);
@@ -118,7 +118,7 @@ test('a non-object dependency entry fails with exit code 2', () => {
 });
 
 test('a dependency entry missing a name fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{}] }));
     const result = runScript(SCRIPT, ['resolve'], ctx);
@@ -131,7 +131,7 @@ test('a dependency entry missing a name fails with exit code 2', () => {
 });
 
 test('a dependency not present in the workspace map is reported as missing, and the exit code is 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     const result = runScript(SCRIPT, ['resolve'], ctx);
@@ -146,7 +146,7 @@ test('a dependency not present in the workspace map is reported as missing, and 
 });
 
 test('invalid JSON in the workspace map fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     writeHome(ctx, '.xoch/workspace-map.json', 'not json');
@@ -160,7 +160,7 @@ test('invalid JSON in the workspace map fails with exit code 2', () => {
 });
 
 test('a workspace map entry given as a bare string path is treated as { path }', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const siblingDir = path.join(path.dirname(ctx.cwd), 'sibling-project');
     fs.mkdirSync(siblingDir, { recursive: true });
@@ -178,7 +178,7 @@ test('a workspace map entry given as a bare string path is treated as { path }',
 });
 
 test('a workspace map entry whose mapped path does not exist is reported as missing', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     writeHome(ctx, '.xoch/workspace-map.json', JSON.stringify({ projects: { sibling: { path: path.join(ctx.cwd, 'nope') } } }));
@@ -193,7 +193,7 @@ test('a workspace map entry whose mapped path does not exist is reported as miss
 });
 
 test('a workspace map entry whose mapped path is a file (not a directory) is reported as missing', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const filePath = path.join(ctx.cwd, 'not-a-dir.txt');
     fs.writeFileSync(filePath, 'x');
@@ -210,7 +210,7 @@ test('a workspace map entry whose mapped path is a file (not a directory) is rep
 });
 
 test('a resolved dependency reports in_job_scope true when its name is present in the --scope file', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const siblingDir = path.join(path.dirname(ctx.cwd), 'scoped-sibling');
     fs.mkdirSync(siblingDir, { recursive: true });
@@ -228,7 +228,7 @@ test('a resolved dependency reports in_job_scope true when its name is present i
 });
 
 test('a --scope file that does not exist fails with exit code 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     const result = runScript(SCRIPT, ['resolve', '--scope', path.join(ctx.cwd, 'missing-scope.json')], ctx);
@@ -241,7 +241,7 @@ test('a --scope file that does not exist fails with exit code 1', () => {
 });
 
 test('invalid JSON in the --scope file fails with exit code 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     write(ctx, 'scope.json', 'not json');
@@ -255,7 +255,7 @@ test('invalid JSON in the --scope file fails with exit code 2', () => {
 });
 
 test('all dependencies resolved reports exit code 0, with a custom --dependencies path honored', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const siblingDir = path.join(path.dirname(ctx.cwd), 'all-good-sibling');
     fs.mkdirSync(siblingDir, { recursive: true });
@@ -271,7 +271,7 @@ test('all dependencies resolved reports exit code 0, with a custom --dependencie
 });
 
 test('a workspace map file whose "projects" key is missing falls back to an empty projects object', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     write(ctx, '.xoch/docs/dependencies.json', JSON.stringify({ dependencies: [{ name: 'sibling' }] }));
     writeHome(ctx, '.xoch/workspace-map.json', '{}');
@@ -286,7 +286,7 @@ test('a workspace map file whose "projects" key is missing falls back to an empt
 });
 
 test('a --scope file whose "projects" key is missing falls back to an empty scope list', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const siblingDir = path.join(path.dirname(ctx.cwd), 'no-scope-projects-sibling');
     fs.mkdirSync(siblingDir, { recursive: true });
@@ -297,6 +297,23 @@ test('a --scope file whose "projects" key is missing falls back to an empty scop
     assert.strictEqual(result.status, 0);
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.resolved[0].in_job_scope, false);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, resolve reads dependencies from the centralized root and reports each project\'s centralized docs', () => {
+  const ctx = scratch();
+  try {
+    const other = path.join(ctx.cwd, 'other-project');
+    fs.mkdirSync(other, { recursive: true });
+    fs.mkdirSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'docs'), { recursive: true });
+    fs.writeFileSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'docs', 'dependencies.json'), JSON.stringify({ dependencies: [{ name: 'other' }] }));
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'workspace-map.json'), JSON.stringify({ projects: { other: { path: other } } }));
+    const result = runScript(SCRIPT, ['resolve'], ctx);
+    assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+    const data = JSON.parse(result.stdout);
+    assert.strictEqual(data.resolved[0].documentation, path.join(ctx.home, '.xoch', 'projects', 'other-project', 'docs'));
   } finally {
     cleanup(ctx);
   }

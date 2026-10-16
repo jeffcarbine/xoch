@@ -48,7 +48,7 @@ Patch notes for target-model jobs may live under its `notes_dir`:
 If no job exists, ask whether to:
 
 1. open a normal job with `xoch-open`
-2. create a small patch note under `[xoch-root]/work/patches/` (resolve `[xoch-root]` with `xoch config root`)
+2. create a small patch note under `[xoch-root]/work/patches/`. {{xoch-partial:storage-root.md}}
 3. proceed without Xoch state and summarize in chat only
 
 {{xoch-partial:project-routing.md}}

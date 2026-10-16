@@ -8,6 +8,7 @@ import path from 'path';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
 import { prettyGenerate } from './lib/ruby-json.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -48,7 +49,7 @@ function run(argv) {
     process.exit(2);
   }
 
-  const jobDir = path.join(root, '.xoch', 'work', 'jobs', job);
+  const jobDir = path.join(storageRoot(root), 'work', 'jobs', job);
   if (!fs.existsSync(jobDir) || !fs.statSync(jobDir).isDirectory()) {
     console.error(`Job folder not found: ${jobDir}`);
     process.exit(1);

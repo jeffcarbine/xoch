@@ -96,7 +96,7 @@ xoch-open -> xoch-do -> xoch-doc -> xoch-close
 | 1 | `xoch-open` | Open a new job or arc, reopen a closed job, or resume paused/archived work, through an accepted plan. |
 | 2 | `xoch-do` | Do whatever the current step calls for: implement, review, and advance each phase; once every phase is done, run the final review. |
 | 3 | `xoch-doc` | Verify or refresh documentation freshness. |
-| 4 | `xoch-close` | Close the job (or an arc) and clear active work. |
+| 4 | `xoch-close` | Close the job (or an arc) through `xoch job close` / `xoch arc close`, which check every closing gate and refuse with the list of anything unmet. |
 
 `xoch-open` flows continuously from opening through an accepted plan in one invocation. `xoch-do` is invoked once per phase until all phases are complete, then once more for the final review.
 
@@ -106,9 +106,9 @@ In an arc, `xoch-next` replaces the `xoch-close` -> `xoch-open` hop between jobs
 
 `xoch-do` carries a job through phase work as three internal steps, tracked by `current_step` in job state rather than by which command was last typed:
 
-- **`implement`** is where implementation happens. It loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
-- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, asks about manual or external changes, writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-do` invocation.
-- **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch-close` confirms `xoch-doc` has run before proceeding; a documentation waiver may still exist, but only as something `xoch-doc` itself recorded. `xoch-close` expects a passing review, but the engineer may explicitly waive review for lightweight work; waivers are recorded in job state and closure notes.
+- **`implement`** is where implementation happens. It marks the phase started (`xoch phase start`, recording the commit work begins from), loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
+- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response — no separate command needed for this transition. It compares the phase plan to the working tree, handles git changes per `git.behavior` (by default asking: [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing), writes a phase snapshot -- whose title, next phase, files changed since the phase started, and acceptance criteria are filled in by `xoch snapshot create` -- and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-do` invocation.
+- **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next — documentation is a required stop, not an optional detour — which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch job close` refuses until every phase is complete, the review status is `pass` or `pass_with_waivers`, and `xoch-doc` has recorded a documentation status; it then writes `closure.md`, clears the pointer, and completes the job in its arc.
 
 ### QA Jobs
 
@@ -121,7 +121,7 @@ xoch-qa -> xoch-do (once per QA phase, then the QA report) -> xoch-close
 - **Open (`xoch-qa`).** `title` -> `intake` -> `plan`. Intake records what is being QA'd, requires the engineer to confirm the target is `dev` or `staging` (production is refused, and phase 1 cannot start without this confirmation), and records which capabilities the agent actually has -- browser, HTTP requests, shell. The plan lays out ordered phases of cases, each with an ID (`QA-P[n]-[nnn]`), the exact input values, the expected result, and why the case is worth running. Phases that need a capability the agent lacks can only be run by the engineer or collaboratively, with step-by-step instructions.
 - **Each phase (`xoch-do`).** The agent runs or hands off every case exactly as planned and records `pass`, `fail`, `blocked`, or `skipped` with evidence in `notes/qa-phase-[N].md`. It then sorts the failures into **patch now** (narrow, clearly understood fixes) and **defer** (anything larger), and the engineer confirms the grouping. Patch-now failures are fixed and re-tested on the spot by re-running the original case with the same input; the original failure stays on record. `advance` refuses to move on if any source change is not tied to a recorded patch.
 - **Report (`xoch-do`'s `final_review`).** The agent writes `qa-report.md` -- results per phase, failures patched during QA, deferred failures with reproduction steps and severity, and coverage gaps -- then asks `[P]atch`, `[O]pen a job`, or `[N]othing needed` for the deferred failures. A QA job never routes to `xoch-doc`.
-- **Close (`xoch-close`).** Requires `qa-report.md` and the recorded decision, and skips the review, coverage, and documentation gates. A `[P]` or `[O]` decision then hands the deferred failures to `xoch-patch` or `xoch-open` as their starting requirements, so the follow-up never overlaps an open QA job.
+- **Close (`xoch-close`).** Requires `qa-report.md` and the recorded decision, and skips the review, coverage, and documentation gates. A `[P]` decision hands the deferred failures to `xoch-patch`; an `[O]` decision leaves them as a pending handoff that the next `xoch-open` offers as its starting requirements, so the follow-up never overlaps an open QA job.
 
 ---
 
@@ -344,7 +344,11 @@ Ready for next step: `xoch-do`
 
 ## Support Workflows
 
-`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-do`'s `final_review` step or `xoch-close`, or maintain `.xoch/docs/` packets. Packets are flexible, project-shaped source chunks for the root README; examples include `OVERVIEW.md`, `ARCHITECTURE.md`, `SETUP.md`, `TESTING.md`, `CONVENTIONS.md`, `RISKS.md`, or whatever packet set the engineer approves. Feature-local documentation should usually live in a nested `README.md` beside the relevant code.
+`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-do`'s `final_review` step or `xoch-close`, or apply the version bump and changelog entry a job's spec calls for. Repo-wide documentation lives in the root `README.md`; feature-local documentation should usually live in a nested `README.md` beside the relevant code.
+
+Versioning is decided at open: the spec records a Version Impact (`none`, `patch`, `minor`, or `major`, with a reason, and whether the project keeps a changelog). After review passes, `xoch-doc` bumps the version in `package.json` (or the project's equivalent) and adds a changelog entry when the project has a changelog. It never publishes or releases.
+
+`xoch-discovery`, `xoch-trace`, and `xoch-qa` leave a **handoff** when their outcome should become a new job: a JSON note under `[xoch-root]/handoffs/` with what should change and why. `xoch-open` lists pending handoffs, offers them as source requirements, and claims the ones it uses, so the same findings are never picked up twice (`xoch handoff write|list|get|claim`).
 
 `xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
 

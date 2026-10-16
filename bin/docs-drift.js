@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Detect source drift without assuming a fixed README packet schema.
+// Detect source changes that may affect durable documentation.
 
 import fs from 'fs';
 import path from 'path';
@@ -10,6 +10,7 @@ import { spawnSync } from 'child_process';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
 import { prettyGenerate } from './lib/ruby-json.js';
+import { storageRoot } from './lib/storage-root.js';
 
 const EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.rb', '.py', '.php', '.go', '.rs', '.java',
@@ -28,7 +29,7 @@ function usage() {
   console.log('  docs-drift.js check [--root ROOT] [--baseline FILE] [--since REF] [--json]');
   console.log('');
   console.log('The helper reports changed source paths. Xoch or the engineer decides whether each');
-  console.log('signal belongs in a root README packet, a nested README, or no documentation.');
+  console.log('signal belongs in the root README, a nested README, or no documentation.');
 }
 
 function sourceLike(relativePath) {
@@ -97,7 +98,7 @@ function localTimestamp(date = new Date()) {
 function baseline(argv) {
   const flags = parseFlags(argv, []);
   const root = path.resolve(flags.root || '.');
-  const baselinePath = path.resolve(root, flags.baseline || '.xoch/docs/drift-baseline.json');
+  const baselinePath = path.resolve(root, flags.baseline || path.join(storageRoot(root), 'docs', 'drift-baseline.json'));
   ensureRootExists(root);
 
   const current = hashes(root);
@@ -109,7 +110,7 @@ function baseline(argv) {
 function check(argv) {
   const flags = parseFlags(argv, ['json']);
   const root = path.resolve(flags.root || '.');
-  const baselinePath = path.resolve(root, flags.baseline || '.xoch/docs/drift-baseline.json');
+  const baselinePath = path.resolve(root, flags.baseline || path.join(storageRoot(root), 'docs', 'drift-baseline.json'));
   const since = flags.since || '';
   const jsonMode = Boolean(flags.json);
   ensureRootExists(root);

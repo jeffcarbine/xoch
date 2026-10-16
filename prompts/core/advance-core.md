@@ -137,21 +137,14 @@ git log --oneline @{u}..HEAD
 
 If there are uncommitted changes, staged changes, or local commits that have not been pushed:
 
-{{xoch-config:git.behavior ask="Ask the engineer, then act on the answer as described below: `Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?`" generate="Do not ask. The configured git.behavior is generate: act as `[G]` below." commit="Do not ask. The configured git.behavior is commit: act as `[C]` below." push="Do not ask. The configured git.behavior is push: act as `[P]` below." none="Do not ask. The configured git.behavior is none: act as `[N]` below." default="Ask the engineer, then act on the answer as described below: `Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?`"}}
-
-For a multi-project phase, report commit/push state per touched project but decide once. For `[C]` or `[P]`, create one focused commit in each repository that has phase changes (and push each, for `[P]`); never combine repository histories or claim one push covers another.
-
-Every commit message is distilled from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
-
-Shape:
+{{xoch-config:git.behavior
+ask="Ask the engineer:
 
 ```text
-[imperative, present-tense summary of what changed]
-
-[optional body: what and why, distilled from spec/plan/phase text -- not a diff recap]
+Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?
 ```
 
-Example:
+Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
 
 ```text
 Add rate limiting to the webhook ingestion endpoint
@@ -161,12 +154,77 @@ overwhelming the queue consumer. Cap accepted requests per source
 IP over a rolling window and return 429 past that limit.
 ```
 
-- `[G]` -- generate: print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
-- `[C]` -- commit: stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
-- `[P]` -- commit and push: as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
-- `[N]` -- nothing: do not commit or push.
+- `[G]` -- print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
+- `[C]` -- stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
+- `[P]` -- as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
+- `[N]` -- do not commit or push.
 
-Then continue with snapshot and advancement, recording the choice (and any commit or push) in the snapshot's Additional Notes.
+For a multi-project phase, report git state per touched project but ask once; for `[C]` or `[P]`, commit (and push, for `[P]`) separately in each repository that has phase changes, never claiming one push covers another."
+generate="Do not ask the engineer what to do with git. Draft a commit message for this phase's changes, print it, and stop there: do not run `git add`, `git commit`, or `git push` -- the engineer commits manually.
+
+Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
+
+```text
+Add rate limiting to the webhook ingestion endpoint
+
+Bursts of retried webhooks from upstream were occasionally
+overwhelming the queue consumer. Cap accepted requests per source
+IP over a rolling window and return 429 past that limit.
+```
+
+For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories."
+commit="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, and report the commit. Do not push.
+
+Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
+
+```text
+Add rate limiting to the webhook ingestion endpoint
+
+Bursts of retried webhooks from upstream were occasionally
+overwhelming the queue consumer. Cap accepted requests per source
+IP over a rolling window and return 429 past that limit.
+```
+
+For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories."
+push="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, push the current branch to its configured upstream, and report the commit and pushed branch.
+
+Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
+
+```text
+Add rate limiting to the webhook ingestion endpoint
+
+Bursts of retried webhooks from upstream were occasionally
+overwhelming the queue consumer. Cap accepted requests per source
+IP over a rolling window and return 429 past that limit.
+```
+
+For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories. Push each repository separately; never claim one push covers another."
+none="Do not ask the engineer what to do with git, and do not commit or push: leave the changes for the engineer."
+default="Ask the engineer:
+
+```text
+Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?
+```
+
+Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
+
+```text
+Add rate limiting to the webhook ingestion endpoint
+
+Bursts of retried webhooks from upstream were occasionally
+overwhelming the queue consumer. Cap accepted requests per source
+IP over a rolling window and return 429 past that limit.
+```
+
+- `[G]` -- print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
+- `[C]` -- stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
+- `[P]` -- as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
+- `[N]` -- do not commit or push.
+
+For a multi-project phase, report git state per touched project but ask once; for `[C]` or `[P]`, commit (and push, for `[P]`) separately in each repository that has phase changes, never claiming one push covers another."
+}}
+
+Then continue with snapshot and advancement, recording what was done with git (including any commit or push) in the snapshot's Additional Notes.
 
 If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how they want to proceed.
 

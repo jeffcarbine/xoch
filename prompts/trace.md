@@ -23,7 +23,7 @@ Do not read the core prompt unless it is needed.
 
 {{xoch-partial:estimator-reminder.md}}
 
-For a fresh invocation, capture the symptom, frame the investigation, inspect only relevant evidence, and avoid code changes unless the engineer explicitly turns the trace into patch or make work.
+For a fresh invocation, capture the symptom, frame the investigation, inspect only relevant evidence, and avoid code changes unless the engineer explicitly turns the trace into an `xoch-patch` or a job.
 
 When the trace is complete, put evidence, hypotheses, confidence, risks, and recommendations first. Make the final line the next Xoch step, such as:
 

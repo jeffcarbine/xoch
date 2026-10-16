@@ -92,7 +92,7 @@ Read only useful orientation files:
 - `README.md`
 - package/build files
 - config manifests
-- `.xoch/docs/` packets
+- `.xoch/docs/dependencies.json`
 - job or arc state when active
 
 Use focused shell commands such as:

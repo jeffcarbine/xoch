@@ -199,7 +199,7 @@ Root cause: [summary]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Investigation comes before implementation.
-- Do not change code unless the engineer explicitly turns the trace into patch or make work.
+- Do not change code unless the engineer explicitly turns the trace into an `xoch-patch` or a job.
 - Do not invent logs, test output, or reproduction results.
 - Record uncertainty honestly.
 - Do not move active legacy job folders during the migration.

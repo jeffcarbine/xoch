@@ -15,7 +15,7 @@ Use this token-light wrapper for normal `xoch-doc` work.
 
 ### Drift Check First
 
-If the engineer's message states a specific documentation goal (create, refresh, repair, packets, or similar), skip this check and go straight to the core process below.
+If the engineer's message states a specific documentation goal (create, refresh, repair, or similar), skip this check and go straight to the core process below.
 
 Otherwise — a bare invocation, typically the mandatory post-review gate — check drift before doing anything else:
 
@@ -24,13 +24,13 @@ xoch docs-drift check --json
 ```
 
 - No baseline exists yet (`Drift baseline not found`), or drift signals are present: continue to the core process below.
-- A baseline exists and shows zero drift signals: skip the core process entirely. When a job is active, record a documentation status of "not impacted" with `xoch state set --job "[job-id]" --field documentation_status --value "not impacted"` (`xoch job close` requires it), and append a one-line note to `notes_dir` via `xoch file write --append` (see the file helper rule below). When no job is active, just report there's no drift and stop. This short path does not need to begin the managed workflow — it completes in one step. Route onward per the engineer's stated goal when they gave one; otherwise end with the same PR-vs-close-job choice a full pass ends with (below).
+- A baseline exists and shows zero drift signals, and the active job's spec records no Version Impact (or `none`): skip the core process entirely. If the spec records a version bump, continue to the core process so it is applied. When a job is active, record a documentation status of "not impacted" with `xoch state set --job "[job-id]" --field documentation_status --value "not impacted"` (`xoch job close` requires it), and append a one-line note to `notes_dir` via `xoch file write --append` (see the file helper rule below). When no job is active, just report there's no drift and stop. This short path does not need to begin the managed workflow — it completes in one step. Route onward per the engineer's stated goal when they gave one; otherwise end with the same PR-vs-close-job choice a full pass ends with (below).
 
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 If you already know the standard `xoch-doc` workflow from this conversation, continue from that context and do not read the core prompt.
 
-If any required workflow detail, packet convention, status vocabulary, or routing behavior is missing, read and follow:
+If any required workflow detail, version-impact handling, status vocabulary, or routing behavior is missing, read and follow:
 
 ```text
 ~/.xoch/prompts/core/doc-check-core.md
@@ -42,7 +42,7 @@ Do not read the core prompt unless it is needed.
 
 {{xoch-partial:estimator-reminder.md}}
 
-For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation (or maintain `.xoch/docs/` packets), load only the context needed, and update or confirm docs against current source and job evidence.
+For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation, load only the context needed, and update or confirm docs against current source and job evidence.
 
 When documentation work is complete, put status, targets, and caveats first. Unless the engineer already stated which they want, make the final line name both valid next commands rather than asserting one:
 

@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { isMainModule } from './lib/is-main.js';
 import { parseFlags } from './lib/args.js';
 import { readJson, updateJson } from './lib/json-store.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -27,11 +28,11 @@ function computeHash(filePath) {
 }
 
 function ledgerPath(root, job) {
-  return path.join(root, '.xoch', 'work', 'jobs', job, 'context-ledger.json');
+  return path.join(storageRoot(root), 'work', 'jobs', job, 'context-ledger.json');
 }
 
 function requireJobDir(root, job) {
-  const jobDir = path.join(root, '.xoch', 'work', 'jobs', job);
+  const jobDir = path.join(storageRoot(root), 'work', 'jobs', job);
   if (!fs.existsSync(jobDir) || !fs.statSync(jobDir).isDirectory()) {
     console.error(`Job folder not found: ${jobDir}`);
     process.exit(1);

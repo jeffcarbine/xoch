@@ -17,7 +17,9 @@ Use `xoch-discovery` for product, domain, design, API, dependency, workflow, com
 
 ## Work Model
 
-Discovery notes live in a shared directory, independent of any job -- resolvable with `xoch config root`:
+Discovery notes live in a shared directory, independent of any job. {{xoch-partial:storage-root.md}}
+
+The directory is:
 
 ```text
 [xoch-root]/discoveries/[date]-[topic]-discovery.md

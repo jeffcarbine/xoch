@@ -77,7 +77,7 @@ function validateScope(data) {
 }
 
 function jobRoot(project) {
-  return path.join(path.resolve(project.path), project.job_path);
+  return path.resolve(project.path, project.job_path);
 }
 
 function digestPath(target, hash, prefix) {
