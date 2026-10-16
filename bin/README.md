@@ -388,7 +388,7 @@ xoch gitignore ensure [--root ROOT] [--mode shared-docs|local-all] [--repair] [-
 
 ### `archive-actions.js`
 
-Dry-run, archive, and restore Xoch jobs or arcs safely (moves them out of active `.xoch/work/`
+Dry-run, archive, and restore Xoch jobs or arcs safely (moves them out of active `[xoch-root]/work/`
 without deleting anything).
 
 ```text
@@ -424,7 +424,7 @@ xoch context-sync check --scope PATH
 
 ### `dependency-actions.js`
 
-Resolve a job's shareable dependency declarations (`.xoch/docs/dependencies.json`) against the
+Resolve a job's shareable dependency declarations (`[xoch-root]/docs/dependencies.json`) against the
 local, machine-only workspace map, printing JSON and exiting 1 when a declared project can't be
 resolved.
 

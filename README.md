@@ -152,37 +152,35 @@ Retired names map onto the current set: `xoch-build` -> `xoch-do`; `xoch-revise-
 
 ## Project Structure
 
-Xoch uses `.xoch/` for workflow state and project knowledge:
+Xoch keeps workflow state and project knowledge in its storage root, `[xoch-root]` -- `~/.xoch/projects/<project-slug>/` by default, or `.xoch/` inside the repository with in-repo storage (see [Storage Location](#storage-location)):
 
 ```text
-your-project/
-  README.md
-  .xoch/
-    work/
-      current.json
-      jobs/
-        job-id/
-          state.json           # helper-owned: xoch state get/set/update
-          phases.json          # helper-owned: xoch phase get/show/write/advance
-          projects.json        # multi-project jobs only
-          spec.md
-          plan.md
-          review.md
-          closure.md
-          snapshots/
-          notes/
-      arcs/
-        arc-id/
-          state.json           # helper-owned: xoch arc get/update
-          jobs.json            # helper-owned: xoch arc get/job-move
-          notes.md
-    docs/
-      dependencies.json        # optional project-name contracts
-      OVERVIEW.md
-      ARCHITECTURE.md
-      SETUP.md
-      TESTING.md
-      CONVENTIONS.md
+[xoch-root]/                 # ~/.xoch/projects/<project-slug>/ by default; <repo>/.xoch/ in-repo
+  work/
+    current.json
+    jobs/
+      job-id/
+        state.json           # helper-owned: xoch state get/set/update
+        phases.json          # helper-owned: xoch phase get/show/write/advance
+        projects.json        # multi-project jobs only
+        spec.md
+        plan.md
+        review.md
+        closure.md
+        snapshots/
+        notes/
+    arcs/
+      arc-id/
+        state.json           # helper-owned: xoch arc get/update
+        jobs.json            # helper-owned: xoch arc get/job-move
+        notes.md
+  docs/
+    dependencies.json        # optional project-name contracts
+    OVERVIEW.md
+    ARCHITECTURE.md
+    SETUP.md
+    TESTING.md
+    CONVENTIONS.md
 ```
 
 Prompt source files can also use reusable partials:
@@ -207,7 +205,7 @@ During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/`
 - A **phase** is an implementation slice inside a job.
 - An **arc** is an optional grouping of related jobs.
 
-Jobs live under `.xoch/work/jobs/`. Arcs live under `.xoch/work/arcs/` and reference job IDs; job folders are not nested inside arc folders.
+Jobs live under `[xoch-root]/work/jobs/`. Arcs live under `[xoch-root]/work/arcs/` and reference job IDs; job folders are not nested inside arc folders.
 
 ### Storage Location
 
@@ -221,7 +219,7 @@ Resolve the active root directly with `xoch config root`, or read the `directory
 
 ### Active Pointer And Workflows
 
-`.xoch/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
+`[xoch-root]/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
 
 ```bash
 xoch job current --json
@@ -242,7 +240,7 @@ Machine-local project paths live in `~/.xoch/workspace-map.json`. Shareable depe
 Arc files are intentionally small:
 
 ```text
-.xoch/work/arcs/[arc-id]/
+[xoch-root]/work/arcs/[arc-id]/
   state.json
   jobs.json
   notes.md
@@ -250,7 +248,7 @@ Arc files are intentionally small:
   revisions/
 ```
 
-`jobs.json` is the membership list. It groups job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job state's `arc` field holds the arc ID, but the job folder still stays under `.xoch/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active -- all through `xoch arc job-move`. Read an arc's state and membership with `xoch arc get --arc ID --json`.
+`jobs.json` is the membership list. It groups job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job state's `arc` field holds the arc ID, but the job folder still stays under `[xoch-root]/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active -- all through `xoch arc job-move`. Read an arc's state and membership with `xoch arc get --arc ID --json`.
 
 `xoch-open`'s `spec` step should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, it recommends setting up an arc before job planning. Arc setup checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, it asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
 
@@ -259,7 +257,7 @@ Arc files are intentionally small:
 Each job has a `state.json` file that records the active workflow state:
 
 ```text
-.xoch/work/jobs/[job-id]/state.json
+[xoch-root]/work/jobs/[job-id]/state.json
 ```
 
 Structured job and arc files (`state.json`, `phases.json`, and an arc's `state.json`/`jobs.json`) are owned by Xoch's helpers, which validate every change before saving it. Read them with `xoch state get`, `xoch phase get`/`phase show`, and `xoch arc get`; change them with `xoch state set`/`state update`, `xoch phase write`/`phase advance`, `xoch arc update`, and `xoch arc job-move`. Never edit them by hand. A phase's number is its position in `phases.json`. Prose artifacts -- spec, plan, snapshots, review, closure, notes, and revisions -- stay markdown.
@@ -285,7 +283,9 @@ Revision notes live under each job or arc `revisions/` folder and explain why th
 
 ## Gitignore Choices
 
-Choose what your team wants to share:
+This only applies with in-repo storage (`storage.mode` set to `in-repo`). With the default centralized storage, nothing Xoch writes lives in the repository, so there is nothing to ignore.
+
+With in-repo storage, choose what your team wants to share:
 
 ```gitignore
 # Local-only Xoch state
@@ -296,8 +296,6 @@ Choose what your team wants to share:
 ```
 
 For solo work, ignoring all of `.xoch/` is also valid.
-
-If `storage.mode` is set to `centralized` (see [Storage Location](#storage-location)), none of this is needed — job/arc state lives entirely under `~/.xoch/projects/<project-slug>/`, so there's nothing under `.xoch/work/` in the repo to ignore in the first place.
 
 ---
 
