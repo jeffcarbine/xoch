@@ -84,6 +84,10 @@ xoch file read --job ID --path PATH
 xoch file edit --job ID --path PATH [--old-string TEXT --new-string TEXT] [--replace-all]
 xoch discovery write --topic TOPIC
 xoch discovery read --path PATH
+xoch handoff write --source discovery|trace|qa --topic TOPIC   # body on stdin
+xoch handoff list [--pending] [--json]
+xoch handoff get --id ID [--json]
+xoch handoff claim --id ID --job JOB
 xoch qa confirm-env --job ID --env dev|staging --target TEXT
 xoch qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
 ```
@@ -137,6 +141,13 @@ findable by a later, unrelated job instead of disappearing inside whichever job 
 active when the research ran. `discovery write` derives its own filename
 (`[date]-[topic-slug]-discovery.md`) from `--topic` and prints the path it wrote; a same-day
 rewrite of the same topic gets a numeric suffix rather than overwriting the earlier finding.
+
+`handoff write` leaves information a side workflow (discovery, trace, or QA) wants a later
+`xoch-open` to use as source requirements: one JSON file under `[xoch-root]/handoffs/`, named
+`[date]-[topic-slug]` (numeric suffix when taken), starting `pending`. `handoff list --pending`
+shows what `xoch-open` should offer, `handoff get` prints one in full, and `handoff claim` marks it
+claimed by the job that used it -- refusing a second claim -- so the same findings are never picked
+up twice. Handoffs are never deleted.
 
 `job current`/`job set-current` project a job's `next_command` and `current_step` into
 `current.json` alongside `workflow`, self-healing on every `job current` read so a bundled

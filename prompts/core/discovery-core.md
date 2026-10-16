@@ -226,6 +226,16 @@ Recommend:
 - `xoch-doc` when accepted findings belong in durable project documentation
 - stop as blocked when required access or authority is unavailable
 
+When the route is `xoch-open`, leave a handoff so the next `xoch-open` picks these findings up as source requirements (and claims them, so they are never picked up twice):
+
+```bash
+xoch handoff write --source discovery --topic "[topic]" <<'XOCHEOF'
+[what a new job should do, the accepted findings it rests on, unresolved questions, and the discovery note path]
+XOCHEOF
+```
+
+Report the handoff ID it prints.
+
 ## Output
 
 End with:

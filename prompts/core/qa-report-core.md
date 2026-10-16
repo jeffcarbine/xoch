@@ -118,7 +118,13 @@ Then end with the next step. A QA job is closed before follow-up work starts, so
 
 - `[N]` -- `Ready for next step: \`xoch-close\``
 - `[P]` -- say that after closing, `xoch-patch` should be given the report's deferred failures (`qa-report.md` -> Recommended Follow-Up) as its issue, then end with `Ready for next step: \`xoch-close\``
-- `[O]` -- say that after closing, `xoch-open` should be given the report's deferred failures as its source requirements, then end with `Ready for next step: \`xoch-close\``
+- `[O]` -- leave the deferred failures as a handoff for the next `xoch-open`, report the handoff ID it prints, say that after closing `xoch-open` will offer it as source requirements, then end with `Ready for next step: \`xoch-close\``:
+
+  ```bash
+  xoch handoff write --source qa --topic "[job title] follow-up" <<'XOCHEOF'
+  [the report's Recommended Follow-Up: each deferred failure with its reproduction, expected vs. actual, and severity, plus the qa-report.md path]
+  XOCHEOF
+  ```
 
 ## Rules
 

@@ -147,6 +147,22 @@ If the engineer invokes `xoch-open` with no job description at all and no active
    - `title`, `spec`, or `plan` -- continue that step in this same response, exactly as a fresh entry into that step would.
    - anything else -- this job is past `xoch-open`'s territory. Report the summary and end with `Ready for next step: \`xoch-do\`` (or `` `xoch-close` `` if it looks done) rather than continuing here.
 
+### Pending Handoffs
+
+Discovery, trace, and QA leave handoffs for work that should become a job. Before a fresh job or a bare-invocation resume search, check for unclaimed ones:
+
+```bash
+xoch handoff list --pending
+```
+
+If any are pending, list them (ID, source, topic) and ask which, if any, this job should take as source requirements -- alongside resume candidates on a bare invocation. Read each chosen one in full with `xoch handoff get --id "[id]"`; its body is source input for the `spec` step, not an accepted spec. Once the job exists (after `job open`, or after reopening/resuming), claim every handoff it used so it is never offered again:
+
+```bash
+xoch handoff claim --id "[id]" --job "[job-id]"
+```
+
+Never claim a handoff the engineer did not choose, and never delete one.
+
 ### Fresh Job
 
 The default when none of the above applies.

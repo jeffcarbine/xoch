@@ -3059,4 +3059,155 @@ test('file edit refuses only one of --old-string and --new-string, or an empty -
   }
 });
 
+// ---------------------------------------------------------------------
+// handoffs
+// ---------------------------------------------------------------------
+
+function handoffsDirOf(ctx) {
+  return path.join(xochRootDir(ctx), 'handoffs');
+}
+
+test('handoff write stores a pending handoff named from the date and topic, and prints its id', () => {
+  const ctx = scratch();
+  try {
+    const r = run(['handoff', 'write', '--source', 'trace', '--topic', 'Login Bug!'], ctx, 'Root cause: expired token\n');
+    assert.strictEqual(r.status, 0, r.stderr);
+    const id = r.stdout.match(/Handoff written: (\S+)/)[1];
+    assert.match(id, /^\d{4}-\d{2}-\d{2}-login-bug$/);
+    const data = readJsonFile(path.join(handoffsDirOf(ctx), `${id}.json`));
+    assert.strictEqual(data.source, 'trace');
+    assert.strictEqual(data.topic, 'Login Bug!');
+    assert.strictEqual(data.status, 'pending');
+    assert.strictEqual(data.body, 'Root cause: expired token\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a second handoff with the same topic on the same day gets a numeric suffix', () => {
+  const ctx = scratch();
+  try {
+    const first = run(['handoff', 'write', '--source', 'qa', '--topic', 'Checkout'], ctx, 'a').stdout.match(/Handoff written: (\S+)/)[1];
+    const second = run(['handoff', 'write', '--source', 'qa', '--topic', 'Checkout'], ctx, 'b').stdout.match(/Handoff written: (\S+)/)[1];
+    assert.strictEqual(second, `${first}-2`);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff write refuses a missing or unknown source, a missing topic, or an empty body', () => {
+  const ctx = scratch();
+  try {
+    assert.match(run(['handoff', 'write', '--topic', 'T'], ctx, 'b').stderr, /--source must be one of discovery, trace, qa/);
+    assert.match(run(['handoff', 'write', '--source', 'sidebar', '--topic', 'T'], ctx, 'b').stderr, /--source must be one of/);
+    assert.match(run(['handoff', 'write', '--source', 'qa'], ctx, 'b').stderr, /requires --topic/);
+    assert.match(run(['handoff', 'write', '--source', 'qa', '--topic', '!!!'], ctx, 'b').stderr, /empty slug/);
+    assert.match(run(['handoff', 'write', '--source', 'qa', '--topic', 'T'], ctx, '  \n').stderr, /body is empty/);
+    assert.ok(!fs.existsSync(handoffsDirOf(ctx)) || fs.readdirSync(handoffsDirOf(ctx)).length === 0);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff list shows every handoff, or only pending ones, as text or JSON', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    const a = run(['handoff', 'write', '--source', 'discovery', '--topic', 'Alpha'], ctx, 'A').stdout.match(/Handoff written: (\S+)/)[1];
+    const b = run(['handoff', 'write', '--source', 'trace', '--topic', 'Beta'], ctx, 'B').stdout.match(/Handoff written: (\S+)/)[1];
+    run(['handoff', 'claim', '--id', a, '--job', 'j1'], ctx);
+    const text = run(['handoff', 'list'], ctx).stdout;
+    assert.match(text, new RegExp(`${a} \\[claimed by j1\\] discovery: Alpha`));
+    assert.match(text, new RegExp(`${b} \\[pending\\] trace: Beta`));
+    const pending = JSON.parse(run(['handoff', 'list', '--pending', '--json'], ctx).stdout);
+    assert.deepStrictEqual(pending.map((h) => h.id), [b]);
+    assert.strictEqual(pending[0].body, 'B');
+    assert.strictEqual(run(['handoff', 'list', '--pending'], ctx).stdout.includes(a), false);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff list with none says so', () => {
+  const ctx = scratch();
+  try {
+    assert.strictEqual(run(['handoff', 'list', '--pending'], ctx).stdout, 'No pending handoffs.\n');
+    assert.strictEqual(run(['handoff', 'list'], ctx).stdout, 'No handoffs.\n');
+    assert.strictEqual(run(['handoff', 'list', '--json'], ctx).stdout, '[]\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff get prints one handoff in full, as text or JSON', () => {
+  const ctx = scratch();
+  try {
+    const id = run(['handoff', 'write', '--source', 'qa', '--topic', 'Cards'], ctx, 'Deferred: QA-3\n').stdout.match(/Handoff written: (\S+)/)[1];
+    const text = run(['handoff', 'get', '--id', id], ctx).stdout;
+    assert.match(text, new RegExp(`id: ${id}\\nsource: qa\\ntopic: Cards\\nstatus: pending\\n`));
+    assert.match(text, /\n\nDeferred: QA-3\n$/);
+    assert.strictEqual(JSON.parse(run(['handoff', 'get', '--id', id, '--json'], ctx).stdout).body, 'Deferred: QA-3\n');
+    assert.match(run(['handoff', 'get', '--id', 'nope'], ctx).stderr, /handoff not found: nope/);
+    assert.match(run(['handoff', 'get'], ctx).stderr, /requires --id/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff claim marks a handoff claimed by a job, and refuses a second claim, a missing handoff, or an unknown job', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    seedJob(ctx, 'j2');
+    const id = run(['handoff', 'write', '--source', 'trace', '--topic', 'T'], ctx, 'B').stdout.match(/Handoff written: (\S+)/)[1];
+    assert.match(run(['handoff', 'claim', '--id', id, '--job', 'ghost'], ctx).stderr, /state not found/);
+    const ok = run(['handoff', 'claim', '--id', id, '--job', 'j1'], ctx);
+    assert.strictEqual(ok.status, 0, ok.stderr);
+    assert.match(ok.stdout, new RegExp(`Handoff ${id} claimed by j1`));
+    const data = readJsonFile(path.join(handoffsDirOf(ctx), `${id}.json`));
+    assert.strictEqual(data.status, 'claimed');
+    assert.strictEqual(data.claimed_by, 'j1');
+    assert.ok(data.claimed_at);
+    assert.match(run(['handoff', 'claim', '--id', id, '--job', 'j2'], ctx).stderr, /already claimed by j1/);
+    assert.match(run(['handoff', 'claim', '--id', 'nope', '--job', 'j1'], ctx).stderr, /handoff not found: nope/);
+    assert.match(run(['handoff', 'claim', '--id', id], ctx).stderr, /requires --id and --job/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoff ids cannot escape the handoffs folder', () => {
+  const ctx = scratch();
+  try {
+    assert.match(run(['handoff', 'get', '--id', '../current'], ctx).stderr, /invalid handoff id/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('handoffs are stored under the centralized root when storage is centralized', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'centralized' } }));
+    const id = run(['handoff', 'write', '--source', 'qa', '--topic', 'T'], ctx, 'B').stdout.match(/Handoff written: (\S+)/)[1];
+    assert.ok(fs.existsSync(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd), 'handoffs', `${id}.json`)));
+    assert.ok(!fs.existsSync(handoffsDirOf(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a corrupt handoff file is refused by get and list, with the file named', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(handoffsDirOf(ctx), { recursive: true });
+    fs.writeFileSync(path.join(handoffsDirOf(ctx), 'broken.json'), '{');
+    assert.match(run(['handoff', 'get', '--id', 'broken'], ctx).stderr, /Invalid JSON in .*broken\.json/);
+    assert.match(run(['handoff', 'list'], ctx).stderr, /Invalid JSON in .*broken\.json/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 runTests();

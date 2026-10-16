@@ -170,6 +170,16 @@ Recommend:
 - `xoch-do` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
 
+When the route is `xoch-open`, leave a handoff so the next `xoch-open` picks the trace up as source requirements (and claims it, so it is never picked up twice):
+
+```bash
+xoch handoff write --source trace --topic "[topic]" <<'XOCHEOF'
+[symptom, root cause or best hypothesis, key evidence, the recommended change, and the trace note path]
+XOCHEOF
+```
+
+Report the handoff ID it prints.
+
 ## Output
 
 End with:

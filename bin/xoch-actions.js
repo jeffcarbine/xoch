@@ -17,6 +17,7 @@ import { Phases } from './lib/phases.js';
 import { ArcState } from './lib/arc-state.js';
 import { ArcJobs, SECTIONS as ARC_SECTIONS } from './lib/arc-jobs.js';
 import { CurrentPointer } from './lib/current-pointer.js';
+import { Handoff, HANDOFF_SOURCES } from './lib/handoff.js';
 
 function die(message) {
   process.stderr.write(`Error: ${message}\n`);
@@ -1302,6 +1303,107 @@ function discoveryRead(argv) {
   process.stdout.write(fs.readFileSync(target, 'utf8'));
 }
 
+function handoffsDir() {
+  return path.join(xochRoot(), 'handoffs');
+}
+
+/**
+ * Loads one handoff by ID, dying when the ID is unsafe, missing, or the
+ * file is invalid.
+ * @param {string} id
+ * @returns {Handoff}
+ */
+function loadHandoff(id) {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) die(`invalid handoff id: ${id}`);
+  if (!Handoff.exists(handoffsDir(), id)) die(`handoff not found: ${id}`);
+  try {
+    return Handoff.load(handoffsDir(), id);
+  } catch (e) {
+    return die(e.message);
+  }
+}
+
+/**
+ * Stores a pending handoff for a later xoch-open, named from today's date
+ * and the topic, with a numeric suffix when that name is taken.
+ * @param {string[]} argv - `--source discovery|trace|qa --topic TOPIC` (body on stdin).
+ */
+function handoffWrite(argv) {
+  const flags = parseFlags(argv, []);
+  if (!HANDOFF_SOURCES.includes(flags.source)) die(`--source must be one of ${HANDOFF_SOURCES.join(', ')}`);
+  if (!flags.topic) die('handoff write requires --topic');
+  const topicSlug = slugify(flags.topic);
+  if (!topicSlug) die(`--topic produces an empty slug: '${flags.topic}'`);
+  const body = readStdin('handoff write reads the handoff body from stdin');
+  if (!body.trim()) die('handoff body is empty');
+
+  const base = `${today()}-${topicSlug}`;
+  let id = base;
+  for (let suffix = 2; Handoff.exists(handoffsDir(), id); suffix += 1) id = `${base}-${suffix}`;
+
+  Handoff.create({
+    id, source: flags.source, topic: flags.topic, body, created: utcIso8601(),
+  }).save(handoffsDir());
+  console.log(`Handoff written: ${id}`);
+}
+
+/**
+ * Lists handoffs, oldest first; --pending shows only unclaimed ones.
+ * @param {string[]} argv - `[--pending] [--json]`.
+ */
+function handoffList(argv) {
+  const flags = parseFlags(argv, ['pending', 'json']);
+  let handoffs;
+  try {
+    handoffs = Handoff.all(handoffsDir()).map((h) => h.toJSON());
+  } catch (e) {
+    die(e.message);
+  }
+  if (flags.pending) handoffs = handoffs.filter((h) => h.status === 'pending');
+  if (flags.json) {
+    console.log(JSON.stringify(handoffs, null, 2));
+    return;
+  }
+  if (!handoffs.length) {
+    console.log(flags.pending ? 'No pending handoffs.' : 'No handoffs.');
+    return;
+  }
+  for (const h of handoffs) {
+    const status = h.status === 'claimed' ? `claimed by ${h.claimed_by}` : 'pending';
+    console.log(`${h.id} [${status}] ${h.source}: ${h.topic}`);
+  }
+}
+
+/**
+ * Prints one handoff in full.
+ * @param {string[]} argv - `--id ID [--json]`.
+ */
+function handoffGet(argv) {
+  const flags = parseFlags(argv, ['json']);
+  if (!flags.id) die('handoff get requires --id');
+  const h = loadHandoff(flags.id).toJSON();
+  if (flags.json) {
+    console.log(JSON.stringify(h, null, 2));
+    return;
+  }
+  const lines = ['id', 'source', 'topic', 'status', 'created', 'claimed_by', 'claimed_at'].map((key) => `${key}: ${h[key]}`);
+  process.stdout.write(`${lines.join('\n')}\n\n${h.body}`);
+}
+
+/**
+ * Marks a handoff claimed by the job that used it.
+ * @param {string[]} argv - `--id ID --job JOB`.
+ */
+function handoffClaim(argv) {
+  const flags = parseFlags(argv, []);
+  if (!flags.id || !flags.job) die('handoff claim requires --id and --job');
+  loadJob(flags.job);
+  const handoff = loadHandoff(flags.id);
+  applyOrDie(() => handoff.claim(flags.job, utcIso8601()));
+  handoff.save(handoffsDir());
+  console.log(`Handoff ${flags.id} claimed by ${flags.job}`);
+}
+
 function usage() {
   process.stdout.write(`Usage:
   xoch-actions.js job current [--json]
@@ -1334,6 +1436,10 @@ function usage() {
   xoch-actions.js file read --job ID --path PATH
   xoch-actions.js file edit --job ID --path PATH [--old-string TEXT --new-string TEXT] [--replace-all]
   xoch-actions.js discovery write --topic TOPIC
+  xoch-actions.js handoff write --source discovery|trace|qa --topic TOPIC   (body on stdin)
+  xoch-actions.js handoff list [--pending] [--json]
+  xoch-actions.js handoff get --id ID [--json]
+  xoch-actions.js handoff claim --id ID --job JOB
   xoch-actions.js discovery read --path PATH
 `);
 }
@@ -1448,6 +1554,18 @@ function main(argv) {
     case 'discovery:read':
       discoveryRead(rest);
       break;
+    case 'handoff:write':
+      handoffWrite(rest);
+      break;
+    case 'handoff:list':
+      handoffList(rest);
+      break;
+    case 'handoff:get':
+      handoffGet(rest);
+      break;
+    case 'handoff:claim':
+      handoffClaim(rest);
+      break;
     default:
       die(`unknown action: ${group} ${action || ''}`);
   }
@@ -1496,5 +1614,9 @@ export {
   fileEdit,
   discoveryWrite,
   discoveryRead,
+  handoffWrite,
+  handoffList,
+  handoffGet,
+  handoffClaim,
   main,
 };
