@@ -201,15 +201,12 @@ Use this structure:
 
 Discovery notes are shared regardless of job model, including for legacy jobs. For multi-project jobs, write through the primary project's root and synchronize accepted findings to participants.
 
-Update `state.md` only when discovery affects active workflow routing. Keep it compact:
+Update job state only when discovery affects active workflow routing. Keep it compact:
 
-```yaml
-discovery_status: [status]
-last_discovery: "[path printed by the discovery write in Step 7]"
-unresolved_questions:
-  - [question]
-next_command: [xoch-open | xoch-revise | xoch-discovery]
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"discovery_status": "[status]", "last_discovery": "[path printed by the discovery write in Step 7]", "unresolved_questions": ["[question]"], "next_command": "[xoch-open | xoch-revise | xoch-discovery]", "last_updated": "[today]"}
+XOCHEOF
 ```
 
 After the accepted note and state update exist, complete the workflow before executing any explicitly chained command:

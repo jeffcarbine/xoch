@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { test, run } from './lib/runner.js';
 import { scratch, cleanup } from './lib/cli.js';
-import { readJson, writeJson, updateJson } from '../bin/lib/json-store.js';
+import { readJson, readJsonStrict, writeJson, updateJson } from '../bin/lib/json-store.js';
 
 test('readJson returns {} for a missing file', () => {
   const ctx = scratch();
@@ -103,6 +103,38 @@ test('updateJson on a missing file starts from an empty object', () => {
       return data;
     });
     assert.deepStrictEqual(result, { created: true });
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('readJsonStrict refuses a missing file instead of treating it as empty', () => {
+  const ctx = scratch();
+  try {
+    const target = path.join(ctx.cwd, 'nope.json');
+    assert.throws(() => readJsonStrict(target), (err) => err.message.includes('not found') && err.message.includes(target));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('readJsonStrict refuses a malformed file instead of treating it as empty', () => {
+  const ctx = scratch();
+  try {
+    const target = path.join(ctx.cwd, 'bad.json');
+    fs.writeFileSync(target, '{not valid json');
+    assert.throws(() => readJsonStrict(target), (err) => err.message.includes('Invalid JSON') && err.message.includes(target));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('readJsonStrict parses a valid file', () => {
+  const ctx = scratch();
+  try {
+    const target = path.join(ctx.cwd, 'good.json');
+    fs.writeFileSync(target, '{"a": [1, null]}');
+    assert.deepStrictEqual(readJsonStrict(target), { a: [1, null] });
   } finally {
     cleanup(ctx);
   }

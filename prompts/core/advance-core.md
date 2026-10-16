@@ -146,7 +146,7 @@ For a multi-project phase, report commit/push state per touched project but ask 
 If the engineer chooses `[C]`:
 
 1. Create a focused commit for the current phase changes.
-2. Distill the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in `phases.md`, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
+2. Distill the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in the message; a reader with no knowledge of this job or Xoch should be able to understand the change from the message alone.
 
    Shape:
 
@@ -184,16 +184,16 @@ If the branch has no upstream, the push fails, or git state is ambiguous, stop t
 
 When confirmed, write a phase snapshot.
 
-For target-model jobs, prefer deterministic helpers for file/path mechanics:
+For target-model jobs, use the deterministic helpers:
 
 ```bash
 xoch snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or final review]"
-xoch phase advance --job "[job-id]" --phase "[N]" --next-phase "[N+1]" --next-title "[title]" --next-goal "[goal]" --next-type "[implementation or checkpoint, from phase N+1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+xoch phase advance --job "[job-id]" --phase "[N]"
 ```
 
-If there are no more phases, omit the `--next-*` arguments so the helper routes state to `final_review`.
+`phase advance` marks phase N complete in the phases document and makes phase N+1 current, taking its title, goal, type, files, acceptance criteria, and validation from the phases document. When phase N is the last phase, it routes state to `final_review` instead.
 
-After helper use, replace placeholder snapshot content with the actual summary/evidence. If helpers are unavailable, create or update `phase-[N].md` under `snapshots_dir` (from Step 1's `job evidence` call).
+After helper use, replace placeholder snapshot content with the actual summary/evidence.
 
 Use this structure:
 
@@ -228,63 +228,27 @@ Use this structure:
 [next phase or final review]
 ```
 
-Also update the current phase section in `phases.md`:
+Do not edit the phases document or job state by hand to advance. If another phase exists, `phase advance` leaves job state at:
 
-```markdown
-**Status**: Complete
+```json
+{
+  "status": "phase_ready",
+  "current_phase": 2,
+  "current_phase_title": "[next phase title]",
+  "current_phase_goal": "[next phase goal]",
+  "current_phase_type": "implementation | checkpoint",
+  "current_phase_files": ["[path]"],
+  "current_phase_acceptance_criteria": ["AC-001"],
+  "current_phase_validation": ["[expected check]"],
+  "phase_index": ["[every phase, with phase N now complete]"],
+  "next_command": "xoch-do",
+  "current_step": "implement"
+}
 ```
 
-If another phase exists, update:
+If no phases remain, it leaves job state at `status: implementation_complete`, every `current_phase*` field cleared (`null` or `[]`), `next_command: xoch-do`, and `current_step: final_review`.
 
-```markdown
-## Current Phase: [N+1]
-```
-
-and update `state.md`:
-
-```yaml
-status: phase_ready
-current_phase: [N+1]
-current_phase_title: [next phase title]
-current_phase_goal: [one-sentence next phase goal]
-current_phase_type: [implementation or checkpoint]
-current_phase_files:
-  - [path]
-current_phase_acceptance_criteria:
-  - AC-001
-current_phase_validation:
-  - [expected check]
-phase_index:
-  - phase: [N]
-    title: [completed title]
-    status: complete
-    type: [implementation or checkpoint]
-  - phase: [N+1]
-    title: [next title]
-    status: not_started
-    type: [implementation or checkpoint]
-next_command: xoch-do
-current_step: implement
-last_updated: [today]
-```
-
-If no phases remain, update `state.md`:
-
-```yaml
-status: implementation_complete
-current_phase: null
-current_phase_title: null
-current_phase_goal: null
-current_phase_type: null
-current_phase_files: []
-current_phase_acceptance_criteria: []
-current_phase_validation: []
-next_command: xoch-do
-current_step: final_review
-last_updated: [today]
-```
-
-Both blocks above are what `phase advance` already writes when run per Step 7 -- this documents its effect, it is not a separate hand-edit.
+Both outcomes above are what `phase advance` writes when run per Step 7 -- this documents its effect, it is not a separate hand-edit.
 
 For legacy migration jobs, write a comparable `milestone-[N].md` or phase snapshot in the legacy job folder and update the legacy tracker in place.
 

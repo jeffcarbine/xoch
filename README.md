@@ -162,23 +162,19 @@ your-project/
       current.json
       jobs/
         job-id/
-          state.md
+          state.json           # helper-owned: xoch state get/set/update
+          phases.json          # helper-owned: xoch phase get/show/write/advance
           projects.json        # multi-project jobs only
           spec.md
           plan.md
-          phases.md
           review.md
           closure.md
-          phases/
-            phase-1.md
-            phase-2.md
           snapshots/
           notes/
       arcs/
         arc-id/
-          state.md
-          plan.md
-          jobs.md
+          state.json           # helper-owned: xoch arc get/update
+          jobs.json            # helper-owned: xoch arc get/job-move
           notes.md
     docs/
       dependencies.json        # optional project-name contracts
@@ -229,7 +225,7 @@ Resolve the active root directly with `xoch config root`, or read the `directory
 xoch job current --json
 ```
 
-Do not edit the pointer manually. `state.md` keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
+Do not edit the pointer manually. Job state (`state.json`) keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
 
 Discovery, sidebar, trace, documentation, and map work use managed workflow actions. A new command cannot silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
 
@@ -245,24 +241,26 @@ Arc files are intentionally small:
 
 ```text
 .xoch/work/arcs/[arc-id]/
-  state.md
-  jobs.md
+  state.json
+  jobs.json
   notes.md
   closure.md
   revisions/
 ```
 
-`jobs.md` is the membership list. It can group job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job `state.md` should use `arc: [arc-id]`, but the job folder still stays under `.xoch/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active -- all through `xoch arc job-move`, which keeps the sections and their `None` placeholders in step.
+`jobs.json` is the membership list. It groups job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job state's `arc` field holds the arc ID, but the job folder still stays under `.xoch/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active -- all through `xoch arc job-move`. Read an arc's state and membership with `xoch arc get --arc ID --json`.
 
 `xoch-open`'s `spec` step should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, it recommends setting up an arc before job planning. Arc setup checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, it asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
 
 ### Job State
 
-Each job has a `state.md` file that records the active workflow state:
+Each job has a `state.json` file that records the active workflow state:
 
 ```text
-.xoch/work/jobs/[job-id]/state.md
+.xoch/work/jobs/[job-id]/state.json
 ```
+
+Structured job and arc files (`state.json`, `phases.json`, and an arc's `state.json`/`jobs.json`) are owned by Xoch's helpers, which validate every change before saving it. Read them with `xoch state get`, `xoch phase get`/`phase show`, and `xoch arc get`; change them with `xoch state set`/`state update`, `xoch phase write`/`phase advance`, `xoch arc update`, and `xoch arc job-move`. Never edit them by hand. A phase's number is its position in `phases.json`. Prose artifacts -- spec, plan, snapshots, review, closure, notes, and revisions -- stay markdown.
 
 Typical state includes the job ID, title, job type (`standard` or `qa`; jobs created before job types existed are read as `standard`), optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
 
@@ -321,7 +319,7 @@ Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (defau
 
 Before full-file reads beyond active Xoch pointer/state files, Xoch should run `token-estimator.js budget check --skill <skill> --files [files...]` against the candidate files and report the estimate. A FAIL result is a hard stop: reading past budget is not a judgment call the agent makes on its own -- it requires an explicit waiver from the engineer.
 
-For repeated phase work, `state.md` should act as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.md`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them by section or only when state/prior context is insufficient.
+For repeated phase work, job state (`xoch state get`) acts as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.json`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them one phase or section at a time (`xoch phase get --phase N`), or only when state/prior context is insufficient.
 
 Long workflow explanations live in `~/.xoch/prompts/core/`. Command prompts stay short and should only load core references when the current agent lacks Xoch context or exact artifact/rule details.
 

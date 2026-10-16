@@ -166,8 +166,6 @@ xoch file write --job "[job-id]" --path "notes/make-[date].md" --append <<'XOCHE
 XOCHEOF
 ```
 
-or, when a current phase file already exists (`current_phase_body` from Step 1's `job evidence` call), append to it instead by passing `--path "phases/phase-[N].md"`.
-
 For legacy migration jobs, add notes to the existing legacy job folder when useful.
 
 ### Step 8: Validate
@@ -198,24 +196,15 @@ Before ending, summarize:
 - risks or follow-up notes
 - whether docs were updated or intentionally deferred
 
-For target-model jobs, update `state.md`:
+For target-model jobs, update job state:
 
-```yaml
-status: phase_in_progress
-current_phase: [N]
-current_phase_title: [title]
-current_phase_goal: [one-sentence phase goal]
-current_phase_files:
-  - [path]
-current_phase_acceptance_criteria:
-  - AC-001
-current_phase_validation:
-  - [expected or completed check]
-last_make_summary: [short summary]
-last_validation:
-  - [latest check and result]
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "phase_in_progress", "last_make_summary": "[short summary]", "last_validation": ["[latest check and result]"], "last_updated": "[today]"}
+XOCHEOF
 ```
+
+The `current_phase*` fields are maintained by `phase advance` from the phases document; do not rewrite them here.
 
 `next_command` is left untouched here -- it stays `xoch-do` throughout the `implement`/`advance` cycle within a phase; only crossing a phase boundary changes it, and that's `phase advance`'s job.
 
@@ -229,7 +218,7 @@ For a multi-project job, write notes and state through the primary job and sync 
 
 Follow this instead of Steps 2-8 when the current phase's `current_phase_type` is `checkpoint`.
 
-1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from `phases.md` and prior snapshots, not from memory alone.
+1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from the phases document (`xoch phase show --job "[job-id]"`) and prior snapshots, not from memory alone.
 2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
 3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise` for it, and do not reopen or amend the snapshots of phases already completed.
 4. Once the engineer confirms things look right — with or without corrections along the way — write `checkpoint-[N].md` under `snapshots_dir`, recording what was tested, what was found, and what was corrected.

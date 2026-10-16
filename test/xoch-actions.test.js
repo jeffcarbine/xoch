@@ -51,58 +51,75 @@ function readJsonFile(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-function readStateLines(dir) {
-  return fs.readFileSync(path.join(dir, 'state.md'), 'utf8').split('\n');
+function readState(dir) {
+  return readJsonFile(path.join(dir, 'state.json'));
 }
 
 function fieldValue(dir, field) {
-  const line = readStateLines(dir).find((l) => l.startsWith(`${field}:`));
-  return line ? line.slice(field.length + 1).trim() : undefined;
+  return readState(dir)[field];
 }
 
-// Seeds a job directory with a minimal, fully-scalar state.md -- bypassing
-// `job open` -- for tests that only care about a later command's own
-// behavior (evidence, state set, workflow, phase advance, ...).
+// Fixture overrides may be written the way state.md used to spell them
+// ('null', '1', 'true'); convert those to the real JSON values state.json
+// holds so older call sites keep meaning the same thing.
+const INT_FIELDS = ['current_phase', 'phase_count'];
+function typedFields(fields) {
+  const out = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    if (value === 'null') out[key] = null;
+    else if (value === 'true') out[key] = true;
+    else if (INT_FIELDS.includes(key) && typeof value === 'string' && /^\d+$/.test(value)) out[key] = Number(value);
+    else out[key] = value;
+  }
+  return out;
+}
+
+// Seeds a job directory with a minimal state.json -- bypassing `job open`
+// -- for tests that only care about a later command's own behavior
+// (evidence, state set, workflow, phase advance, ...).
 function seedJob(ctx, id, overrides = {}) {
   const dir = jobDirOf(ctx, id);
   fs.mkdirSync(dir, { recursive: true });
-  const fields = {
+  const fields = typedFields({
     job_id: id,
     title: id,
     description: id,
     status: 'phase_ready',
     arc: 'standalone',
-    current_phase: '1',
-    phase_count: '1',
+    current_phase: 1,
+    phase_count: 1,
     current_phase_title: 'Test Phase',
     current_phase_goal: 'Goal',
-    next_command: 'xoch-make',
+    next_command: 'xoch-do',
     started: '2026-08-19',
     last_updated: '2026-08-19',
-    active_workflow: 'null',
-    workflow_stage: 'null',
-    pending_action: 'null',
-    workflow_artifact: 'null',
-    return_command: 'null',
-    workflow_started_at: 'null',
-    review_status: 'null',
-    closure_status: 'null',
+    active_workflow: null,
+    workflow_stage: null,
+    pending_action: null,
+    workflow_artifact: null,
+    return_command: null,
+    workflow_started_at: null,
+    review_status: null,
+    closure_status: null,
     ...overrides,
-  };
-  const lines = Object.entries(fields)
-    .filter(([, v]) => v !== undefined)
-    .map(([k, v]) => `${k}: ${v}`);
-  fs.writeFileSync(path.join(dir, 'state.md'), `${lines.join('\n')}\n`);
+  });
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify(fields, null, 2));
   return dir;
 }
 
 function seedArc(ctx, id, overrides = {}) {
   const dir = arcDirOf(ctx, id);
   fs.mkdirSync(dir, { recursive: true });
-  const fields = { arc_id: id, title: id, status: 'active', started: '2026-08-19', last_updated: '2026-08-19', ...overrides };
-  const lines = Object.entries(fields).map(([k, v]) => `${k}: ${v}`);
-  fs.writeFileSync(path.join(dir, 'state.md'), `${lines.join('\n')}\n`);
+  const fields = typedFields({ arc_id: id, title: id, status: 'active', started: '2026-08-19', last_updated: '2026-08-19', ...overrides });
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify(fields, null, 2));
   return dir;
+}
+
+function seedPhases(ctx, id, doc) {
+  const file = path.join(jobDirOf(ctx, id), 'phases.json');
+  fs.writeFileSync(file, JSON.stringify(doc, null, 2));
+  return file;
 }
 
 function seedPointer(ctx, job, workflow = null, extra = {}) {
@@ -271,10 +288,11 @@ test('job open derives an id from the title when --id is omitted', () => {
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Job opened: my-cool-job/);
     const dir = jobDirOf(ctx, 'my-cool-job');
-    assert.ok(fs.existsSync(path.join(dir, 'state.md')));
-    for (const sub of ['notes', 'phases', 'revisions', 'snapshots']) {
+    assert.ok(fs.existsSync(path.join(dir, 'state.json')));
+    for (const sub of ['notes', 'revisions', 'snapshots']) {
       assert.ok(fs.statSync(path.join(dir, sub)).isDirectory());
     }
+    assert.ok(!fs.existsSync(path.join(dir, 'phases')));
   } finally {
     cleanup(ctx);
   }
@@ -291,7 +309,7 @@ test('job open honors an explicit --id over the title', () => {
   }
 });
 
-test('job open writes state.md with defaults and the given overrides', () => {
+test('job open writes state.json with defaults and the given overrides', () => {
   const ctx = scratch();
   try {
     run(['job', 'open', '--title', 'T', '--id', 'j1', '--arc', 'my-arc', '--description', 'Desc', '--doc-scope', 'docs', '--doc-path', 'README.md'], ctx);
@@ -302,8 +320,9 @@ test('job open writes state.md with defaults and the given overrides', () => {
     assert.strictEqual(fieldValue(dir, 'status'), 'active');
     assert.strictEqual(fieldValue(dir, 'arc'), 'my-arc');
     assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-open');
-    const content = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(content, /scope: docs\n\s+path: README\.md/);
+    assert.deepStrictEqual(fieldValue(dir, 'documentation_targets'), [{ scope: 'docs', path: 'README.md' }]);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), null);
+    assert.deepStrictEqual(fieldValue(dir, 'phase_index'), []);
   } finally {
     cleanup(ctx);
   }
@@ -321,14 +340,10 @@ test('job open defaults arc to standalone and description to the title', () => {
   }
 });
 
-test('job open writes the current pointer and removes a stale current.md', () => {
+test('job open writes the current pointer', () => {
   const ctx = scratch();
   try {
-    const staleMd = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(staleMd), { recursive: true });
-    fs.writeFileSync(staleMd, '**Job ID**: stale\n');
     run(['job', 'open', '--title', 'New Job', '--id', 'newjob'], ctx);
-    assert.ok(!fs.existsSync(staleMd));
     const pointer = readJsonFile(pointerPath(ctx));
     assert.strictEqual(pointer.job.id, 'newjob');
     assert.strictEqual(pointer.workflow, null);
@@ -433,7 +448,7 @@ test('job set-current fails when the job state does not exist', () => {
 test('job set-current writes a pointer from the job state, defaulting missing fields', () => {
   const ctx = scratch();
   try {
-    seedJob(ctx, 'j1', { title: undefined, arc: undefined, started: undefined });
+    seedJob(ctx, 'j1', { arc: 'null', started: undefined });
     const result = run(['job', 'set-current', '--job', 'j1'], ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Current job set: j1/);
@@ -456,7 +471,7 @@ test('job set-current projects an active workflow from state into the pointer', 
     const pointer = readJsonFile(pointerPath(ctx));
     assert.strictEqual(pointer.workflow.name, 'doing-thing');
     assert.strictEqual(pointer.workflow.stage, 'in_progress');
-    assert.strictEqual(pointer.workflow.return_command, 'xoch-make');
+    assert.strictEqual(pointer.workflow.return_command, 'xoch-do');
   } finally {
     cleanup(ctx);
   }
@@ -482,20 +497,6 @@ test('job set-current falls back to the workflow name for return_command when bo
     run(['job', 'set-current', '--job', 'j1'], ctx);
     const pointer = readJsonFile(pointerPath(ctx));
     assert.strictEqual(pointer.workflow.return_command, 'doing-thing');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('job set-current removes a stale current.md', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1');
-    const staleMd = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(staleMd), { recursive: true });
-    fs.writeFileSync(staleMd, '**Job ID**: stale\n');
-    run(['job', 'set-current', '--job', 'j1'], ctx);
-    assert.ok(!fs.existsSync(staleMd));
   } finally {
     cleanup(ctx);
   }
@@ -636,7 +637,7 @@ test('job current rejects a pointer workflow missing required fields', () => {
 test('job current syncs the pointer workflow to match the job state when they differ', () => {
   const ctx = scratch();
   try {
-    seedJob(ctx, 'j1', { active_workflow: 'my-flow', workflow_stage: 'in_progress', pending_action: 'continue_workflow', next_command: 'xoch-make' });
+    seedJob(ctx, 'j1', { active_workflow: 'my-flow', workflow_stage: 'in_progress', pending_action: 'continue_workflow', next_command: 'xoch-do' });
     seedPointer(ctx, { id: 'j1' }, null);
     const before = readJsonFile(pointerPath(ctx));
     assert.strictEqual(before.workflow, null);
@@ -658,7 +659,7 @@ test('job current syncs the pointer next_command and current_step to match the j
   const ctx = scratch();
   try {
     seedJob(ctx, 'j1', { next_command: 'xoch-do', current_step: 'advance' });
-    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-make', current_step: 'implement' });
+    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-do', current_step: 'implement' });
 
     const result = run(['job', 'current', '--json'], ctx);
     assert.strictEqual(result.status, 0);
@@ -683,7 +684,7 @@ test('job current preserves the existing workflow\'s started_at when the job sta
       stage: 'old-stage',
       pending_action: 'continue_workflow',
       artifact: null,
-      return_command: 'xoch-make',
+      return_command: 'xoch-do',
       started_at: '2020-01-01T00:00:00Z',
     });
     const result = run(['job', 'current', '--json'], ctx);
@@ -700,7 +701,7 @@ test('job current does not rewrite the pointer when the projected workflow, next
   try {
     seedJob(ctx, 'j1');
     seedPointer(ctx, { id: 'j1' }, null, {
-      next_command: 'xoch-make',
+      next_command: 'xoch-do',
       current_step: null,
       job_type: 'standard',
       updated_at: '2020-01-01T00:00:00Z',
@@ -708,129 +709,6 @@ test('job current does not rewrite the pointer when the projected workflow, next
     run(['job', 'current'], ctx);
     const after = readJsonFile(pointerPath(ctx));
     assert.strictEqual(after.updated_at, '2020-01-01T00:00:00Z');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('job current migrates a target-model current.md pointer to current.json', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', { title: 'Migrated Title', arc: 'my-arc' });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    assert.strictEqual(result.status, 0);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.job.id, 'j1');
-    assert.strictEqual(data.job.title, 'Migrated Title');
-    assert.strictEqual(data.job.arc, 'my-arc');
-    assert.ok(!fs.existsSync(md));
-    assert.ok(fs.existsSync(pointerPath(ctx)));
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a target-model current.md using **Task ID** also migrates', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1');
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Task ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.job.id, 'j1');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a target-model current.md missing a job ID fails to migrate', () => {
-  const ctx = scratch();
-  try {
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Title**: No ID here\n');
-    const result = run(['job', 'current'], ctx);
-    assert.strictEqual(result.status, 1);
-    assert.match(result.stderr, /Cannot migrate .* job ID is missing/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a migrated current.md falls back to the job state for title and arc when the markdown omits them', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', { title: 'From State', arc: 'state-arc' });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.job.title, 'From State');
-    assert.strictEqual(data.job.arc, 'state-arc');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a migrated current.md falls all the way back to the job id and standalone when nothing else supplies title/arc', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', { title: undefined, arc: undefined });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.job.title, 'j1');
-    assert.strictEqual(data.job.arc, 'standalone');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a migrated current.md with an active workflow but no stage/pending/return/started_at defaults them (existing workflow is null)', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', {
-      active_workflow: 'my-flow',
-      workflow_stage: undefined,
-      pending_action: undefined,
-      return_command: undefined,
-      next_command: undefined,
-      workflow_started_at: undefined,
-    });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.workflow.stage, 'in_progress');
-    assert.strictEqual(data.workflow.pending_action, 'resume_workflow');
-    // Neither return_command nor next_command is set, so it falls all the
-    // way back to the workflow's own name.
-    assert.strictEqual(data.workflow.return_command, 'my-flow');
-    assert.strictEqual(data.workflow.started_at, null);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a migrated current.md workflow falls back to next_command when return_command is absent but next_command is set', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', { active_workflow: 'my-flow', return_command: undefined, next_command: 'xoch-next-thing' });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.workflow.return_command, 'xoch-next-thing');
   } finally {
     cleanup(ctx);
   }
@@ -917,15 +795,14 @@ test('job evidence reports missing optional files as not found, in text and json
   }
 });
 
-test('job evidence reports existing files and the current phase snapshot/body', () => {
+test('job evidence reports existing files and the current phase snapshot', () => {
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'j1', { current_phase: '3' });
     fs.writeFileSync(path.join(dir, 'spec.md'), 'spec');
+    fs.writeFileSync(path.join(dir, 'phases.json'), '{}');
     fs.mkdirSync(path.join(dir, 'snapshots'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'snapshots', 'phase-3.md'), 'snap');
-    fs.mkdirSync(path.join(dir, 'phases'), { recursive: true });
-    fs.writeFileSync(path.join(dir, 'phases', 'phase-3.md'), 'body');
 
     const json = run(['job', 'evidence', '--job', 'j1', '--json'], ctx);
     const data = JSON.parse(json.stdout);
@@ -933,7 +810,9 @@ test('job evidence reports existing files and the current phase snapshot/body', 
     assert.strictEqual(data.spec, path.join(relDir, 'spec.md'));
     assert.strictEqual(data.current_phase, '3');
     assert.strictEqual(data.current_phase_snapshot, path.join(relDir, 'snapshots', 'phase-3.md'));
-    assert.strictEqual(data.current_phase_body, path.join(relDir, 'phases', 'phase-3.md'));
+    assert.strictEqual(data.state, path.join(relDir, 'state.json'));
+    assert.strictEqual(data.phases, path.join(relDir, 'phases.json'));
+    assert.ok(!('current_phase_body' in data));
   } finally {
     cleanup(ctx);
   }
@@ -969,16 +848,17 @@ test('arc evidence reports files present and missing, in text and json', () => {
   const ctx = scratch();
   try {
     const dir = seedArc(ctx, 'a1');
-    fs.writeFileSync(path.join(dir, 'jobs.md'), 'jobs');
+    fs.writeFileSync(path.join(dir, 'jobs.json'), '{}');
 
     const text = run(['arc', 'evidence', '--arc', 'a1'], ctx);
-    assert.match(text.stdout, /jobs: .*jobs\.md/);
+    assert.match(text.stdout, /state: .*state\.json/);
+    assert.match(text.stdout, /jobs: .*jobs\.json/);
     assert.match(text.stdout, /notes: \(not found\)/);
 
     const json = run(['arc', 'evidence', '--arc', 'a1', '--json'], ctx);
     const data = JSON.parse(json.stdout);
     const relDir = path.join('.xoch', 'work', 'arcs', 'a1');
-    assert.strictEqual(data.jobs, path.join(relDir, 'jobs.md'));
+    assert.strictEqual(data.jobs, path.join(relDir, 'jobs.json'));
     assert.strictEqual(data.notes, null);
     assert.strictEqual(data.revisions_dir, path.join(relDir, 'revisions'));
   } finally {
@@ -1023,7 +903,7 @@ test('state set replaces an existing field and bumps last_updated', () => {
     const dir = seedJob(ctx, 'j1', { last_updated: '2020-01-01' });
     const result = run(['state', 'set', '--job', 'j1', '--field', 'status', '--value', 'phase_ready'], ctx);
     assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Updated .*state\.md: status=phase_ready/);
+    assert.match(result.stdout, /Updated .*state\.json: status=phase_ready/);
     assert.strictEqual(fieldValue(dir, 'status'), 'phase_ready');
     assert.notStrictEqual(fieldValue(dir, 'last_updated'), '2020-01-01');
   } finally {
@@ -1087,21 +967,21 @@ test('pointer clear removes current.json only when its job id matches', () => {
   }
 });
 
-test('pointer clear removes a matching current.md and legacy pointer, leaves non-matching alone', () => {
+test('pointer clear removes a matching legacy pointer and leaves a non-matching one alone', () => {
   const ctx = scratch();
   try {
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-
     const legacyDir = path.join(ctx.cwd, '.xoch', 'context');
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Task ID**: other\n');
 
-    const result = run(['pointer', 'clear', '--job', 'j1'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.ok(!fs.existsSync(md));
+    const other = run(['pointer', 'clear', '--job', 'j1'], ctx);
+    assert.strictEqual(other.status, 0);
     assert.ok(fs.existsSync(path.join(legacyDir, 'current.md')));
+
+    fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Job ID**: j1\n');
+    const matching = run(['pointer', 'clear', '--job', 'j1'], ctx);
+    assert.match(matching.stdout, /Cleared pointer: .*context\/current\.md/);
+    assert.ok(!fs.existsSync(path.join(legacyDir, 'current.md')));
   } finally {
     cleanup(ctx);
   }
@@ -1140,13 +1020,12 @@ test('arc open derives an id from the title and writes state/jobs/notes', () => 
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Arc opened: my-arc/);
     const dir = arcDirOf(ctx, 'my-arc');
-    assert.ok(fs.existsSync(path.join(dir, 'state.md')));
-    assert.ok(fs.existsSync(path.join(dir, 'jobs.md')));
     assert.ok(fs.existsSync(path.join(dir, 'notes.md')));
-    const jobs = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
-    assert.match(jobs, /## Active\n\n- None/);
-    const state = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(state, /next_command: xoch-open\n/);
+    const jobs = readJsonFile(path.join(dir, 'jobs.json'));
+    assert.deepStrictEqual(jobs, { active: [], planned: [], complete: [], parked: [] });
+    const state = readJsonFile(path.join(dir, 'state.json'));
+    assert.strictEqual(state.next_command, 'xoch-open');
+    assert.strictEqual(state.purpose, 'My Arc!');
   } finally {
     cleanup(ctx);
   }
@@ -1157,9 +1036,9 @@ test('arc open honors an explicit --id, --purpose, and --success', () => {
   try {
     run(['arc', 'open', '--title', 'T', '--id', 'custom-arc', '--purpose', 'P', '--success', 'S'], ctx);
     const dir = arcDirOf(ctx, 'custom-arc');
-    const state = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(state, /purpose: P/);
-    assert.match(state, /success_outcome: S/);
+    const state = readJsonFile(path.join(dir, 'state.json'));
+    assert.strictEqual(state.purpose, 'P');
+    assert.strictEqual(state.success_outcome, 'S');
   } finally {
     cleanup(ctx);
   }
@@ -1170,9 +1049,8 @@ test('arc open --adopt-active with no current job leaves the active section as N
   try {
     const result = run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
     assert.strictEqual(result.status, 0);
-    const dir = arcDirOf(ctx, 't');
-    const jobs = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
-    assert.match(jobs, /## Active\n\n- None/);
+    const jobs = readJsonFile(path.join(arcDirOf(ctx, 't'), 'jobs.json'));
+    assert.deepStrictEqual(jobs.active, []);
   } finally {
     cleanup(ctx);
   }
@@ -1185,23 +1063,8 @@ test('arc open --adopt-active with only a legacy pointer still shows None (legac
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Job ID**: legacy-job\n');
     run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
-    const jobs = fs.readFileSync(path.join(arcDirOf(ctx, 't'), 'jobs.md'), 'utf8');
-    assert.match(jobs, /## Active\n\n- None/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('arc open --adopt-active migrates a target-model current.md pointer and adopts it', () => {
-  const ctx = scratch();
-  try {
-    seedJob(ctx, 'j1', { title: 'Adopted Job' });
-    const md = path.join(xochRootDir(ctx), 'work', 'current.md');
-    fs.mkdirSync(path.dirname(md), { recursive: true });
-    fs.writeFileSync(md, '**Job ID**: j1\n');
-    run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
-    const jobs = fs.readFileSync(path.join(arcDirOf(ctx, 't'), 'jobs.md'), 'utf8');
-    assert.match(jobs, /`j1` - Adopted Job/);
+    const jobs = readJsonFile(path.join(arcDirOf(ctx, 't'), 'jobs.json'));
+    assert.deepStrictEqual(jobs.active, []);
   } finally {
     cleanup(ctx);
   }
@@ -1213,15 +1076,15 @@ test('arc open --adopt-active with an existing pointer adopts it and stamps the 
     const dir = seedJob(ctx, 'j1', { title: 'Existing Job', arc: 'old-arc' });
     seedPointer(ctx, { id: 'j1', title: 'Existing Job', arc: 'old-arc' });
     run(['arc', 'open', '--title', 'T', '--id', 'new-arc', '--adopt-active'], ctx);
-    const jobs = fs.readFileSync(path.join(arcDirOf(ctx, 'new-arc'), 'jobs.md'), 'utf8');
-    assert.match(jobs, /`j1` - Existing Job/);
+    const jobs = readJsonFile(path.join(arcDirOf(ctx, 'new-arc'), 'jobs.json'));
+    assert.deepStrictEqual(jobs.active, [{ id: 'j1', title: 'Existing Job' }]);
     assert.strictEqual(fieldValue(dir, 'arc'), 'new-arc');
   } finally {
     cleanup(ctx);
   }
 });
 
-test('arc open --adopt-active shows "unknown" when the current pointer has no job title', () => {
+test('arc open --adopt-active takes the adopted job\'s title from its state when the pointer has none', () => {
   const ctx = scratch();
   try {
     seedJob(ctx, 'j1');
@@ -1229,14 +1092,14 @@ test('arc open --adopt-active shows "unknown" when the current pointer has no jo
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, JSON.stringify({ version: 1, job: { id: 'j1', directory: path.join('.xoch', 'work', 'jobs', 'j1') }, workflow: null }));
     run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
-    const jobs = fs.readFileSync(path.join(arcDirOf(ctx, 't'), 'jobs.md'), 'utf8');
-    assert.match(jobs, /`j1` - unknown/);
+    const jobs = readJsonFile(path.join(arcDirOf(ctx, 't'), 'jobs.json'));
+    assert.deepStrictEqual(jobs.active, [{ id: 'j1', title: 'j1' }]);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('arc open --adopt-active appends an arc: field when the job state does not already have one', () => {
+test('arc open --adopt-active sets the arc field when the job state does not already have one', () => {
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'j1', { arc: undefined });
@@ -1425,7 +1288,7 @@ function seedActiveWorkflow(ctx, jobId, wf = {}, jobOverrides = {}) {
     stage: 'in_progress',
     pending_action: 'continue_workflow',
     artifact: null,
-    return_command: 'xoch-make',
+    return_command: 'xoch-do',
     started_at: '2026-08-19T00:00:00Z',
     updated_at: '2026-08-19T00:00:00Z',
     ...wf,
@@ -1599,11 +1462,11 @@ test('workflow complete without an artifact-gated pending action completes clean
     const result = run(['workflow', 'complete', '--job', 'j1'], ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Workflow completed: my-flow/);
-    assert.strictEqual(fieldValue(dir, 'active_workflow'), 'null');
+    assert.strictEqual(fieldValue(dir, 'active_workflow'), null);
     assert.strictEqual(fieldValue(dir, 'last_workflow'), 'my-flow');
     assert.strictEqual(fieldValue(dir, 'last_workflow_status'), 'complete');
     assert.strictEqual(fieldValue(dir, 'last_workflow_reason'), 'completed');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-make');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
 
     const pointer = readJsonFile(pointerPath(ctx));
     assert.strictEqual(pointer.workflow, null);
@@ -1821,31 +1684,14 @@ test('snapshot create fails when --body-file does not exist', () => {
 // ---------------------------------------------------------------------
 
 function phasesFixture() {
-  return `# Phases - test
-
-## Current Phase: 1
-
----
-
-## Phase 1: First Phase
-
-**Files to modify/create:**
-- a.js
-
-**Status**: Not Started
-
----
-
-## Phase 2: Second Phase
-
-**Status**: In Progress
-
----
-
-## Phase 3: Third Phase
-
-**Status**: Not Started
-`;
+  return {
+    current_phase: 1,
+    phases: [
+      { title: 'First Phase', files: [{ path: 'a.js' }] },
+      { title: 'Second Phase', status: 'in_progress' },
+      { title: 'Third Phase' },
+    ],
+  };
 }
 
 test('phase advance requires --job and --phase', () => {
@@ -1874,252 +1720,14 @@ test('phase advance fails when the job state does not exist', () => {
   }
 });
 
-test('phase advance without a phases.md just updates state.md fields', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    const result = run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'Phase Two', '--next-goal', 'Do things'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Phase advanced for job j1: 1 -> 2/);
-    assert.strictEqual(fieldValue(dir, 'current_phase'), '2');
-    assert.strictEqual(fieldValue(dir, 'current_phase_title'), 'Phase Two');
-    assert.strictEqual(fieldValue(dir, 'status'), 'phase_ready');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
-    assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing to a next phase updates phases.md status, current-phase marker, and phase_index', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'Second Phase', '--next-goal', 'G'], ctx);
-
-    const phasesText = fs.readFileSync(path.join(dir, 'phases.md'), 'utf8');
-    assert.match(phasesText, /## Current Phase: 2/);
-    assert.match(phasesText, /## Phase 1: First Phase\n\n\*\*Files to modify\/create:\*\*\n- a\.js\n\n\*\*Status\*\*: Complete/);
-    // Only phase 1's own status changed -- phase 2's stays "In Progress".
-    assert.match(phasesText, /## Phase 2: Second Phase\n\n\*\*Status\*\*: In Progress/);
-
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /phase_index:\n\s+- phase: 1, title: First Phase, status: complete, type: implementation\n\s+- phase: 2, title: Second Phase, status: in_progress, type: implementation\n\s+- phase: 3, title: Third Phase, status: not_started, type: implementation/);
-    assert.strictEqual(fieldValue(dir, 'phase_count'), '3');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing with next-files/next-ac/next-validation writes them as CSV-derived list blocks', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-    run(
-      [
-        'phase', 'advance', '--job', 'j1', '--phase', '1',
-        '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G',
-        '--next-files', ' a.js, b.js ,,c.js',
-        '--next-ac', 'AC-001,AC-002',
-        '--next-validation', 'npm test',
-      ],
-      ctx
-    );
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /current_phase_files:\n\s+- a\.js\n\s+- b\.js\n\s+- c\.js/);
-    assert.match(stateText, /current_phase_acceptance_criteria:\n\s+- AC-001\n\s+- AC-002/);
-    assert.match(stateText, /current_phase_validation:\n\s+- npm test/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing replaces pre-existing list blocks rather than duplicating their entries', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    const original = fs.readFileSync(path.join(dir, 'state.md'), 'utf8').replace(/\n$/, '');
-    fs.writeFileSync(
-      path.join(dir, 'state.md'),
-      `${original}\ncurrent_phase_files:\n  - old-file.js\ncurrent_phase_acceptance_criteria:\n  - AC-OLD\ncurrent_phase_validation:\n  - old validation\nphase_index:\n  - phase: 1, title: Old, status: not_started\n`
-    );
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G', '--next-files', 'new-file.js'], ctx);
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.ok(!stateText.includes('old-file.js'));
-    assert.ok(!stateText.includes('AC-OLD'));
-    assert.ok(!stateText.includes('old validation'));
-    assert.match(stateText, /current_phase_files:\n\s+- new-file\.js/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing with an empty --next-phase marks the job implementation-complete', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '3' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-    const result = run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /Phase advanced for job j1: 3 -> review/);
-    assert.strictEqual(fieldValue(dir, 'status'), 'implementation_complete');
-    assert.strictEqual(fieldValue(dir, 'current_phase'), 'null');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
-    assert.strictEqual(fieldValue(dir, 'current_step'), 'final_review');
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /current_phase_files: \[\]/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing with an empty --next-phase clears pre-existing list blocks instead of leaving their old entries orphaned', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '3' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-    const original = fs.readFileSync(path.join(dir, 'state.md'), 'utf8').replace(/\n$/, '');
-    fs.writeFileSync(
-      path.join(dir, 'state.md'),
-      `${original}\ncurrent_phase_files:\n  - old-file.js\ncurrent_phase_acceptance_criteria:\n  - AC-OLD\ncurrent_phase_validation:\n  - old validation\n`
-    );
-
-    const result = run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx);
-    assert.strictEqual(result.status, 0);
-
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.ok(!stateText.includes('old-file.js'));
-    assert.ok(!stateText.includes('AC-OLD'));
-    assert.ok(!stateText.includes('old validation'));
-    assert.match(stateText, /current_phase_files: \[\]\ncurrent_phase_acceptance_criteria: \[\]\ncurrent_phase_validation: \[\]/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a phase entry with no explicit Status line defaults to "unknown"', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    fs.writeFileSync(
-      path.join(dir, 'phases.md'),
-      `## Current Phase: 1
-
----
-
-## Phase 1: No Status Here
-
-Just a description, no status field.
-`
-    );
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /- phase: 1, title: No Status Here, status: unknown/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('phase advance with --next-type checkpoint persists current_phase_type to state.md', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    run(
-      ['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G', '--next-type', 'checkpoint'],
-      ctx
-    );
-    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'checkpoint');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('phase advance without --next-type defaults current_phase_type to implementation', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
-    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'implementation');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('advancing with an empty --next-phase resets current_phase_type to null', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '3' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-    run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx);
-    assert.strictEqual(fieldValue(dir, 'current_phase_type'), 'null');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test("a phase's Type field in phases.md is parsed into its phase_index entry", () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    fs.writeFileSync(
-      path.join(dir, 'phases.md'),
-      `## Current Phase: 1
-
----
-
-## Phase 1: First Phase
-
-**Type**: Checkpoint
-
-**Status**: Not Started
-`
-    );
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /- phase: 1, title: First Phase, status: complete, type: checkpoint/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a phase with no Type field defaults to implementation in its phase_index entry', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    fs.writeFileSync(path.join(dir, 'phases.md'), phasesFixture());
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
-    const stateText = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(stateText, /- phase: 1, title: First Phase, status: complete, type: implementation/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
 test('a custom field not touched by phase advance survives unchanged', () => {
   const ctx = scratch();
   try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    const original = fs.readFileSync(path.join(dir, 'state.md'), 'utf8').replace(/\n$/, '');
-    fs.writeFileSync(path.join(dir, 'state.md'), `${original}\nmy_custom_field: keep-me\n`);
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
+    const dir = seedJob(ctx, 'j1', { current_phase: '1', my_custom_field: 'keep-me', my_custom_list: ['a', 'b'] });
+    seedPhases(ctx, 'j1', phasesFixture());
+    assert.strictEqual(run(['phase', 'advance', '--job', 'j1', '--phase', '1'], ctx).status, 0);
     assert.strictEqual(fieldValue(dir, 'my_custom_field'), 'keep-me');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('an indented sub-list under a non-skipped key passes through phase advance unchanged', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { current_phase: '1' });
-    const original = fs.readFileSync(path.join(dir, 'state.md'), 'utf8').replace(/\n$/, '');
-    fs.writeFileSync(path.join(dir, 'state.md'), `${original}\ndocumentation_targets:\n  - scope: docs\n    path: README.md\n`);
-    run(['phase', 'advance', '--job', 'j1', '--phase', '1', '--next-phase', '2', '--next-title', 'T', '--next-goal', 'G'], ctx);
-    const content = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-    assert.match(content, /documentation_targets:\n\s+- scope: docs\n\s+path: README\.md/);
+    assert.deepStrictEqual(fieldValue(dir, 'my_custom_list'), ['a', 'b']);
   } finally {
     cleanup(ctx);
   }
@@ -2139,7 +1747,7 @@ test('qa confirm-env records a dev or staging environment and its target as conf
       assert.match(result.stdout, new RegExp(`QA environment confirmed for job q1: ${env}`));
       assert.strictEqual(fieldValue(dir, 'qa_environment'), env);
       assert.strictEqual(fieldValue(dir, 'qa_target'), 'http://localhost:3000');
-      assert.strictEqual(fieldValue(dir, 'qa_environment_confirmed'), 'true');
+      assert.strictEqual(fieldValue(dir, 'qa_environment_confirmed'), true);
     } finally {
       cleanup(ctx);
     }
@@ -2210,7 +1818,8 @@ test('phase advance refuses to enter phase 1 of a qa job until a dev or staging 
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'q1', { job_type: 'qa', current_phase: 'null', current_step: 'plan' });
-    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0', '--next-phase', '1', '--next-title', 'Forms'], ctx);
+    seedPhases(ctx, 'q1', { phases: [{ title: 'Forms' }] });
+    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0'], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /QA job q1 cannot enter phase 1 until its environment is confirmed/);
     assert.strictEqual(fieldValue(dir, 'current_step'), 'plan');
@@ -2223,9 +1832,10 @@ test('phase advance enters phase 1 of a qa job once its environment is confirmed
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'q1', { job_type: 'qa', current_phase: 'null', current_step: 'plan', qa_environment_confirmed: 'true' });
-    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0', '--next-phase', '1', '--next-title', 'Forms'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.strictEqual(fieldValue(dir, 'current_phase'), '1');
+    seedPhases(ctx, 'q1', { phases: [{ title: 'Forms' }] });
+    const result = run(['phase', 'advance', '--job', 'q1', '--phase', '0'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), 1);
     assert.strictEqual(fieldValue(dir, 'current_step'), 'implement');
   } finally {
     cleanup(ctx);
@@ -2236,9 +1846,10 @@ test('phase advance into phase 1 of a standard job needs no environment confirma
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 's1', { job_type: 'standard', current_phase: 'null', current_step: 'plan' });
-    const result = run(['phase', 'advance', '--job', 's1', '--phase', '0', '--next-phase', '1', '--next-title', 'Build'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.strictEqual(fieldValue(dir, 'current_phase'), '1');
+    seedPhases(ctx, 's1', { phases: [{ title: 'Build' }] });
+    const result = run(['phase', 'advance', '--job', 's1', '--phase', '0'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), 1);
   } finally {
     cleanup(ctx);
   }
@@ -2277,7 +1888,7 @@ test('job step-advance fails when the job has no current_step set', () => {
     const result = run(['job', 'step-advance', '--job', 'j1'], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /has no current_step set/);
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-make');
+    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
   } finally {
     cleanup(ctx);
   }
@@ -2406,99 +2017,29 @@ test('job step-advance projects the new current_step into current.json via job c
 });
 
 // ---------------------------------------------------------------------
-// Retired command names -- normalized whenever job state is read
-// ---------------------------------------------------------------------
-
-test('reading the current job renames a retired xoch-build next command to xoch-do in both the pointer and the job state', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-build', current_step: 'implement' });
-    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-build', current_step: 'implement' });
-
-    const result = run(['job', 'current', '--json'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.strictEqual(JSON.parse(result.stdout).next_command, 'xoch-do');
-    assert.strictEqual(readJsonFile(pointerPath(ctx)).next_command, 'xoch-do');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('reading the current job renames retired xoch-revise-spec, xoch-revise-plan, and xoch-revise-arc next commands to xoch-revise', () => {
-  for (const retired of ['xoch-revise-spec', 'xoch-revise-plan', 'xoch-revise-arc']) {
-    const ctx = scratch();
-    try {
-      const dir = seedJob(ctx, 'j1', { next_command: retired });
-      seedPointer(ctx, { id: 'j1' }, null, { next_command: retired });
-
-      const result = run(['job', 'current', '--json'], ctx);
-      assert.strictEqual(JSON.parse(result.stdout).next_command, 'xoch-revise', retired);
-      assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-revise', retired);
-    } finally {
-      cleanup(ctx);
-    }
-  }
-});
-
-test('reading the current job renames a retired command recorded as an active workflow\'s return command', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedActiveWorkflow(ctx, 'j1', { return_command: 'xoch-build' });
-
-    const result = run(['job', 'current', '--json'], ctx);
-    assert.strictEqual(JSON.parse(result.stdout).workflow.return_command, 'xoch-do');
-    assert.strictEqual(fieldValue(dir, 'return_command'), 'xoch-do');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('making a job current renames a retired next command before writing the pointer', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-build' });
-
-    const result = run(['job', 'set-current', '--job', 'j1'], ctx);
-    assert.strictEqual(result.status, 0);
-    assert.strictEqual(readJsonFile(pointerPath(ctx)).next_command, 'xoch-do');
-    assert.strictEqual(fieldValue(dir, 'next_command'), 'xoch-do');
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('reading the current job leaves a current command name untouched', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedJob(ctx, 'j1', { next_command: 'xoch-open' });
-    seedPointer(ctx, { id: 'j1' }, null, { next_command: 'xoch-open' });
-    const before = fs.readFileSync(path.join(dir, 'state.md'), 'utf8');
-
-    run(['job', 'current', '--json'], ctx);
-    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.md'), 'utf8'), before);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-// ---------------------------------------------------------------------
 // arc job-move
 // ---------------------------------------------------------------------
 
+// Seeds an arc's jobs.json from entries written the way jobs.md used to
+// list them ("- `id` - title"), keyed by section name ('Active', ...).
 function seedArcJobs(ctx, arcId, sections) {
   const dir = seedArc(ctx, arcId);
-  const body = ['Active', 'Planned', 'Complete', 'Parked']
-    .map((name) => `## ${name}\n\n${(sections[name] || ['- None']).join('\n')}\n`)
-    .join('\n');
-  fs.writeFileSync(path.join(dir, 'jobs.md'), `# Arc Jobs - ${arcId}\n\n${body}`);
+  const data = {};
+  for (const name of ['Active', 'Planned', 'Complete', 'Parked']) {
+    data[name.toLowerCase()] = (sections[name] || []).map((line) => {
+      const m = line.match(/^- `([^`]+)`(?: - (.*))?$/);
+      return { id: m[1], title: m[2] || null };
+    });
+  }
+  fs.writeFileSync(path.join(dir, 'jobs.json'), JSON.stringify(data, null, 2));
   return dir;
 }
 
+// A section's entries from jobs.json, formatted "- `id` - title" so tests
+// read the same way the arc's membership is described.
 function sectionLines(dir, name) {
-  const text = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
-  const match = text.match(new RegExp(`## ${name}\\n\\n([\\s\\S]*?)(?:\\n## |$)`));
-  return match[1].split('\n').filter((line) => line.startsWith('- '));
+  const data = readJsonFile(path.join(dir, 'jobs.json'));
+  return data[name.toLowerCase()].map((e) => `- \`${e.id}\`${e.title ? ` - ${e.title}` : ''}`);
 }
 
 test('moving a planned job to active takes it out of Planned and lists it under Active with its title', () => {
@@ -2519,19 +2060,6 @@ test('moving a planned job to active takes it out of Planned and lists it under 
   }
 });
 
-test('moving a job into an empty section replaces its None placeholder, and emptying a section puts None back', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedArcJobs(ctx, 'a1', { Active: ['- `first` - First job'] });
-
-    run(['arc', 'job-move', '--arc', 'a1', '--job', 'first', '--to', 'complete'], ctx);
-    assert.deepStrictEqual(sectionLines(dir, 'Complete'), ['- `first` - First job']);
-    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- None']);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
 test('moving a job the arc does not list yet adds it under the target section', () => {
   const ctx = scratch();
   try {
@@ -2541,7 +2069,7 @@ test('moving a job the arc does not list yet adds it under the target section', 
     assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `fresh` - Fresh job']);
 
     run(['arc', 'job-move', '--arc', 'a1', '--job', 'untitled', '--to', 'parked'], ctx);
-    assert.deepStrictEqual(sectionLines(dir, 'Parked'), ['- `untitled` - unknown']);
+    assert.deepStrictEqual(sectionLines(dir, 'Parked'), ['- `untitled`']);
   } finally {
     cleanup(ctx);
   }
@@ -2554,7 +2082,7 @@ test('--from swaps a planned placeholder entry for the real job ID that was open
 
     run(['arc', 'job-move', '--arc', 'a1', '--job', 'build-the-api', '--from', 'api-work', '--to', 'active'], ctx);
     assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `build-the-api` - Build the API']);
-    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), []);
   } finally {
     cleanup(ctx);
   }
@@ -2572,59 +2100,6 @@ test('an explicit --title replaces the title an existing entry already had', () 
   }
 });
 
-test('an existing entry listed without a title is moved and labeled unknown', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedArcJobs(ctx, 'a1', { Planned: ['- `bare`'] });
-
-    run(['arc', 'job-move', '--arc', 'a1', '--job', 'bare', '--to', 'active'], ctx);
-    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `bare` - unknown']);
-    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('moving a job keeps notes written under section headings, and carries the moved job\'s own indented details with it', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedArc(ctx, 'a1');
-    fs.writeFileSync(path.join(dir, 'jobs.md'), [
-      '# Arc Jobs - a1', '', 'Intro text stays.', '',
-      '## Active', '', 'Ordered by priority.', '', '- `first` - First job', '  - blocked on vendor', '',
-      '## Planned', '', '- `second` - Second job', '  - needs design review', '',
-      '## Complete', '', '- None', '',
-    ].join('\n'));
-
-    run(['arc', 'job-move', '--arc', 'a1', '--job', 'second', '--to', 'active'], ctx);
-    const text = fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8');
-    assert.match(text, /Intro text stays\./);
-    assert.match(text, /## Active\n\nOrdered by priority\.\n\n- `first` - First job\n  - blocked on vendor\n- `second` - Second job\n  - needs design review\n/);
-    assert.match(text, /## Planned\n\n- None\n/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a section holding only notes keeps them alongside the job entry or the None placeholder it ends up with', () => {
-  const ctx = scratch();
-  try {
-    const dir = seedArc(ctx, 'a1');
-    fs.writeFileSync(path.join(dir, 'jobs.md'), [
-      '## Active', '', 'Nothing started yet.', '',
-      '## Planned', '', 'Queued work:', '', '- `last` - Last job',
-    ].join('\n'));
-
-    run(['arc', 'job-move', '--arc', 'a1', '--job', 'last', '--to', 'active'], ctx);
-    assert.strictEqual(
-      fs.readFileSync(path.join(dir, 'jobs.md'), 'utf8'),
-      '## Active\n\nNothing started yet.\n\n- `last` - Last job\n\n## Planned\n\nQueued work:\n\n- None\n',
-    );
-  } finally {
-    cleanup(ctx);
-  }
-});
-
 test('a job listed more than once, or alongside its --from placeholder, ends up listed exactly once', () => {
   const ctx = scratch();
   try {
@@ -2635,14 +2110,14 @@ test('a job listed more than once, or alongside its --from placeholder, ends up 
 
     run(['arc', 'job-move', '--arc', 'a1', '--job', 'real-id', '--from', 'placeholder', '--to', 'complete'], ctx);
     assert.deepStrictEqual(sectionLines(dir, 'Complete'), ['- `real-id` - Real title']);
-    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- None']);
-    assert.deepStrictEqual(sectionLines(dir, 'Planned'), ['- None']);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), []);
+    assert.deepStrictEqual(sectionLines(dir, 'Planned'), []);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('arc job-move refuses missing flags, an unknown target section, an arc without jobs.md, and a jobs.md missing that section', () => {
+test('arc job-move refuses missing flags, an unknown target section, and a missing arc, and starts membership for an arc that has none', () => {
   const ctx = scratch();
   try {
     seedArcJobs(ctx, 'a1', {});
@@ -2654,16 +2129,14 @@ test('arc job-move refuses missing flags, an unknown target section, an arc with
     assert.strictEqual(badSection.status, 1);
     assert.match(badSection.stderr, /--to must be one of active, planned, complete, parked/);
 
-    seedArc(ctx, 'a2');
-    const noJobs = run(['arc', 'job-move', '--arc', 'a2', '--job', 'j', '--to', 'active'], ctx);
-    assert.strictEqual(noJobs.status, 1);
-    assert.match(noJobs.stderr, /jobs\.md not found/);
+    const missing = run(['arc', 'job-move', '--arc', 'ghost', '--job', 'j', '--to', 'active'], ctx);
+    assert.strictEqual(missing.status, 1);
+    assert.match(missing.stderr, /arc not found: ghost/);
 
-    const dir = seedArc(ctx, 'a3');
-    fs.writeFileSync(path.join(dir, 'jobs.md'), '# Arc Jobs - a3\n\n## Active\n\n- None\n');
-    const noSection = run(['arc', 'job-move', '--arc', 'a3', '--job', 'j', '--to', 'complete'], ctx);
-    assert.strictEqual(noSection.status, 1);
-    assert.match(noSection.stderr, /has no "## Complete" section/);
+    const dir = seedArc(ctx, 'a2');
+    const noJobs = run(['arc', 'job-move', '--arc', 'a2', '--job', 'j', '--to', 'active'], ctx);
+    assert.strictEqual(noJobs.status, 0, noJobs.stderr);
+    assert.deepStrictEqual(sectionLines(dir, 'Active'), ['- `j`']);
   } finally {
     cleanup(ctx);
   }
@@ -2836,7 +2309,7 @@ test('file write/read round trip under centralized storage mode', () => {
     fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'centralized' } }));
     const centralJobDir = path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd), 'work', 'jobs', 'j1');
     fs.mkdirSync(centralJobDir, { recursive: true });
-    fs.writeFileSync(path.join(centralJobDir, 'state.md'), 'job_id: j1\n');
+    fs.writeFileSync(path.join(centralJobDir, 'state.json'), JSON.stringify({ job_id: 'j1', title: 'j1' }));
 
     run(['file', 'write', '--job', 'j1', '--path', 'spec.md'], ctx, 'centralized content\n');
     assert.strictEqual(fs.readFileSync(path.join(centralJobDir, 'spec.md'), 'utf8'), 'centralized content\n');
@@ -2988,6 +2461,512 @@ test('discovery write/read round trip under centralized storage mode', () => {
 
     const readResult = run(['discovery', 'read', '--path', name], ctx);
     assert.strictEqual(readResult.stdout, 'centralized content\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// JSON state helpers: state get / update, typed state set
+// ---------------------------------------------------------------------
+
+test('state get prints the whole job state as JSON, or one field', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1', { risks: ['slow disk'] });
+    const whole = run(['state', 'get', '--job', 'j1', '--json'], ctx);
+    assert.strictEqual(whole.status, 0, whole.stderr);
+    assert.strictEqual(JSON.parse(whole.stdout).job_id, 'j1');
+    const text = run(['state', 'get', '--job', 'j1', '--field', 'status'], ctx);
+    assert.strictEqual(text.stdout, 'phase_ready\n');
+    const list = run(['state', 'get', '--job', 'j1', '--field', 'risks'], ctx);
+    assert.deepStrictEqual(JSON.parse(list.stdout), ['slow disk']);
+    const missing = run(['state', 'get', '--job', 'j1', '--field', 'nope'], ctx);
+    assert.strictEqual(missing.stdout, 'null\n');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('state get requires --job and an existing job', () => {
+  const ctx = scratch();
+  try {
+    assert.match(run(['state', 'get'], ctx).stderr, /requires --job/);
+    assert.match(run(['state', 'get', '--job', 'ghost'], ctx).stderr, /state not found/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('state set with --json stores a list or number, and a plain "null" value clears a field', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    assert.strictEqual(run(['state', 'set', '--job', 'j1', '--field', 'risks', '--value', '["a","b"]', '--json'], ctx).status, 0);
+    assert.strictEqual(run(['state', 'set', '--job', 'j1', '--field', 'current_phase', '--value', '2', '--json'], ctx).status, 0);
+    assert.strictEqual(run(['state', 'set', '--job', 'j1', '--field', 'review_status', '--value', 'null'], ctx).status, 0);
+    assert.deepStrictEqual(fieldValue(dir, 'risks'), ['a', 'b']);
+    assert.strictEqual(fieldValue(dir, 'current_phase'), 2);
+    assert.strictEqual(fieldValue(dir, 'review_status'), null);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('state set refuses a value that does not fit the field, or JSON that does not parse, and writes nothing', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
+    const wrongType = run(['state', 'set', '--job', 'j1', '--field', 'current_phase', '--value', 'two'], ctx);
+    assert.strictEqual(wrongType.status, 1);
+    assert.match(wrongType.stderr, /current_phase/);
+    const badJson = run(['state', 'set', '--job', 'j1', '--field', 'risks', '--value', '[oops', '--json'], ctx);
+    assert.strictEqual(badJson.status, 1);
+    assert.match(badJson.stderr, /not valid JSON/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('state update merges a JSON object from stdin and stamps last_updated', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const r = run(['state', 'update', '--job', 'j1'], ctx, '{"status": "spec_complete", "spec_status": "accepted", "current_step": null}');
+    assert.strictEqual(r.status, 0, r.stderr);
+    const state = readState(dir);
+    assert.strictEqual(state.status, 'spec_complete');
+    assert.strictEqual(state.spec_status, 'accepted');
+    assert.strictEqual(state.current_step, null);
+    assert.notStrictEqual(state.last_updated, '2026-08-19');
+    assert.strictEqual(state.title, 'j1');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('state update refuses input that is not a JSON object, or a mistyped field, and writes nothing', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
+    assert.match(run(['state', 'update', '--job', 'j1'], ctx, 'not json').stderr, /not valid JSON/);
+    assert.match(run(['state', 'update', '--job', 'j1'], ctx, '[1, 2]').stderr, /JSON object/);
+    assert.match(run(['state', 'update', '--job', 'j1'], ctx, '{"phase_count": "x"}').stderr, /phase_count/);
+    assert.match(run(['state', 'update'], ctx, '{}').stderr, /requires --job/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// phase write / get / show
+// ---------------------------------------------------------------------
+
+function threePhases() {
+  return {
+    phases: [
+      {
+        title: 'Build', goal: 'Make it', files: [{ path: 'a.js' }], acceptance_criteria: ['AC-001'], testing_requirements: ['npm test'],
+      },
+      { title: 'Check it live', type: 'checkpoint', acceptance_criteria: ['AC-002'] },
+      { title: 'Docs', goal: 'Write it down' },
+    ],
+  };
+}
+
+test('phase write stores a validated phases document and records the phase count and index in job state', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: null, phase_count: 0 });
+    const r = run(['phase', 'write', '--job', 'j1'], ctx, JSON.stringify(threePhases()));
+    assert.strictEqual(r.status, 0, r.stderr);
+    const doc = readJsonFile(path.join(dir, 'phases.json'));
+    assert.strictEqual(doc.phases.length, 3);
+    assert.strictEqual(doc.phases[1].type, 'checkpoint');
+    const state = readState(dir);
+    assert.strictEqual(state.phase_count, 3);
+    assert.deepStrictEqual(state.phase_index.map((e) => [e.phase, e.title, e.status]), [[1, 'Build', 'not_started'], [2, 'Check it live', 'not_started'], [3, 'Docs', 'not_started']]);
+    assert.strictEqual(state.current_phase, null);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase write with a current phase refreshes the current-phase fields in job state, keeping completed statuses', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const doc = threePhases();
+    doc.phases[0].status = 'complete';
+    doc.current_phase = 3;
+    assert.strictEqual(run(['phase', 'write', '--job', 'j1'], ctx, JSON.stringify(doc)).status, 0);
+    const state = readState(dir);
+    assert.strictEqual(state.current_phase, 3);
+    assert.strictEqual(state.current_phase_title, 'Docs');
+    assert.strictEqual(state.current_phase_goal, 'Write it down');
+    assert.strictEqual(state.phase_index[0].status, 'complete');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase write reports how many phases it wrote', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    assert.match(run(['phase', 'write', '--job', 'j1'], ctx, '{"phases": [{"title": "Only"}]}').stdout, /Phases written for job j1: 1 phase\n/);
+    assert.match(run(['phase', 'write', '--job', 'j1'], ctx, JSON.stringify(threePhases())).stdout, /Phases written for job j1: 3 phases\n/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase write refuses a malformed document and writes nothing', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
+    const bad = run(['phase', 'write', '--job', 'j1'], ctx, '{"phases": [{"type": "checkpoint"}]}');
+    assert.strictEqual(bad.status, 1);
+    assert.match(bad.stderr, /phase 1: title is required/);
+    assert.match(run(['phase', 'write', '--job', 'j1'], ctx, '{nope').stderr, /not valid JSON/);
+    assert.ok(!fs.existsSync(path.join(dir, 'phases.json')));
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase get returns the whole phases document, or one phase by position with its number', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    seedPhases(ctx, 'j1', threePhases());
+    const whole = JSON.parse(run(['phase', 'get', '--job', 'j1', '--json'], ctx).stdout);
+    assert.strictEqual(whole.phases.length, 3);
+    const second = JSON.parse(run(['phase', 'get', '--job', 'j1', '--phase', '2'], ctx).stdout);
+    assert.strictEqual(second.phase, 2);
+    assert.strictEqual(second.title, 'Check it live');
+    const outOfRange = run(['phase', 'get', '--job', 'j1', '--phase', '9'], ctx);
+    assert.strictEqual(outOfRange.status, 1);
+    assert.match(outOfRange.stderr, /phase 9/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase get and show refuse a job that has no phases yet', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    assert.match(run(['phase', 'get', '--job', 'j1'], ctx).stderr, /no phases/);
+    assert.match(run(['phase', 'show', '--job', 'j1'], ctx).stderr, /no phases/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase show renders phases as readable text, marking the current phase', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    seedPhases(ctx, 'j1', { ...threePhases(), current_phase: 2 });
+    const all = run(['phase', 'show', '--job', 'j1'], ctx);
+    assert.strictEqual(all.status, 0, all.stderr);
+    assert.match(all.stdout, /Current phase: 2/);
+    assert.match(all.stdout, /## Phase 1: Build/);
+    assert.match(all.stdout, /Goal: Make it/);
+    assert.match(all.stdout, /- a\.js/);
+    assert.match(all.stdout, /## Phase 2: Check it live\nType: checkpoint/);
+    const one = run(['phase', 'show', '--job', 'j1', '--phase', '3'], ctx);
+    assert.match(one.stdout, /## Phase 3: Docs/);
+    assert.doesNotMatch(one.stdout, /Phase 1/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// phase advance by position
+// ---------------------------------------------------------------------
+
+test('phase advance --phase 0 enters phase 1, taking its details from the phases document', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: null });
+    seedPhases(ctx, 'j1', threePhases());
+    const r = run(['phase', 'advance', '--job', 'j1', '--phase', '0'], ctx);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const state = readState(dir);
+    assert.strictEqual(state.current_phase, 1);
+    assert.strictEqual(state.current_phase_title, 'Build');
+    assert.strictEqual(state.current_phase_goal, 'Make it');
+    assert.strictEqual(state.current_phase_type, 'implementation');
+    assert.deepStrictEqual(state.current_phase_files, ['a.js']);
+    assert.deepStrictEqual(state.current_phase_acceptance_criteria, ['AC-001']);
+    assert.deepStrictEqual(state.current_phase_validation, ['npm test']);
+    assert.strictEqual(state.current_step, 'implement');
+    assert.strictEqual(state.next_command, 'xoch-do');
+    assert.strictEqual(readJsonFile(path.join(dir, 'phases.json')).current_phase, 1);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance marks the Nth phase complete and the phase index matches the phases document exactly', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    const doc = threePhases();
+    doc.phases[0].title = 'Phase 2: a title that looks like a heading';
+    seedPhases(ctx, 'j1', { ...doc, current_phase: 1 });
+    assert.strictEqual(run(['phase', 'advance', '--job', 'j1', '--phase', '1'], ctx).status, 0);
+    const phases = readJsonFile(path.join(dir, 'phases.json')).phases;
+    assert.deepStrictEqual(phases.map((p) => p.status), ['complete', 'not_started', 'not_started']);
+    const state = readState(dir);
+    assert.deepStrictEqual(state.phase_index, phases.map((p, i) => ({
+      phase: i + 1, title: p.title, status: p.status, type: p.type,
+    })));
+    assert.strictEqual(state.current_phase, 2);
+    assert.strictEqual(state.current_phase_type, 'checkpoint');
+    assert.strictEqual(state.phase_count, 3);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('advancing past the last phase routes the job to final review and clears the current phase', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1', { current_phase: 3 });
+    seedPhases(ctx, 'j1', { ...threePhases(), current_phase: 3 });
+    assert.strictEqual(run(['phase', 'advance', '--job', 'j1', '--phase', '3'], ctx).status, 0);
+    const state = readState(dir);
+    assert.strictEqual(state.status, 'implementation_complete');
+    assert.strictEqual(state.current_phase, null);
+    assert.strictEqual(state.current_phase_title, null);
+    assert.deepStrictEqual(state.current_phase_files, []);
+    assert.strictEqual(state.current_step, 'final_review');
+    assert.strictEqual(readJsonFile(path.join(dir, 'phases.json')).current_phase, null);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a QA phase\'s validation is its case IDs', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'q1', { job_type: 'qa', qa_environment_confirmed: true, current_phase: null });
+    seedPhases(ctx, 'q1', { phases: [{ title: 'Checkout', cases: [{ id: 'QA-1' }, { id: 'QA-2' }] }] });
+    assert.strictEqual(run(['phase', 'advance', '--job', 'q1', '--phase', '0'], ctx).status, 0);
+    assert.deepStrictEqual(fieldValue(dir, 'current_phase_validation'), ['QA-1', 'QA-2']);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase advance refuses a phase number outside the phases document, or a job with no phases', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    assert.match(run(['phase', 'advance', '--job', 'j1', '--phase', '1'], ctx).stderr, /no phases/);
+    seedPhases(ctx, 'j1', threePhases());
+    assert.match(run(['phase', 'advance', '--job', 'j1', '--phase', '4'], ctx).stderr, /phase 4/);
+    assert.match(run(['phase', 'advance', '--job', 'j1', '--phase', 'x'], ctx).stderr, /phase x/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// arc get / update
+// ---------------------------------------------------------------------
+
+test('arc get prints the arc state and membership as JSON, or as readable text', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArc(ctx, 'a1', { purpose: 'Why' });
+    fs.writeFileSync(path.join(dir, 'jobs.json'), JSON.stringify({ active: [{ id: 'j1', title: 'One' }], planned: [{ id: 'j2', title: null }] }));
+    const json = JSON.parse(run(['arc', 'get', '--arc', 'a1', '--json'], ctx).stdout);
+    assert.strictEqual(json.state.purpose, 'Why');
+    assert.deepStrictEqual(json.jobs.active, [{ id: 'j1', title: 'One' }]);
+    assert.deepStrictEqual(json.jobs.complete, []);
+    const text = run(['arc', 'get', '--arc', 'a1'], ctx).stdout;
+    assert.match(text, /arc_id: a1/);
+    assert.match(text, /Active:\n {2}- j1 - One/);
+    assert.match(text, /Planned:\n {2}- j2\n/);
+    assert.match(text, /Complete:\n {2}- None/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('arc get works for an arc with state but no membership file yet, and refuses a missing arc', () => {
+  const ctx = scratch();
+  try {
+    seedArc(ctx, 'a1');
+    const json = JSON.parse(run(['arc', 'get', '--arc', 'a1', '--json'], ctx).stdout);
+    assert.deepStrictEqual(json.jobs, { active: [], planned: [], complete: [], parked: [] });
+    assert.match(run(['arc', 'get', '--arc', 'ghost'], ctx).stderr, /arc not found/);
+    assert.match(run(['arc', 'get'], ctx).stderr, /requires --arc/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('arc update merges a JSON object into arc state, refusing bad input without writing', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedArc(ctx, 'a1');
+    const r = run(['arc', 'update', '--arc', 'a1'], ctx, '{"status": "closed", "closed": "2026-10-20", "next_command": null}');
+    assert.strictEqual(r.status, 0, r.stderr);
+    const state = readJsonFile(path.join(dir, 'state.json'));
+    assert.strictEqual(state.status, 'closed');
+    assert.strictEqual(state.closed, '2026-10-20');
+    assert.strictEqual(state.next_command, null);
+    const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
+    assert.match(run(['arc', 'update', '--arc', 'a1'], ctx, '{"risks": "none"}').stderr, /risks/);
+    assert.match(run(['arc', 'update', '--arc', 'a1'], ctx, 'nope').stderr, /not valid JSON/);
+    assert.match(run(['arc', 'update', '--arc', 'a1'], ctx, '[1]').stderr, /must be a JSON object/);
+    assert.match(run(['arc', 'update'], ctx, '{}').stderr, /requires --arc/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+// ---------------------------------------------------------------------
+// markdown-only jobs and arcs, and helper-owned files
+// ---------------------------------------------------------------------
+
+test('a job or arc that still has only markdown state is refused as an old format this version no longer reads', () => {
+  const ctx = scratch();
+  try {
+    const job = jobDirOf(ctx, 'old');
+    fs.mkdirSync(job, { recursive: true });
+    fs.writeFileSync(path.join(job, 'state.md'), 'job_id: old\ntitle: Old\n');
+    const arc = arcDirOf(ctx, 'old-arc');
+    fs.mkdirSync(arc, { recursive: true });
+    fs.writeFileSync(path.join(arc, 'state.md'), 'arc_id: old-arc\ntitle: Old\n');
+    for (const args of [['state', 'get', '--job', 'old'], ['job', 'set-current', '--job', 'old'], ['job', 'evidence', '--job', 'old'], ['arc', 'get', '--arc', 'old-arc']]) {
+      const r = run(args, ctx);
+      assert.strictEqual(r.status, 1, args.join(' '));
+      assert.match(r.stderr, /old markdown state format.*no longer reads/, args.join(' '));
+      assert.doesNotMatch(r.stderr, /md-to-json/, args.join(' '));
+    }
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job current refuses an old markdown current.md pointer as a format this version no longer reads', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(xochRootDir(ctx), 'work'), { recursive: true });
+    fs.writeFileSync(path.join(xochRootDir(ctx), 'work', 'current.md'), '**Job ID**: j1\n');
+    const r = run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /current\.md.*old markdown pointer format.*no longer reads/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('file write and file edit refuse state.json and phases.json, which only helpers may change', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    seedPhases(ctx, 'j1', threePhases());
+    const before = fs.readFileSync(path.join(dir, 'state.json'), 'utf8');
+    for (const file of ['state.json', 'phases.json', './state.json']) {
+      const w = run(['file', 'write', '--job', 'j1', '--path', file], ctx, '{}');
+      assert.strictEqual(w.status, 1, file);
+      assert.match(w.stderr, /managed by xoch/, file);
+      const e = run(['file', 'edit', '--job', 'j1', '--path', file], ctx, 'a\n-----XOCH-EDIT-SEPARATOR-----\nb');
+      assert.match(e.stderr, /managed by xoch/, file);
+    }
+    assert.strictEqual(run(['file', 'read', '--job', 'j1', '--path', 'state.json'], ctx).status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'), before);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a corrupt state.json, phases.json, or arc state is refused with the file named', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    fs.writeFileSync(path.join(dir, 'phases.json'), '{bad');
+    assert.match(run(['phase', 'get', '--job', 'j1'], ctx).stderr, /Invalid JSON in .*phases\.json/);
+    fs.writeFileSync(path.join(dir, 'state.json'), '{bad');
+    assert.match(run(['state', 'get', '--job', 'j1'], ctx).stderr, /Invalid JSON in .*state\.json/);
+    const arc = seedArc(ctx, 'a1');
+    fs.writeFileSync(path.join(arc, 'jobs.json'), '[]');
+    assert.match(run(['arc', 'get', '--arc', 'a1'], ctx).stderr, /arc jobs must be a JSON object/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a job whose phases are still markdown is refused as an old format this version no longer reads', () => {
+  const ctx = scratch();
+  try {
+    const dir = seedJob(ctx, 'j1');
+    fs.writeFileSync(path.join(dir, 'phases.md'), '## Phase 1: Old\n');
+    const r = run(['phase', 'show', '--job', 'j1'], ctx);
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /old markdown phases format.*no longer reads/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase show renders every kind of phase detail, and document notes, when present', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'q1');
+    seedPhases(ctx, 'q1', {
+      notes: ['Shared definitions'],
+      phases: [{
+        title: 'Checkout',
+        description: 'Exercise checkout.',
+        required_capability: 'browser',
+        allowed_owners: '[E]/[C] only',
+        projects: ['shop'],
+        files: [{ path: 'a.js', project: 'shop', note: 'form' }, { path: 'b.js' }],
+        cases: [{ id: 'QA-1', expected: 'declined' }, { id: 'QA-2' }],
+        notes: ['watch the logs'],
+      }],
+    });
+    const out = run(['phase', 'show', '--job', 'q1'], ctx).stdout;
+    assert.match(out, /Current phase: none/);
+    assert.match(out, /Required capability: browser\nAllowed owners: \[E\]\/\[C\] only/);
+    assert.match(out, /Exercise checkout\./);
+    assert.match(out, /- shop: a\.js - form\n- b\.js/);
+    assert.match(out, /Cases:\n- QA-1 - expected: declined\n- QA-2\n/);
+    assert.match(out, /Projects:\n- shop/);
+    assert.match(out, /Notes:\n- watch the logs/);
+    assert.match(out, /## Notes\n- Shared definitions/);
+    assert.match(run(['phase', 'show', '--job', 'q1', '--phase', '2'], ctx).stderr, /phase 2/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('phase helpers and state update require --job, and phase numbers must be numbers', () => {
+  const ctx = scratch();
+  try {
+    seedJob(ctx, 'j1');
+    for (const action of ['write', 'get', 'show', 'advance']) {
+      assert.match(run(['phase', action], ctx, '{}').stderr, new RegExp(`phase ${action} requires --job`));
+    }
+    assert.match(run(['phase', 'advance', '--job', 'j1'], ctx).stderr, /requires --phase/);
+    seedPhases(ctx, 'j1', threePhases());
+    assert.match(run(['phase', 'get', '--job', 'j1', '--phase', 'two'], ctx).stderr, /phase two is not a phase number/);
   } finally {
     cleanup(ctx);
   }

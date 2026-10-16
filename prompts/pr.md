@@ -25,7 +25,7 @@ Resolve available job artifacts before reading them:
 xoch job evidence --job "[job-id]" --json
 ```
 
-Read the active job's `state.md`. Use the smallest sufficient evidence set for the requested draft, preferring:
+Read the active job's state with `xoch state get --job "[job-id]" --json`. Use the smallest sufficient evidence set for the requested draft, preferring:
 
 1. completed phase snapshots and recorded validation evidence;
 2. accepted `spec.md` and `plan.md` for scope and acceptance criteria;

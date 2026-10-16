@@ -37,10 +37,10 @@ xoch workflow begin --job "[job-id]" --name xoch-sidebar --stage exploring --pen
 
 For target-model jobs, read:
 
-- `state.md`
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec.md`
 - `plan.md`
-- `phases.md`
+- phases, via `xoch phase get --job "[job-id]" --json`
 
 For legacy jobs, read the matching legacy files.
 

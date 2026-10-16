@@ -43,10 +43,10 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 Then load:
 
-- `state`
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec`
 - `plan`
-- `phases` only when state and snapshots do not establish implementation completion clearly
+- phases, via `xoch phase get --job "[job-id]" --json`, only when state and snapshots do not establish implementation completion clearly
 - phase snapshots (`current_phase_snapshot`, or list `snapshots_dir` for the full set)
 - `review`
 - documentation targets
@@ -61,7 +61,7 @@ If there is no active job, ask which job should be closed.
 Confirm one of these is true:
 
 - all phases are complete
-- `state.md` says `implementation_complete`
+- job state says `implementation_complete`
 - the engineer explicitly wants to close a small or manually tracked job
 
 If implementation is incomplete, recommend returning to `xoch-do`.
@@ -69,7 +69,7 @@ If implementation is incomplete, recommend returning to `xoch-do`.
 **QA jobs only (`job_type: qa`).** A QA job's only source changes are small, re-tested patches recorded per phase, so Steps 3-5 (review, coverage, documentation) do not apply -- skip them and use this gate instead:
 
 - `qa-report.md` exists in the job directory, and
-- `state.md` records a `qa_decision` (`patch`, `open_job`, or `none`).
+- job state records a `qa_decision` (`patch`, `open_job`, or `none`).
 
 If either is missing, do not close: route to `xoch-do` to run the QA report step. Then continue at Step 6. In Step 6, any change outside `.xoch/` that is not listed under Patches in `qa-report.md` is a violation to report before closing. In Step 7's closure notes, replace the Coverage and Documentation sections with `QA report: qa-report.md` and `Decision: [qa_decision]`, and summarize case results under Validation.
 
@@ -101,7 +101,7 @@ Only continue without a passing review when the engineer explicitly chooses a wa
 
 ### Step 5: Check Documentation Freshness
 
-`xoch-doc` is a required gate after a passing review, not an optional detour. Confirm it has already run for this job's current state — check `state.md`/`review.md` for a recorded documentation status (current, updated, not impacted, stale, waived, or unknown).
+`xoch-doc` is a required gate after a passing review, not an optional detour. Confirm it has already run for this job's current state — check job state and `review.md` for a recorded documentation status (current, updated, not impacted, stale, waived, or unknown).
 
 If `xoch-doc` has not run yet for this job's final state, route to `xoch-doc` now rather than offering to skip it. A documentation waiver can still exist, but only as something `xoch-doc` itself records — not as a shortcut offered here.
 
@@ -167,15 +167,12 @@ Use this structure:
 [Known follow-up or "None"]
 ```
 
-Update `state.md`:
+Update job state:
 
-```yaml
-status: closed
-closure_status: closed
-next_command: null
-current_step: null
-closed: [today]
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "closed", "closure_status": "closed", "next_command": null, "current_step": null, "closed": "[today]", "last_updated": "[today]"}
+XOCHEOF
 ```
 
 For legacy migration jobs, write `closure.md` or final notes in the legacy job folder.
@@ -203,19 +200,19 @@ For multi-project jobs, run the same helper checks from every listed repository.
 
 ### Step 9: Update Arc Membership
 
-If the job's `state.md` names an arc (anything other than `standalone`), mark it Complete in that arc's `jobs.md`:
+If the job's state names an arc (anything other than `standalone`), mark it Complete in that arc's membership:
 
 ```bash
 xoch arc job-move --arc "[arc-id]" --job "[job-id]" --to complete
 ```
 
-If the helper refuses because `jobs.md` is missing or lacks a `## Complete` section, fix `jobs.md` by hand to the shape `open-core.md` documents, then rerun it -- and say so in the output. Do not skip this step silently.
+If the helper refuses because the arc's membership is missing or invalid, report the refusal in the output. Do not skip this step silently, and do not edit arc files by hand.
 
 Then note what the arc has left: any remaining Planned entries, and whether every listed job is now Complete or Parked.
 
 ### Step 10: Leave Job In Place
 
-Closed jobs stay in their existing folder; marking `status: closed` in `state.md` and clearing the active pointer is sufficient. Do not move or archive job folders.
+Closed jobs stay in their existing folder; marking `status: closed` in job state and clearing the active pointer is sufficient. Do not move or archive job folders.
 
 ## Output
 

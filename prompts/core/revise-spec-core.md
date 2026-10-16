@@ -43,10 +43,10 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 Then load:
 
-- `state` when returned
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec`
 - `plan`
-- `phases`
+- phases, via `xoch phase get --job "[job-id]" --json`
 - recent files under `revisions_dir`
 - relevant documentation target files when the spec change affects docs
 
@@ -148,25 +148,22 @@ Update `spec.md` carefully:
 
 ### Step 7: Update State
 
-For target-model jobs, update `state.md`:
+For target-model jobs, update job state:
 
-```yaml
-status: spec_revised
-spec_status: revised
-review_status: null
-closure_status: null
-last_spec_revision: revisions/spec-[date].md
-last_updated: [today]
-next_command: xoch-revise
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "spec_revised", "spec_status": "revised", "review_status": null, "closure_status": null, "last_spec_revision": "revisions/spec-[date].md", "last_updated": "[today]", "next_command": "xoch-revise"}
+XOCHEOF
 ```
 
 `next_command: xoch-revise` marks the plan step as still pending, so an interrupted invocation resumes there.
 
 If the plan is still valid, set instead:
 
-```yaml
-next_command: xoch-do
-current_step: implement
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"next_command": "xoch-do", "current_step": "implement"}
+XOCHEOF
 ```
 
 and record why no plan revision is needed.

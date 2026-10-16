@@ -113,18 +113,15 @@ Use this structure:
 
 ### Step 6: Mark Arc Closed
 
-Update `state` (from the same `arc evidence` call).
+Update arc state:
 
-Set:
-
-```yaml
-status: closed
-closed: [today]
-last_updated: [today]
-next_command: null
+```bash
+xoch arc update --arc "[arc-id]" <<'XOCHEOF'
+{"status": "closed", "closed": "[today]", "last_updated": "[today]", "next_command": null}
+XOCHEOF
 ```
 
-Keep `jobs.md` as a final reference record unless the engineer asked to revise it before closing.
+Keep the arc's membership as a final reference record unless the engineer asked to revise it before closing.
 
 ## Output
 

@@ -47,11 +47,20 @@ xoch verify
 
 Job, arc, pointer, state, snapshot, and phase mechanics -- the helper prompts reach for most.
 
+Job state (`state.json`), phases (`phases.json`), arc state (`state.json`), and arc membership
+(`jobs.json`) are JSON documents owned by these helpers. Each is read and validated through its
+shape class in `bin/lib/` (`JobState`, `Phases`, `ArcState`, `ArcJobs`, `CurrentPointer`); every
+write is validated first and refused, with nothing written, when it doesn't fit. A job or arc that
+still has only the older markdown files (`state.md`, `phases.md`, `jobs.md`, or a `work/current.md`
+pointer) is refused as an old format this version of Xoch no longer reads.
+
 ```text
 xoch job current [--json]
 xoch job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
 xoch job set-current --job ID
-xoch state set --job ID --field FIELD --value VALUE
+xoch state get --job ID [--field FIELD] [--json]
+xoch state set --job ID --field FIELD --value VALUE [--json]
+xoch state update --job ID                       # JSON object on stdin
 xoch pointer clear --job ID
 xoch workflow begin --job ID --name NAME [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
 xoch workflow update --job ID [--name NAME] [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
@@ -59,8 +68,13 @@ xoch workflow complete --job ID [--name NAME] [--next COMMAND]
 xoch workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
 xoch arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
 xoch arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
+xoch arc get --arc ID [--json]
+xoch arc update --arc ID                         # JSON object on stdin
 xoch snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
-xoch phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
+xoch phase write --job ID                        # phases JSON on stdin
+xoch phase get --job ID [--phase N] [--json]
+xoch phase show --job ID [--phase N]
+xoch phase advance --job ID --phase N
 xoch job step-advance --job ID
 xoch config root
 xoch job evidence --job ID [--json]
@@ -76,24 +90,40 @@ xoch qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
 
 `job open --type` sets the job's `job_type` (default `standard`; any other value is rejected). A
 `qa` job starts with `next_command: xoch-qa`. `job_type` is projected into `current.json` alongside
-`next_command` and `current_step`, and a job whose `state.md` has no `job_type` is read as
+`next_command` and `current_step`, and a job whose state has no `job_type` is read as
 `standard`.
 
 `qa confirm-env` records `qa_environment`, `qa_target`, and `qa_environment_confirmed: true` for a
 QA job, and refuses any `--env` other than `dev` or `staging`. `phase advance` refuses to enter
 phase 1 of a QA job until this confirmation is recorded. `qa capabilities` records what the agent
 checked it can do -- drive a browser, send HTTP requests, run shell commands -- as a single
-`qa_capabilities` line, so planning can limit phases the agent cannot run to engineer or
+`qa_capabilities` string, so planning can limit phases the agent cannot run to engineer or
 collaborative ownership.
 
-`phase advance`'s `--next-type` marks the phase being advanced *into* as `implementation`
-(default) or `checkpoint` -- a checkpoint phase carries no implementation of its own; it's where
-the engineer verifies everything built so far live and collaborates on corrections. The type is
-persisted as `current_phase_type` in `state.md` and, when the target phase's own `phases.md` entry
-declares `**Type**: Checkpoint`, echoed into that phase's `phase_index` entry too.
+`state get` prints the whole job state as JSON, or one field (a string field prints raw unless
+`--json`; an absent field prints `null`). `state set` stores `--value` as a string, parses it as
+JSON with `--json` (lists, numbers, objects), and treats a plain `null` as clearing the field.
+`state update` merges a JSON object from stdin, all fields or none. Both stamp `last_updated`.
+
+`phase write` validates a whole phases document from stdin and saves it, then refreshes job state's
+`phase_count` and `phase_index` -- and, when the document names a `current_phase`, the
+current-phase fields -- from it; completed phases keep their `status`, so `xoch-revise` can rewrite
+the remaining phases. A phase's number is always its position in the list. `phase get` prints the
+document, or one phase (with its position as `phase`), as JSON; `phase show` renders it as readable
+text with the current phase marked.
+
+`phase advance --phase N` marks phase N complete and makes phase N+1 current, taking its title,
+goal, type, files, acceptance criteria, and validation (a QA phase's case IDs) from the phases
+document; `phase_index` is rebuilt from the document, so it always matches it. `--phase 0` enters
+phase 1 without marking anything. Advancing past the last phase sets `status:
+implementation_complete`, clears every current-phase field, and routes `current_step` to
+`final_review`. A phase's `type` is `implementation` or `checkpoint` -- a checkpoint phase carries no
+implementation of its own; it's where the engineer verifies everything built so far live and
+collaborates on corrections.
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
-they reject path traversal outside it. `discovery write`/`discovery read` are the one exception to
+they reject path traversal outside it. `file write` and `file edit` also refuse `state.json` and
+`phases.json`, which only the state and phase helpers may change. `discovery write`/`discovery read` are the one exception to
 job-scoping in this file: they read and write `[xoch-root]/discoveries/`, a directory shared
 across every job (and reachable with no job active at all), so accepted discovery findings stay
 findable by a later, unrelated job instead of disappearing inside whichever job happened to be
@@ -104,9 +134,6 @@ rewrite of the same topic gets a numeric suffix rather than overwriting the earl
 `job current`/`job set-current` project a job's `next_command` and `current_step` into
 `current.json` alongside `workflow`, self-healing on every `job current` read so a bundled
 multi-step command (`xoch-open`, `xoch-do`) can tell exactly where it is from that one call.
-Both also rename retired command names in `next_command`/`return_command` (`xoch-build` ->
-`xoch-do`; `xoch-revise-spec`, `xoch-revise-plan`, `xoch-revise-arc` -> `xoch-revise`), rewriting
-the job's `state.md` too so state and pointer agree.
 `job step-advance` moves `current_step` forward for a transition with no phase-index bookkeeping
 and no outcome to judge, following the job type's step table: `title`->`spec`->`plan` for a
 standard job, `title`->`intake`->`plan` for a QA job, and `implement`->`advance` for both -- it refuses to
@@ -114,14 +141,15 @@ move past `plan` or `advance` (those cross a phase boundary; use `phase advance`
 `current_step` too) or past `final_review` (leaving it depends on the review's own pass/fail
 outcome, not a fixed lookup).
 
-`arc job-move` moves one job's entry between the Active, Planned, Complete, and Parked sections of
-an arc's `jobs.md`, adding it when the arc doesn't list it yet. It keeps each section's `- None`
-placeholder in step (dropped when a section gains its first job, restored when it loses its last),
-preserves any notes already written under a heading, and carries the moved job's own indented
-detail lines with it. `--from` names a differently-keyed entry -- typically a Planned placeholder --
-to replace and take the title from; `--title` overrides the title. It refuses, rather than guesses,
-when `jobs.md` or the target section is missing. `xoch-open`, `xoch-close`, and `xoch-next` use it
-to keep arc membership current as jobs open and close.
+`arc job-move` moves one job's entry between the `active`, `planned`, `complete`, and `parked`
+lists of an arc's `jobs.json`, adding it when the arc doesn't list it yet (and starting `jobs.json`
+for an arc that has none). The entry keeps its title and any extra details. `--from` names a
+differently-keyed entry -- typically a Planned placeholder -- to replace and take the title from
+(the job's own entry wins when both are listed); `--title` overrides the title. `xoch-open`,
+`xoch-close`, and `xoch-next` use it to keep arc membership current as jobs open and close.
+
+`arc get` prints an arc's state and membership, as JSON (`{"state": ..., "jobs": ...}`) or readable
+text. `arc update` merges a JSON object from stdin into arc state, all fields or none.
 
 ### `generate-job-id.js`
 

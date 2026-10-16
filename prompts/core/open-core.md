@@ -21,7 +21,11 @@ When `job current --json` shows no active job, decide which of these applies fro
 
 If the engineer names an existing job ID (a directory already under `[xoch-root]/work/jobs/[job-id]/`, resolve `[xoch-root]` with `xoch config root`) that is not currently active, this is a reopen, not a fresh job.
 
-1. Read that job's `state.md`.
+1. Read that job's state:
+
+   ```bash
+   xoch state get --job "[job-id]" --json
+   ```
 2. Set it current:
 
    ```bash
@@ -34,7 +38,7 @@ If the engineer names an existing job ID (a directory already under `[xoch-root]
    xoch state set --job "[job-id]" --field status --value active
    ```
 
-   If the job belongs to an arc, move it back to Active in that arc's `jobs.md`:
+   If the job belongs to an arc, move it back to Active in that arc's membership:
 
    ```bash
    xoch arc job-move --arc "[arc-id]" --job "[job-id]" --to active
@@ -48,7 +52,7 @@ If the engineer names an existing job ID (a directory already under `[xoch-root]
      xoch state set --job "[job-id]" --field current_step --value spec
      ```
 
-     Continue into `spec-core.md`, treating the engineer's new description as the source requirements for a fresh spec pass. Do not silently reuse the old `plan.md`/`phases.md` -- `spec-core.md`'s own process decides whether they still apply.
+     Continue into `spec-core.md`, treating the engineer's new description as the source requirements for a fresh spec pass. Do not silently reuse the old `plan.md` or phases -- `spec-core.md`'s own process decides whether they still apply.
 
 ### Set Up An Arc
 
@@ -70,7 +74,7 @@ Arc files live under:
 
 Jobs remain first-class folders under `[xoch-root]/work/jobs/[job-id]/`; arc membership is by job ID reference only. Do not move or nest job folders inside an arc.
 
-1. **Check active job context.** If a standalone active job already exists, read its `state.md` evidence and ask whether to adopt it into the new arc, infer arc purpose/initial job list from its spec, or open the arc without adopting it.
+1. **Check active job context.** If a standalone active job already exists, read its state (`xoch state get --job "[job-id]" --json`) and ask whether to adopt it into the new arc, infer arc purpose/initial job list from its spec, or open the arc without adopting it.
 2. **Gather arc metadata:** arc ID or short name, arc title, larger goal, success outcome, known job IDs (if any), documentation targets, risks/constraints/non-goals. Generate a short kebab-case ID from the title when none is given.
 3. **Check existing arc state** under `[xoch-root]/work/arcs/`. If the named arc already exists, summarize it and ask whether to resume it or use `xoch-revise` (arc) instead of creating a duplicate.
 4. **Create arc files** with the deterministic helper:
@@ -79,48 +83,16 @@ Jobs remain first-class folders under `[xoch-root]/work/jobs/[job-id]/`; arc mem
    xoch arc open --id "[arc-id]" --title "[title]" --purpose "[purpose]" --success "[success outcome]" --doc-scope "[scope]" --doc-path "[path]"
    ```
 
-   Add `--adopt-active` only when the engineer confirmed adopting an active standalone job. If the helper is unavailable, create `state.md` under the arc directory manually:
+   Add `--adopt-active` only when the engineer confirmed adopting an active standalone job. The helper writes the arc's state and membership (with the adopted job, if any, listed as Active); do not create them by hand.
 
-   ```yaml
-   arc_id: [arc-id]
-   title: [arc title]
-   purpose: [larger goal]
-   status: active
-   documentation_targets:
-     - scope: feature|project|docs|unknown
-       path: [path or unknown]
-   success_outcome: [what done looks like]
-   risks: []
-   unresolved_questions: []
-   started: [today]
-   last_updated: [today]
-   next_command: xoch-open
-   ```
+5. **List planned jobs** in the arc's membership, one call per known job:
 
-5. **Write `jobs.md`** in the same arc directory:
-
-   ```markdown
-   # Arc Jobs - [arc-id]
-
-   ## Active
-
-   - `[job-id]` - [job title or unknown]
-
-   ## Planned
-
-   - `[job-id or placeholder]` - [intended job]
-
-   ## Complete
-
-   - None
-
-   ## Parked
-
-   - None
+   ```bash
+   xoch arc job-move --arc "[arc-id]" --job "[job-id or placeholder]" --title "[intended job]" --to planned
    ```
 
 6. **Write `notes.md`**: why the arc exists, initial decisions, known constraints, initial job membership reasoning, whether active-job adoption was checked, whether metadata was inferred or engineer-provided.
-7. **If a standalone job was adopted**, update its `state.md`: `arc: [arc-id]`, `last_updated: [today]`. Do not change its current phase, review status, or step unless the engineer explicitly asks.
+7. **If a standalone job was adopted**, `arc open --adopt-active` has already set its `arc` field. Do not change its current phase, review status, or step unless the engineer explicitly asks.
 8. **Continue.** If the engineer wants to open a job inside the arc now, continue into Fresh Job below with `arc: [arc-id]` set. If the arc was opened only for planning, stop after summarizing the created arc files.
 
 ### Resume Paused Or Archived Work
@@ -142,7 +114,7 @@ If the engineer invokes `xoch-open` with no job description at all and no active
 
    {{xoch-partial:job-evidence.md}}
 
-   Read `state`; read `spec`, `plan`, or `phases` (whichever are returned) only when `state` does not contain enough current-phase context; read `current_phase_snapshot` or list `snapshots_dir` when needed. For legacy jobs, read the equivalent legacy context files. If a participant mirror has `projects.json`, resolve the primary job and use its canonical state.
+   Read job state; read `spec`, `plan` (whichever are returned), or phases (`xoch phase get`) only when state does not contain enough current-phase context; read `current_phase_snapshot` or list `snapshots_dir` when needed. For legacy jobs, read the equivalent legacy context files. If a participant mirror has `projects.json`, resolve the primary job and use its canonical state.
 
    {{xoch-partial:state-phase-index.md}}
 
@@ -161,13 +133,14 @@ If the engineer invokes `xoch-open` with no job description at all and no active
    xoch job set-current --job "[job-id]"
    ```
 
-   This restores any managed workflow preserved in `state.md` and projects `next_command`/`current_step`. Do not write `current.json` manually. Run `job current --json` again after setting the pointer; if it reports an active workflow, resume that workflow and its pending action before routing to phase work. For legacy jobs, update `.xoch/context/current.md` instead. For a multi-project job, set only the invoked repository's current pointer; write resumed state through the canonical primary job and sync to participants.
+   This restores any managed workflow preserved in job state and projects `next_command`/`current_step`. Do not write `current.json` manually. Run `job current --json` again after setting the pointer; if it reports an active workflow, resume that workflow and its pending action before routing to phase work. For legacy jobs, update `.xoch/context/current.md` instead. For a multi-project job, set only the invoked repository's current pointer; write resumed state through the canonical primary job and sync to participants.
 
-   Update the resumed job's `state.md`:
+   Update the resumed job's state:
 
-   ```yaml
-   status: resumed
-   last_updated: [today]
+   ```bash
+   xoch state update --job "[job-id]" <<'XOCHEOF'
+   {"status": "resumed", "last_updated": "[today]"}
+   XOCHEOF
    ```
 
 5. **Present the summary:** job goal, current phase, completed phases, remaining phases, risks/unresolved questions, and where `current_step` (or the legacy equivalent) lands:
@@ -199,15 +172,15 @@ The default when none of the above applies.
    xoch job open --id "[job-id]" --title "[title]" --arc "[arc-id or standalone]" --doc-scope "[scope]" --doc-path "[path]"
    ```
 
-   For multi-project work, run this from the confirmed primary repository root even when `xoch-open` was invoked from a participant repository. If the helper is unavailable, create the same folders and state/current files manually using the foundation core model.
+   For multi-project work, run this from the confirmed primary repository root even when `xoch-open` was invoked from a participant repository. Do not create job folders or state by hand if the helper fails; report the failure.
 
-   When the job belongs to an arc, list it as Active in that arc's `jobs.md`. If it was opened for an existing Planned entry whose ID differs from the generated job ID, pass that entry's ID as `--from` so the placeholder is replaced rather than duplicated:
+   When the job belongs to an arc, list it as Active in that arc's membership. If it was opened for an existing Planned entry whose ID differs from the generated job ID, pass that entry's ID as `--from` so the placeholder is replaced rather than duplicated:
 
    ```bash
    xoch arc job-move --arc "[arc-id]" --job "[job-id]" --title "[title]" --to active [--from "[planned-entry-id]"]
    ```
 
-   If the helper refuses because `jobs.md` is missing or malformed, fix it by hand to the shape documented under Set Up An Arc and rerun it.
+   If the helper refuses because the arc's membership is missing or invalid, report the refusal to the engineer rather than editing arc files by hand.
 
 5. For a multi-project job:
    - Resolve project names with `~/.xoch/workspace-map.json`; run `xoch-map` first when required projects are missing.
@@ -252,7 +225,7 @@ Then continue directly into gathering source requirements (`spec-core.md`'s own 
 - Arcs group job IDs by reference; do not create job folders inside arc folders.
 - Multi-project jobs have one canonical primary job and optional participant mirrors described by `projects.json`.
 - Source files and active pointers are never synchronized.
-- Missing documentation targets are allowed for exploratory work but must be explicit in `state.md`.
+- Missing documentation targets are allowed for exploratory work but must be explicit in job state.
 - Do not auto-migrate active legacy `.xoch/context/` jobs.
 - Do not require arcs for standalone jobs; keep arcs lightweight, not project-management ceremony.
 - Reopening a closed job never silently discards its prior spec/plan history -- `spec-core.md` decides what still applies.

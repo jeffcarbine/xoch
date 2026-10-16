@@ -21,14 +21,7 @@ Arc files live under:
 .xoch/work/arcs/[arc-id]/
 ```
 
-Typical files:
-
-```text
-state.md
-jobs.md
-notes.md
-revisions/
-```
+Typical contents: arc state and membership (JSON, read with `xoch arc get` and changed only through `xoch arc update` / `xoch arc job-move`), `notes.md`, and `revisions/`.
 
 Arc membership is represented by job ID references. Job folders remain under `.xoch/work/jobs/`.
 
@@ -54,7 +47,7 @@ Ask what changed:
 - risk, constraint, or unresolved question
 - arc status
 
-Clarify whether existing jobs should point back to this arc in their job `state.md`.
+Clarify whether existing jobs should point back to this arc in their job state's `arc` field.
 
 ### Step 3: Assess Impact
 
@@ -63,7 +56,7 @@ Summarize:
 - current arc state
 - proposed change
 - affected job IDs
-- whether job `state.md` files need updates
+- whether any job's `arc` field needs updating
 - whether any job specs or plans should be revised
 
 If job requirements or implementation order changed, note which affected jobs need a spec, plan, or both revision. When the active job is one of them, offer to continue into its spec or plan step after this one, in this same `xoch-revise` invocation; other jobs get `xoch-revise` as follow-up once they're active.
@@ -116,14 +109,21 @@ Use this structure:
 
 Update only the files needed:
 
-- `state.md` for title, purpose, status, documentation targets, success outcome, risks, unresolved questions, or `last_updated`
-- `jobs.md` for job membership references -- prefer `xoch arc job-move` for moving or adding a job between Active/Planned/Complete/Parked
+- arc state, for title, purpose, status, documentation targets, success outcome, risks, unresolved questions, or `last_updated`:
+
+  ```bash
+  xoch arc update --arc "[arc-id]" <<'XOCHEOF'
+  {"[field]": "[value]", "last_updated": "[today]"}
+  XOCHEOF
+  ```
+
+- arc membership, for moving or adding a job between Active/Planned/Complete/Parked -- always through `xoch arc job-move`
 - `notes.md` for rationale or context
 
-If the engineer confirmed job back-reference updates, update affected job `state.md` files:
+If the engineer confirmed job back-reference updates, update each affected job:
 
-```yaml
-arc: [arc-id or standalone]
+```bash
+xoch state set --job "[job-id]" --field arc --value "[arc-id or standalone]"
 ```
 
 Do not move job folders.
@@ -165,5 +165,5 @@ Revision: .xoch/work/arcs/[arc-id]/revisions/arc-[date].md
 - Present the draft revision and get `[A]` acceptance before writing anything.
 - Job membership is by job ID reference.
 - Do not nest, move, archive, or delete job folders from arc commands.
-- Do not update job `state.md` arc fields without engineer confirmation.
+- Do not update a job's `arc` field without engineer confirmation.
 - Keep arc revisions focused on the shared goal; job-level scope changes belong in `xoch-revise`.

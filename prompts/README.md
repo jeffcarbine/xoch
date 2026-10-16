@@ -29,7 +29,7 @@ open -> do -> doc -> close
 
 | Command | Purpose | Primary Output |
 |---|---|---|
-| `open` | Open a fresh job, reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.md`, `spec.md`, `plan.md`, `phases.md` |
+| `open` | Open a fresh job, reopen a closed one, set up an arc, or resume paused/archived work -- then carry it through `spec` and `plan`. | `.xoch/work/current.json`, job `state.json`, `spec.md`, `plan.md`, `phases.json` |
 | `do` | Do whatever the current step calls for: implement the current phase, review and advance it, and run the final quality-gate review once every phase is done. Routes by `job_type` to `standard-job-core.md` or `qa-job-core.md`. | standard: source changes, test evidence, phase snapshots, job `review.md`; QA: case results, triaged patches, `qa-report.md` |
 | `doc` | Create, refresh, repair, or validate docs; a required stop after a passing review. | updated docs, recorded documentation status |
 | `close` | Close a completed job or an arc. | job `closure.md`, cleared current pointer |
@@ -41,7 +41,7 @@ Bundled commands track their position with `current_step` in job state, not with
 
 Run `do` repeatedly until every phase is complete and the final review passes.
 
-`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `do` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise` ceremony and no amending already-completed phase snapshots. `xoch phase advance --next-type` is what carries the type from `phases.md` into job state.
+`plan` may mark a phase `**Type**: Checkpoint` when several phases must land together before the engineer can tell whether they actually work. A checkpoint phase carries no implementation of its own: `do` routes it to a live-verification flow instead of the normal ownership/implementation steps -- the engineer exercises everything built so far and collaborates directly on any corrections, with no `revise` ceremony and no amending already-completed phase snapshots. `xoch phase advance` carries each phase's type from `phases.json` into job state.
 
 `do.md` itself is a thin router: it reads `job_type` from `job current --json` and loads exactly one job-type core -- `core/standard-job-core.md` for `standard` (or a job with no `job_type`), `core/qa-job-core.md` for `qa` -- and stops to ask on any other value. Each job-type core owns that type's step routing.
 
@@ -55,12 +55,12 @@ Arcs are an optional grouping for related jobs. There are no arc-only commands; 
 
 | Command | Arc behavior |
 |---|---|
-| `open` | Set up an arc (optionally adopting the active standalone job), or open a job inside one -- listing it as Active in the arc's `jobs.md`. |
+| `open` | Set up an arc (optionally adopting the active standalone job), or open a job inside one -- listing it as Active in the arc's `jobs.json`. |
 | `next` | Close the active arc job, then open the arc's next Planned job, in one pass. Every closing gate still applies; refuses for standalone jobs or when nothing is Planned. |
 | `revise` | Arc mode updates arc purpose, status, notes, risks, documentation targets, or job membership. |
-| `close` | Close a job (marking it Complete in its arc's `jobs.md`), or close an arc once its jobs are complete, moved, or parked. |
+| `close` | Close a job (marking it Complete in its arc's `jobs.json`), or close an arc once its jobs are complete, moved, or parked. |
 
-Arcs reference job IDs. They do not contain nested job folders. `xoch arc job-move` keeps `jobs.md`'s Active/Planned/Complete/Parked sections in step.
+Arcs reference job IDs. They do not contain nested job folders. `xoch arc job-move` keeps `jobs.json`'s Active/Planned/Complete/Parked lists in step.
 
 `open`'s `spec` step recommends setting up an arc when work appears too broad for one focused job.
 
@@ -229,7 +229,7 @@ Use `phase-boundary.md` in phase commands. It tells agents that `Ready for next 
 
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
 
-Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps `state.md` useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.md` on every `do` loop.
+Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps job state (read with `xoch state get`) useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.json` on every `do` loop.
 
 Use `project-routing.md` in commands that read or write active job artifacts. It routes optional multi-project jobs through their canonical primary context and requires guarded synchronization after shared writes.
 

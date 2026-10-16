@@ -16,18 +16,18 @@ The workflow boundary check above already ran `job current --json`.
 ## Step 1: Confirm There Is A Next Job
 
 - **No active job** -- say so and recommend `xoch-open`. Stop.
-- **Active job is standalone** (`arc: standalone` or missing in `state.md`) -- there is no arc to move through. Say so and route to `xoch-close`. Stop without closing anything.
+- **Active job is standalone** (`arc` is `standalone` or missing in job state) -- there is no arc to move through. Say so and route to `xoch-close`. Stop without closing anything.
 - **Active job belongs to an arc** -- load the arc:
 
   {{xoch-partial:arc-evidence.md}}
 
-  Read its `jobs.md` Planned section. If it lists no jobs (only `- None`), say so and route to `xoch-close` for this job -- and, when every other arc job is already Complete or Parked, note that the arc itself can be closed afterward with `xoch-close`. Stop without closing anything.
+  Read its membership with `xoch arc get --arc "[arc-id]" --json` and look at the `planned` list. If it is empty, say so and route to `xoch-close` for this job -- and, when every other arc job is already Complete or Parked, note that the arc itself can be closed afterward with `xoch-close`. Stop without closing anything.
 
-Never guess a next job that `jobs.md` doesn't list.
+Never guess a next job that the arc's `planned` list doesn't contain.
 
 ## Step 2: Choose And Confirm
 
-If exactly one job is Planned, that's the next job. If several are, list them in their `jobs.md` order, recommend the first, and let the engineer pick.
+If exactly one job is Planned, that's the next job. If several are, list them in their `planned` order, recommend the first, and let the engineer pick.
 
 Then confirm the whole move once:
 
@@ -39,7 +39,7 @@ On `[N]`, stop without changing anything.
 
 ## Step 3: Close The Current Job
 
-Read and follow `~/.xoch/prompts/core/close-job-core.md` in full, for the active job. Its own arc step marks the job Complete in `jobs.md`.
+Read and follow `~/.xoch/prompts/core/close-job-core.md` in full, for the active job. Its own arc step marks the job Complete in the arc's membership.
 
 If any closing gate stops short of `Job closed.` -- implementation incomplete, review missing with no waiver chosen, a coverage gap, documentation routed to `xoch-doc`, or the engineer choosing to keep the job active -- stop there and end with that gate's own routing. Do not open the next job. The engineer re-runs `xoch-next` once the gate is satisfied.
 

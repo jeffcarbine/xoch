@@ -29,13 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Expected files after this command:
-
-```text
-.xoch/work/current.json
-.xoch/work/jobs/[job-id]/state.md
-.xoch/work/jobs/[job-id]/spec.md
-```
+Expected artifacts after this command: `spec.md` in the job directory, plus updated job state and `.xoch/work/current.json`, both maintained by helpers.
 
 Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.json` exists, continue that legacy job in place and do not move it automatically.
 
@@ -66,44 +60,16 @@ xoch generate-id
 
 ### Step 2: Ensure Job State
 
-For target-model jobs, ensure:
+For target-model jobs, confirm the job's state is readable:
 
-```text
-.xoch/work/jobs/[job-id]/state.md
-.xoch/work/current.json
+```bash
+xoch state get --job "[job-id]" --json
 ```
 
-If `state.md` does not exist, create it with:
+If it is missing, the job was never opened through `xoch job open` -- return to `open-core.md`'s Fresh Job flow rather than creating state by hand. Then mark the spec as in progress:
 
-```yaml
-job_id: [job-id]
-title: [job title]
-status: spec_in_progress
-arc: [arc-id or standalone]
-current_phase: null
-phase_count: 0
-current_phase_title: null
-current_phase_goal: null
-current_phase_files: []
-current_phase_acceptance_criteria: []
-current_phase_validation: []
-phase_index: []
-documentation_targets:
-  - [README path, docs packet, or project-wide]
-decisions: []
-risks: []
-active_workflow: null
-workflow_stage: null
-pending_action: null
-workflow_artifact: null
-return_command: null
-workflow_started_at: null
-review_status: null
-closure_status: null
-next_command: xoch-open
-current_step: spec
-started: [today]
-last_updated: [today]
+```bash
+xoch state set --job "[job-id]" --field status --value spec_in_progress
 ```
 
 For legacy jobs, update the legacy context files in place.
@@ -314,12 +280,12 @@ Budget: [current value reported by `xoch token-estimator budget check --skill sp
 
 ### Step 9: Update State
 
-Update `state.md`:
+Update job state:
 
-```yaml
-status: spec_complete
-spec_status: accepted
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "spec_complete", "spec_status": "accepted", "last_updated": "[today]"}
+XOCHEOF
 ```
 
 If writing a legacy migration job, update the existing `.xoch/context/[job-id]/spec.md` and current pointer instead.

@@ -13,7 +13,7 @@ const SCRIPT = path.join(__dirname, '..', 'bin', 'context-sync.js');
 
 // Builds a primary + participant project tree with a real canonical
 // projects.json under primary/.xoch/work/jobs/[jobId]/, plus a seeded
-// state.md (file) and notes/ (directory) so the shared-item sync logic
+// state.json (file) and notes/ (directory) so the shared-item sync logic
 // has real file and directory cases to exercise.
 function buildFixture(ctx, jobId = 'demo') {
   const primaryDir = path.join(ctx.cwd, 'primary');
@@ -23,7 +23,7 @@ function buildFixture(ctx, jobId = 'demo') {
   const jobPath = path.join('.xoch', 'work', 'jobs', jobId);
   const canonicalRoot = path.join(primaryDir, jobPath);
   fs.mkdirSync(canonicalRoot, { recursive: true });
-  fs.writeFileSync(path.join(canonicalRoot, 'state.md'), 'canonical state\n');
+  fs.writeFileSync(path.join(canonicalRoot, 'state.json'), 'canonical state\n');
   fs.mkdirSync(path.join(canonicalRoot, 'notes'), { recursive: true });
   fs.writeFileSync(path.join(canonicalRoot, 'notes', 'a.md'), 'note a\n');
   const scopeData = {
@@ -431,7 +431,7 @@ test('a participant with a stale recorded content_digest is refused as independe
     const fixture = buildFixture(ctx);
     const destRoot = destinationRoot(fixture);
     fs.mkdirSync(destRoot, { recursive: true });
-    fs.writeFileSync(path.join(destRoot, 'state.md'), 'independently edited\n');
+    fs.writeFileSync(path.join(destRoot, 'state.json'), 'independently edited\n');
     writeJson(path.join(destRoot, 'projects.json'), { ...fixture.scopeData, content_digest: 'deadbeef' });
     const result = runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
     assert.strictEqual(result.status, 1);
@@ -450,7 +450,7 @@ test('check reports out-of-sync for an unsynced participant without writing anyt
     const summary = JSON.parse(result.stdout);
     assert.strictEqual(summary.mode, 'check');
     assert.strictEqual(summary.participants[0].status, 'out-of-sync');
-    assert.ok(summary.participants[0].changed.includes('state.md'));
+    assert.ok(summary.participants[0].changed.includes('state.json'));
     assert.ok(summary.participants[0].changed.includes('notes'));
     assert.ok(!fs.existsSync(destinationRoot(fixture)));
   } finally {
@@ -466,18 +466,18 @@ test('check treats a source item whose type changed (file to directory) as chang
     // recorded content_digest matches its disk state (no unrelated drift).
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
 
-    // Canonical's "state.md" changes from a file into a directory. The
+    // Canonical's "state.json" changes from a file into a directory. The
     // participant's copy is untouched, so samePath's isFile/isDirectory
     // type-mismatch branch is what flags it, not a byte-content diff.
-    fs.rmSync(path.join(fixture.canonicalRoot, 'state.md'));
-    fs.mkdirSync(path.join(fixture.canonicalRoot, 'state.md'));
-    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.md', 'inner.txt'), 'now a directory');
+    fs.rmSync(path.join(fixture.canonicalRoot, 'state.json'));
+    fs.mkdirSync(path.join(fixture.canonicalRoot, 'state.json'));
+    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.json', 'inner.txt'), 'now a directory');
 
     const result = runScript(SCRIPT, ['check', '--scope', fixture.canonicalScopePath], ctx);
     assert.strictEqual(result.status, 1);
     const summary = JSON.parse(result.stdout);
     assert.strictEqual(summary.participants[0].status, 'out-of-sync');
-    assert.ok(summary.participants[0].changed.includes('state.md'));
+    assert.ok(summary.participants[0].changed.includes('state.json'));
   } finally {
     cleanup(ctx);
   }
@@ -511,7 +511,7 @@ test('sync copies shared items to a fresh participant and bumps the canonical re
     assert.strictEqual(summary.participants[0].status, 'ready');
 
     const destRoot = destinationRoot(fixture);
-    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.md'), 'utf8'), 'canonical state\n');
+    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.json'), 'utf8'), 'canonical state\n');
     assert.strictEqual(fs.readFileSync(path.join(destRoot, 'notes', 'a.md'), 'utf8'), 'note a\n');
     const participantScope = JSON.parse(fs.readFileSync(path.join(destRoot, 'projects.json'), 'utf8'));
     assert.strictEqual(participantScope.revision, 1);
@@ -545,9 +545,9 @@ test('a second sync updates changed content and removes items no longer present 
     const fixture = buildFixture(ctx);
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
 
-    // Canonical drops its "notes" directory and changes state.md's content.
+    // Canonical drops its "notes" directory and changes state.json's content.
     fs.rmSync(path.join(fixture.canonicalRoot, 'notes'), { recursive: true, force: true });
-    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.md'), 'updated state\n');
+    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.json'), 'updated state\n');
     const canonical = JSON.parse(fs.readFileSync(fixture.canonicalScopePath, 'utf8'));
     writeJson(fixture.canonicalScopePath, canonical);
 
@@ -557,7 +557,7 @@ test('a second sync updates changed content and removes items no longer present 
     assert.strictEqual(summary.revision, 2);
 
     const destRoot = destinationRoot(fixture);
-    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.md'), 'utf8'), 'updated state\n');
+    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.json'), 'utf8'), 'updated state\n');
     assert.ok(!fs.existsSync(path.join(destRoot, 'notes')));
   } finally {
     cleanup(ctx);

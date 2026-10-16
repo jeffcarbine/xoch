@@ -14,6 +14,22 @@ function readJson(filePath) {
   }
 }
 
+/**
+ * Strict read for files whose absence or corruption must not be mistaken
+ * for "empty": job/arc state, phases, and the current pointer.
+ * @param {string} filePath - JSON file to read.
+ * @returns {*} The parsed JSON value.
+ * @throws {Error} When the file is missing or is not valid JSON.
+ */
+function readJsonStrict(filePath) {
+  if (!fs.existsSync(filePath)) throw new Error(`JSON file not found: ${filePath}`);
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (e) {
+    throw new Error(`Invalid JSON in ${filePath}: ${e.message}`);
+  }
+}
+
 // Atomic write: temp file in the same directory + rename, so a reader
 // never observes a partially-written file.
 function writeJson(filePath, data) {
@@ -33,4 +49,4 @@ function updateJson(filePath, updater) {
   return updated;
 }
 
-export { readJson, writeJson, updateJson };
+export { readJson, readJsonStrict, writeJson, updateJson };

@@ -17,7 +17,7 @@ Run -- or hand to the engineer -- every case in the current QA phase exactly as 
 
 ### Step 1: Load The Phase
 
-Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read `state` (for `qa_environment`, `qa_target`, `qa_environment_confirmed`, `qa_capabilities`) and the current phase section of `phases.md` -- its required capability, allowed owners, case table, and engineer instructions.
+Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read job state with `xoch state get --job "[job-id]" --json` (for `qa_environment`, `qa_target`, `qa_environment_confirmed`, `qa_capabilities`) and the current phase with `xoch phase get --job "[job-id]" --phase [N] --json` -- its required capability, allowed owners, cases, and engineer instructions.
 
 If `qa_environment_confirmed` is not `true`, stop: do not send any input. Report the gap and route back to `xoch-qa` for intake.
 
@@ -151,7 +151,7 @@ Update `notes/qa-phase-[N].md`: fill the Resolution column (`patched` or `deferr
 
 Summarize: failures patched (with files changed), failures deferred.
 
-Update `state.md`:
+Update job state:
 
 ```bash
 xoch state set --job "[job-id]" --field status --value phase_in_progress

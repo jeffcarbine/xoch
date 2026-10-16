@@ -43,10 +43,10 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 Then read:
 
-- `state`
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec`
 - `plan`
-- `phases` only when state and snapshots do not establish phase completion clearly
+- phases, via `xoch phase get --job "[job-id]" --json`, only when state and snapshots do not establish phase completion clearly
 - completed phase snapshots (`current_phase_snapshot`, or list `snapshots_dir` for the full set)
 - `review` if it already exists (non-`null`)
 - documentation targets from job state/spec
@@ -190,14 +190,15 @@ Use this structure:
 {{xoch-partial:next-step.md command="[xoch-doc when pass or pass_with_waivers | xoch-do when needs_work | xoch-revise when scope changed | more investigation when blocked]"}}
 ```
 
-Update `state.md`, setting `current_step` from the same outcome rather than leaving it at `final_review`:
+Update job state, setting `current_step` from the same outcome rather than leaving it at `final_review`:
 
-```yaml
-review_status: [status]
-next_command: [recommended next command]
-current_step: [null when pass or pass_with_waivers -- next_command is xoch-doc; implement when needs_work -- next_command is xoch-do; final_review when blocked -- still stuck here]
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"review_status": "[status]", "next_command": "[recommended next command]", "current_step": "[see below]", "last_updated": "[today]"}
+XOCHEOF
 ```
+
+Set `current_step` to `null` (JSON `null`, not a string) when the status is `pass` or `pass_with_waivers` -- `next_command` is `xoch-doc`; to `"implement"` when `needs_work` -- `next_command` is `xoch-do`; and to `"final_review"` when `blocked` -- still stuck here.
 
 `current_step` is written directly here, not through `job step-advance` -- this outcome is a judgment call, not a mechanical lookup.
 

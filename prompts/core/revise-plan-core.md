@@ -45,10 +45,10 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 Then load:
 
-- `state` when returned
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec`
 - `plan`
-- `phases`, or only the affected phase sections, when state already has a useful phase index
+- phases via `xoch phase get --job "[job-id]" --json`, or only the affected phases (`--phase N`), when state already has a useful phase index
 - completed phase snapshots (`current_phase_snapshot`, or list `snapshots_dir`)
 - recent files under `revisions_dir`
 
@@ -106,7 +106,7 @@ Then ask:
 
 {{xoch-partial:accept-or-modify.md artifact="plan revision"}}
 
-If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Do not write the revision note, `plan.md`, `phases.md`, or state until the engineer chooses `[A]`.
+If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Do not write the revision note, `plan.md`, the phases document, or state until the engineer chooses `[A]`.
 
 ### Step 6: Write Revision Note
 
@@ -159,61 +159,35 @@ For legacy migration jobs, write the revision note in the legacy job folder.
 
 ### Step 7: Update Plan And Phases
 
-Update:
+Update `plan.md` with `xoch file write`. Update the phases document by reading it with `xoch phase get --job "[job-id]" --json`, revising that JSON, and writing it back whole:
 
-```text
-plan.md
-phases.md
+```bash
+xoch phase write --job "[job-id]" <<'XOCHEOF'
+[revised phases JSON]
+XOCHEOF
 ```
 
-Keep:
+Keep, in the revised document:
 
-- completed phase summaries
+- every completed phase, with its `status` and `start_ref` unchanged, in its original position
 - completed phase snapshots
 - AC traceability
 - explicit testing requirements
 - completion evidence expectations
 
-If the current phase changes, update `phases.md`:
-
-```markdown
-## Current Phase: [N]
-```
+Set the document's `current_phase` to the phase work should resume at. `phase write` refuses a document whose `current_phase` is not a listed phase.
 
 ### Step 8: Update State
 
-For target-model jobs, update `state.md`:
+`phase write` already refreshed the phase fields in job state (`phase_count`, `phase_index`, and every `current_phase*` field) from the revised document. Update the remaining fields:
 
-```yaml
-status: plan_revised
-current_phase: [N]
-phase_count: [number of phases]
-current_phase_title: [title]
-current_phase_goal: [one-sentence phase goal]
-current_phase_files:
-  - [path]
-current_phase_acceptance_criteria:
-  - AC-001
-current_phase_validation:
-  - [expected check]
-phase_index:
-  - phase: [N]
-    title: [title]
-    status: [not_started | in_progress | complete | deferred]
-review_status: null
-closure_status: null
-last_plan_revision: revisions/plan-[date].md
-last_updated: [today]
-next_command: xoch-do
-current_step: implement
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "plan_revised", "review_status": null, "closure_status": null, "last_plan_revision": "revisions/plan-[date].md", "last_updated": "[today]", "next_command": "xoch-do", "current_step": "implement"}
+XOCHEOF
 ```
 
-If the job should go straight to review, set:
-
-```yaml
-next_command: xoch-do
-current_step: final_review
-```
+If the job should go straight to review, use `"current_step": "final_review"` instead.
 
 and record why implementation is already complete.
 

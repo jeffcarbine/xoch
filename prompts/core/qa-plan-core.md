@@ -11,13 +11,7 @@ This is the full reference workflow for `xoch-qa`'s `plan` step. It is rendered 
 
 Turn the accepted QA intake into ordered QA phases in which every test case is spelled out: what is exercised, the exact input or steps, the expected result, and why the case exists. Someone who has never seen the application should be able to run any case from the plan alone.
 
-Expected files after this step:
-
-```text
-.xoch/work/jobs/[job-id]/plan.md
-.xoch/work/jobs/[job-id]/phases.md
-.xoch/work/jobs/[job-id]/state.md
-```
+Expected artifacts after this step: `plan.md` in the job directory, plus the phases document and updated job state, both written through helpers.
 
 {{xoch-partial:context-economy.md}}
 
@@ -104,43 +98,36 @@ xoch file write --job "[job-id]" --path plan.md <<'XOCHEOF'
 XOCHEOF
 ```
 
-Write `phases.md`:
+Write the phases document through the helper, which validates it before saving. Phases are numbered by their position in the list:
 
 ```bash
-xoch file write --job "[job-id]" --path phases.md <<'XOCHEOF'
-# Phases - [Job Title]
-
-## Current Phase: 1
-
----
-
-## Phase 1: [Title]
-
-[What this phase exercises and why it comes here]
-
-**Type**: QA
-
-**Required capability**: [browser | http | shell | none]
-
-**Allowed owners**: [[E]/[A]/[C] | [E]/[C] only]
-
-**Cases:**
-
-| ID | Target | Action | Exact input / steps | Expected result | Rationale |
-|---|---|---|---|---|---|
-
-**Engineer instructions:** [numbered steps when the agent lacks the capability; otherwise "Agent can run these cases."]
-
-**Status**: Not Started
+xoch phase write --job "[job-id]" <<'XOCHEOF'
+{
+  "phases": [
+    {
+      "title": "[Title]",
+      "goal": "[one-sentence goal]",
+      "description": "[What this phase exercises and why it comes here]",
+      "required_capability": "browser | http | shell | none",
+      "allowed_owners": "[E]/[A]/[C] | [E]/[C] only",
+      "cases": [
+        { "id": "[case ID]", "target": "[target]", "action": "[action]", "input": "[exact input / steps]", "expected": "[expected result]", "rationale": "[rationale]" }
+      ],
+      "engineer_instructions": ["[numbered step, when the agent lacks the capability]"]
+    }
+  ]
+}
 XOCHEOF
 ```
+
+Leave `engineer_instructions` empty (`[]`) when the agent can run every case itself. Check the result with `xoch phase show --job "[job-id]"`.
 
 ### Step 7: Update State And Enter Phase 1
 
 ```bash
 xoch state set --job "[job-id]" --field status --value plan_complete
 xoch state set --job "[job-id]" --field plan_status --value accepted
-xoch phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type implementation --next-validation "[comma-separated case IDs]"
+xoch phase advance --job "[job-id]" --phase 0
 ```
 
 If `phase advance` refuses because the environment is not confirmed, return to `qa-intake-core.md` Step 2 -- never work around the guard.

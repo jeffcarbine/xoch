@@ -65,10 +65,10 @@ Common files:
 | File | Purpose | Created By |
 |---|---|---|
 | `[xoch-root]/work/current.json` | Active job pointer | `open` (`title` step) |
-| `state.md` | Job status and routing | `open` (`title` step) |
+| `state.json` | Job status and routing (helper-owned: `xoch state get/set/update`) | `open` (`title` step) |
 | `spec.md` | Requirements and ACs | `open` (`spec` step) |
 | `plan.md` | Implementation approach | `open` (`plan` step) |
-| `phases.md` | Phase tracker | `open` (`plan` step) |
+| `phases.json` | Ordered phases; a phase's number is its position (helper-owned: `xoch phase write/get/show/advance`) | `open` (`plan` step) |
 | `snapshots/phase-[N].md` | Phase completion snapshot | `do` (`advance` step) |
 | `review.md` | Acceptance and quality review | `do` (`final_review` step) |
 | `closure.md` | Closure notes | `close` (or `next`) |
@@ -80,7 +80,9 @@ Arcs live under:
 [xoch-root]/work/arcs/[arc-id]/
 ```
 
-Arcs reference job IDs in `jobs.md`; they do not contain job folders.
+Arcs keep their state in `state.json` and reference job IDs in `jobs.json` (both helper-owned: `xoch arc get/update/job-move`); they do not contain job folders.
+
+Structured files (`state.json`, `phases.json`, an arc's `state.json`/`jobs.json`) are read and validated through the shape classes in `bin/lib/` (`JobState`, `Phases`, `ArcState`, `ArcJobs`, `CurrentPointer`). Prompts must reach them only through `xoch` helpers -- never tell the agent to open or edit them directly. Prose artifacts stay markdown.
 
 ---
 

@@ -109,7 +109,8 @@ test('xoch arc job-move produces the same output as invoking xoch-actions.js dir
     for (const ctx of [ctxA, ctxB]) {
       const arcDir = path.join(ctx.cwd, '.xoch', 'work', 'arcs', 'a1');
       fs.mkdirSync(arcDir, { recursive: true });
-      fs.writeFileSync(path.join(arcDir, 'jobs.md'), '# Arc Jobs - a1\n\n## Active\n\n- None\n\n## Planned\n\n- `j1` - Job one\n');
+      fs.writeFileSync(path.join(arcDir, 'state.json'), JSON.stringify({ arc_id: 'a1', title: 'A1' }));
+      fs.writeFileSync(path.join(arcDir, 'jobs.json'), JSON.stringify({ planned: [{ id: 'j1', title: 'Job one' }] }));
     }
     const args = ['arc', 'job-move', '--arc', 'a1', '--job', 'j1', '--to', 'active'];
     const viaDispatcher = run(args, ctxA);

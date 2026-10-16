@@ -11,12 +11,7 @@ This is the full reference workflow for `xoch-do`'s `final_review` step on a QA 
 
 Turn every phase's recorded results into one QA report the engineer can act on, then ask what happens next for the failures that were deferred: patch, open a job, or nothing. Failures already patched and re-tested during their phase are reported but need no follow-up.
 
-Expected files after this step:
-
-```text
-.xoch/work/jobs/[job-id]/qa-report.md
-.xoch/work/jobs/[job-id]/state.md   (qa_decision, review_status: qa_reported)
-```
+Expected artifacts after this step: `qa-report.md` in the job directory, plus job state fields `qa_decision` and `review_status: qa_reported`, set through `xoch state set`.
 
 {{xoch-partial:context-economy.md}}
 
@@ -24,7 +19,7 @@ Expected files after this step:
 
 ### Step 1: Gather Results
 
-Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read `state`, `intake.md`, `plan.md`, and every `notes/qa-phase-[N].md`. Read phase snapshots only when a results note is missing or contradicts them.
+Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read job state (`xoch state get --job "[job-id]" --json`), `intake.md`, `plan.md`, and every `notes/qa-phase-[N].md`. Read phase snapshots only when a results note is missing or contradicts them.
 
 Confirm every planned case has a recorded status. A case with no result is reported as `not run` -- never assumed to have passed.
 

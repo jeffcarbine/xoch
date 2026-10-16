@@ -11,12 +11,7 @@ This is the full reference workflow for `xoch-qa`'s `intake` step. It is rendere
 
 Establish, before any test input is sent, three things the QA plan depends on: exactly what is being QA'd, that the target is a confirmed dev or staging environment, and what the agent can actually exercise itself.
 
-Expected files after this step:
-
-```text
-.xoch/work/jobs/[job-id]/intake.md
-.xoch/work/jobs/[job-id]/state.md   (qa_environment, qa_target, qa_environment_confirmed, qa_capabilities)
-```
+Expected artifacts after this step: `intake.md` in the job directory, plus job state fields `qa_environment`, `qa_target`, `qa_environment_confirmed`, and `qa_capabilities`, set through the `xoch qa` helpers.
 
 {{xoch-partial:context-economy.md}}
 

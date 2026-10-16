@@ -29,13 +29,7 @@ Target-model job files live under:
 .xoch/work/jobs/[job-id]/
 ```
 
-Expected files after this command:
-
-```text
-.xoch/work/jobs/[job-id]/plan.md
-.xoch/work/jobs/[job-id]/phases.md
-.xoch/work/jobs/[job-id]/state.md
-```
+Expected artifacts after this command: `plan.md` in the job directory, plus the phases document and updated job state, both written through helpers.
 
 Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` is active and no target-model job exists, continue that legacy job in place.
 
@@ -49,7 +43,7 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 Then read:
 
-- `state` when returned
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec`
 - relevant documentation target README/docs
 
@@ -153,7 +147,7 @@ Then ask:
 
 If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Repeat until the engineer accepts.
 
-Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state complete until the engineer chooses `[A]`.
+Do not write `plan.md`, the phases document, or mark plan state complete until the engineer chooses `[A]`.
 
 ### Step 8: Write Accepted Plan
 
@@ -222,102 +216,75 @@ Budget: [current value reported by `xoch token-estimator budget check --skill pl
 
 ### Step 9: Write Accepted Phases
 
-Write `phases.md` with:
+Write the phases document as JSON through the helper, which validates it before saving and refuses a malformed document without writing anything:
 
 ```bash
-xoch file write --job "[job-id]" --path phases.md <<'XOCHEOF'
-[phases.md content]
+xoch phase write --job "[job-id]" <<'XOCHEOF'
+[phases JSON]
 XOCHEOF
 ```
 
-Use this structure:
+Use this shape. Phases are numbered by their position in the list -- never write a phase number yourself:
 
-```markdown
-# Phases - [Job Title]
-
-## Current Phase: 1
-
----
-
-## Phase 1: [Title]
-
-[Description]
-
-**Type**: Implementation
-
-**Projects:**
-- [project name]
-
-**Files to modify/create:**
-- `[project]` `[file]` - [why]
-
-**Acceptance criteria covered:**
-- AC-001
-
-**Behavior tests (write first):**
-- [test description] - covers AC-00X, or "None - this phase doesn't add or change testable code behavior"
-
-**Existing coverage backfill:**
-- [file] - [gap to backfill], or "None - file(s) already at full coverage"
-
-**Testing requirements:**
-- [check]
-
-**Completion evidence:**
-- [diff, validation, manual test, doc update, or other evidence]
-
-**Status**: Not Started
+```json
+{
+  "phases": [
+    {
+      "title": "[Title]",
+      "goal": "[one-sentence goal]",
+      "description": "[what this phase does and why]",
+      "type": "implementation",
+      "projects": ["[project name]"],
+      "files": [
+        { "path": "[file]", "project": "[project]", "note": "[why]" }
+      ],
+      "acceptance_criteria": ["AC-001"],
+      "behavior_tests": ["[test description] - covers AC-00X"],
+      "coverage_backfill": ["[file] - [gap to backfill]"],
+      "testing_requirements": ["[check]"],
+      "completion_evidence": ["[diff, validation, manual test, doc update, or other evidence]"]
+    }
+  ]
+}
 ```
 
-Omit `**Type**:` (or leave it `Implementation`) for a normal phase. A checkpoint phase carries no
-implementation of its own, so its entry drops the Files/Behavior-tests/Coverage-backfill fields:
+Leave a list empty (`[]`) rather than writing "None" into it -- for example, `behavior_tests` is `[]` when a phase doesn't add or change testable code behavior, and `coverage_backfill` is `[]` when the targeted files already have full coverage. `projects` and each file's `project` are only needed for multi-project jobs. Every phase starts as `not_started`; do not set `status` or `start_ref`.
 
-```markdown
-## Phase [N]: Checkpoint - [what it verifies]
+A checkpoint phase carries no implementation of its own, so it sets `"type": "checkpoint"` and uses `verification_focus` instead of files, behavior tests, and coverage backfill:
 
-[What the engineer should exercise live, and why this is the right point to pause]
-
-**Type**: Checkpoint
-
-**Acceptance criteria covered:**
-- AC-001
-
-**Verification focus:**
-- [what to test live, tied to the phases it follows]
-
-**Completion evidence:**
-- [checkpoint-[N].md snapshot: what was tested, what was found, what was corrected]
-
-**Status**: Not Started
+```json
+{
+  "title": "Checkpoint - [what it verifies]",
+  "goal": "[what the engineer confirms live]",
+  "description": "[what the engineer should exercise live, and why this is the right point to pause]",
+  "type": "checkpoint",
+  "acceptance_criteria": ["AC-001"],
+  "verification_focus": ["[what to test live, tied to the phases it follows]"],
+  "completion_evidence": ["checkpoint-[N].md snapshot: what was tested, what was found, what was corrected"]
+}
 ```
 
-Optionally create individual phase files under:
+When a phase needs more detail than these fields hold, put it in the phase's `notes` list.
 
-```text
-.xoch/work/jobs/[job-id]/phases/phase-[N].md
-```
-
-when a phase needs more detail than belongs in `phases.md`.
+Read the result back as readable text with `xoch phase show --job "[job-id]"` when it helps to confirm what was written.
 
 ### Step 10: Update State
 
-Update `state.md`'s plan-specific fields directly:
-
-```yaml
-status: plan_complete
-plan_status: accepted
-review_status: null
-closure_status: null
-last_updated: [today]
-```
-
-Then enter phase 1 through the deterministic helper rather than hand-writing phase fields -- it parses the `phases.md` just written, builds `phase_index` from every phase in it (not just phase 1), and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `next_command` (`xoch-do`), and `current_step` (`implement`) together:
+Update the plan-specific state fields:
 
 ```bash
-xoch phase advance --job "[job-id]" --phase 0 --next-phase 1 --next-title "[phase 1 title]" --next-goal "[phase 1 goal]" --next-type "[implementation or checkpoint, from phase 1's Type field]" --next-files "[comma-separated paths]" --next-ac "[comma-separated AC IDs]" --next-validation "[comma-separated checks]"
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "plan_complete", "plan_status": "accepted", "review_status": null, "closure_status": null, "last_updated": "[today]"}
+XOCHEOF
 ```
 
-`--phase 0` is the entry idiom: there is no "Phase 0" section in `phases.md`, so nothing gets marked complete -- this call only establishes phase 1 as current.
+Then enter phase 1 through the deterministic helper rather than hand-writing phase fields. It reads phase 1 from the phases document just written, builds `phase_index` from every phase in it, and sets `current_phase`, `phase_count`, `current_phase_title`/`current_phase_goal`/`current_phase_type`, `current_phase_files`/`current_phase_acceptance_criteria`/`current_phase_validation`, `next_command` (`xoch-do`), and `current_step` (`implement`) together:
+
+```bash
+xoch phase advance --job "[job-id]" --phase 0
+```
+
+`--phase 0` is the entry idiom: there is no phase 0, so nothing gets marked complete -- this call only establishes phase 1 as current.
 
 For legacy migration jobs, write `plan.md` and `milestones.md` in the existing legacy folder until the migration job is closed.
 

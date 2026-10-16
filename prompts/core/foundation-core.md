@@ -41,24 +41,25 @@ Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's
 
 ## Job Files
 
-- `state.md`: compact working index and durable job status.
+- `state.json`: compact working index and durable job status. Read it with `xoch state get`; change it only with `xoch state set`, `state update`, `phase advance`, and the other state helpers.
 - `spec.md`: accepted requirements, acceptance criteria, constraints, current state, proposed changes, and arc fit.
 - `plan.md`: accepted implementation approach, risks, files, and acceptance coverage.
-- `phases.md`: authoritative phase list.
-- `phases/phase-[N].md`: optional detailed phase body.
+- `phases.json`: authoritative, ordered phase list with each phase's full content. A phase's number is its position in the list. Read it with `xoch phase get` or `xoch phase show`; write it only with `xoch phase write` and `xoch phase advance`.
 - `snapshots/phase-[N].md`: completion evidence captured by `xoch-do`'s `advance` step.
 - `notes/`: implementation, trace, or sidebar notes.
 - `revisions/`: spec, plan, or arc revision history.
 
 Discovery notes are not job files: `[xoch-root]/discoveries/*-discovery.md` sits outside every job's own directory, shared across jobs and reachable even before any job exists.
 
-`state.md` also preserves managed side-workflow fields when one is active: `active_workflow`, `workflow_stage`, `pending_action`, `workflow_artifact`, `return_command`, and `workflow_started_at`. `current.json` is the machine-readable runtime projection used for command routing.
+Job state also preserves managed side-workflow fields when one is active: `active_workflow`, `workflow_stage`, `pending_action`, `workflow_artifact`, `return_command`, and `workflow_started_at`. `current.json` is the machine-readable runtime projection used for command routing.
 
-Use `state.md` first on repeated commands. It should include current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Read full `spec.md`, `plan.md`, or `phases.md` only when state/prior context is insufficient or exact text is required.
+Use job state (`xoch state get --job ID --json`) first on repeated commands. It includes current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Read full `spec.md`, `plan.md`, or phases only when state/prior context is insufficient or exact text is required.
+
+Structured job and arc files are JSON owned by the helpers: never open, edit, or write `state.json`, `phases.json`, or an arc's `state.json`/`jobs.json` directly. Prose artifacts (spec, plan, snapshots, review, notes, revisions) stay markdown.
 
 ## Step Tracking
 
-A bundled multi-step command (`xoch-open`, `xoch-do`) can span several internal steps across one or more invocations without a fresh command each time. `state.md`'s `next_command` and `current_step` track exactly where a job is; `current.json` projects both, so `job current --json` -- the call every command already makes for the workflow boundary -- is enough to know the current step without a separate `state.md` read.
+A bundled multi-step command (`xoch-open`, `xoch-do`) can span several internal steps across one or more invocations without a fresh command each time. Job state's `next_command` and `current_step` track exactly where a job is; `current.json` projects both, so `job current --json` -- the call every command already makes for the workflow boundary -- is enough to know the current step without a separate state read.
 
 These two fields are distinct from the managed side-workflow fields above (`active_workflow`, `workflow_stage`, ...): a side workflow is a temporary diversion from the main flow that returns to it when done (`xoch-discovery`, `xoch-pause`); `next_command`/`current_step` describe position in the main flow itself.
 
@@ -71,8 +72,8 @@ Step vocabulary:
 A bundled skill never decides or writes a step name itself for a mechanical transition. It invokes the right deterministic helper and reports whatever step came back:
 
 - `xoch job step-advance --job ID` for a step-only transition with no phase-index bookkeeping and no outcome to judge: `title`->`spec`, `spec`->`plan`, `implement`->`advance`.
-- `xoch phase advance --job ID --phase N [--next-phase N] ...` for any transition that crosses a phase boundary (entering phase 1 from `plan`, moving `advance`->`implement` into the next phase, or `advance`->`final_review` once `current_phase` reaches `phase_count`) -- it also sets `current_step` as part of updating phase state. `job step-advance` refuses to move past `plan` or `advance` for this reason; use `phase advance` there instead.
-- Leaving `final_review` is not mechanical -- it depends on the review's outcome (pass routes to `xoch-doc`, a failing review routes back into implementation), so `job step-advance` refuses it too. `review-core.md`'s own `state.md` write sets `current_step` directly as part of recording that judgment.
+- `xoch phase advance --job ID --phase N` for any transition that crosses a phase boundary (entering phase 1 from `plan`, moving `advance`->`implement` into the next phase, or `advance`->`final_review` once `current_phase` reaches `phase_count`) -- it takes the next phase's details from the phases document and also sets `current_step` as part of updating phase state. `job step-advance` refuses to move past `plan` or `advance` for this reason; use `phase advance` there instead.
+- Leaving `final_review` is not mechanical -- it depends on the review's outcome (pass routes to `xoch-doc`, a failing review routes back into implementation), so `job step-advance` refuses it too. `review-core.md`'s own state update sets `current_step` directly as part of recording that judgment.
 
 ## Arcs
 
@@ -81,6 +82,8 @@ Arcs group related jobs by job ID reference:
 ```text
 .xoch/work/arcs/[arc-id]/
 ```
+
+An arc holds `state.json` (purpose, success outcome, status), `jobs.json` (Active/Planned/Complete/Parked membership), `notes.md`, and `revisions/`. Read arc state and membership with `xoch arc get`; change them only with `xoch arc update` and `xoch arc job-move`.
 
 Do not nest job folders inside arcs. `xoch-open` sets one up when work has multiple related jobs under a larger goal.
 
@@ -106,7 +109,14 @@ xoch job open ...
 xoch job evidence --job ID --json
 xoch arc open ...
 xoch arc evidence --arc ID --json
+xoch state get --job ID --json
 xoch state set ...
+xoch state update --job ID
+xoch phase get --job ID [--phase N] --json
+xoch phase show --job ID [--phase N]
+xoch phase write --job ID
+xoch arc get --arc ID --json
+xoch arc update --arc ID
 xoch pointer clear ...
 xoch workflow begin ...
 xoch workflow update ...

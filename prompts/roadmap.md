@@ -37,7 +37,7 @@ For legacy jobs, use the existing tracker and milestone files in place without m
 
 ### Step 3: Load Remaining Phase Details
 
-Read only the current and upcoming sections of `phases` (from Step 2's `job evidence` call) or `current_phase_body`. Do not reread completed snapshots, the full spec, or the full plan unless compact state and phase sections cannot explain the roadmap accurately.
+Read only the current and upcoming phases, one at a time with `xoch phase get --job "[job-id]" --phase [N] --json`. Do not reread completed snapshots, the full spec, or the full plan unless compact state and phase sections cannot explain the roadmap accurately.
 
 For each remaining phase, capture:
 

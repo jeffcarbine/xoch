@@ -31,9 +31,9 @@ For target-model jobs:
 
 Read:
 
-- `state`
+- job state, via `xoch state get --job "[job-id]" --json`
 - `spec` when returned (not `null`)
-- `phases` when returned (not `null`)
+- phases, via `xoch phase get --job "[job-id]" --json`, when the job has a plan
 
 For legacy jobs, read the corresponding `.xoch/context/[job-id]/` files without moving them.
 
@@ -64,7 +64,7 @@ If confirmed:
    xoch pointer clear --job "[job-id]"
    ```
 
-2. If helpers are unavailable, update `state.md` and remove `[xoch-root]/work/current.json` (resolve `[xoch-root]` with `xoch config root`) only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
+2. If a helper refuses, report the refusal; do not edit job state or `current.json` by hand. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
 
 For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
 

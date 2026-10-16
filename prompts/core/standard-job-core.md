@@ -35,7 +35,7 @@ Every transition is decided by a deterministic helper, never guessed or written 
 
 - Right when phase implementation is accepted as complete -- before asking the advance question -- run `xoch job step-advance --job "[job-id]"` to move `implement` -> `advance`, then continue straight into the advance flow (`advance-core.md`'s own Step 1 onward) in this same response. Do not ask the engineer to invoke `xoch-do` again for this transition; that defeats the point of bundling these two together.
 - Crossing a phase boundary -- entering phase 1, moving `advance` -> `implement` for the next phase, or falling through `advance` -> `final_review` once every phase is done -- is `phase advance`'s job, exactly as `advance-core.md` documents; it also sets `current_step`. This still ends the response and asks for a fresh `xoch-do` invocation, per the phase boundary above -- entering review is a new step, not a continuation of the phase that just finished.
-- Leaving `final_review` is judgment-dependent, not mechanical: a passing review routes to `xoch-doc`, a failing one routes back into implementation. `review-core.md`'s own `state.md` update sets `current_step` directly as part of recording that outcome, rather than asking a generic helper to guess it.
+- Leaving `final_review` is judgment-dependent, not mechanical: a passing review routes to `xoch-doc`, a failing one routes back into implementation. `review-core.md`'s own job state update sets `current_step` directly as part of recording that outcome, rather than asking a generic helper to guess it.
 
 `implement-core.md`, `advance-core.md`, and `review-core.md` already document their own endings in these terms -- follow each one's own Output section as written.
 

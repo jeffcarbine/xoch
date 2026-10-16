@@ -10,7 +10,7 @@ import { scopeErrors } from './lib/project-scope-validator.js';
 import { prettyGenerate } from './lib/ruby-json.js';
 
 const SHARED_ITEMS = [
-  'state.md', 'spec.md', 'plan.md', 'phases.md', 'phases', 'snapshots', 'notes', 'revisions', 'review.md', 'closure.md',
+  'state.json', 'spec.md', 'plan.md', 'phases.json', 'snapshots', 'notes', 'revisions', 'review.md', 'closure.md',
 ];
 
 // context-sync.sh's own validate_scope! wording -- distinct from
