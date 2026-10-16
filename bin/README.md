@@ -58,6 +58,7 @@ pointer) is refused as an old format this version of Xoch no longer reads.
 xoch job current [--json]
 xoch job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
 xoch job set-current --job ID
+xoch job close --job ID
 xoch state get --job ID [--field FIELD] [--json]
 xoch state set --job ID --field FIELD --value VALUE [--json]
 xoch state update --job ID                       # JSON object on stdin
@@ -69,6 +70,7 @@ xoch workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
 xoch arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
 xoch arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
 xoch arc get --arc ID [--json]
+xoch arc close --arc ID
 xoch arc update --arc ID                         # JSON object on stdin
 xoch snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
 xoch phase write --job ID                        # phases JSON on stdin
@@ -121,9 +123,19 @@ goal, type, files, acceptance criteria, and validation (a QA phase's case IDs) f
 document; `phase_index` is rebuilt from the document, so it always matches it. `--phase 0` enters
 phase 1 without marking anything. Advancing past the last phase sets `status:
 implementation_complete`, clears every current-phase field, and routes `current_step` to
-`final_review`. A phase's `type` is `implementation` or `checkpoint` -- a checkpoint phase carries no
+`final_review`. Entering a phase records the commit it starts from (`start_ref`, or `null`
+outside git or before the first commit). A phase's `type` is `implementation` or `checkpoint` -- a checkpoint phase carries no
 implementation of its own; it's where the engineer verifies everything built so far live and
 collaborates on corrections.
+
+`snapshot create --job ID --phase N` writes `snapshots/phase-N.md`. The mechanical parts come from the
+phases document and git: title, date, next phase (or "Final review"), every file changed since the
+phase's `start_ref` (committed, uncommitted, and untracked, excluding the Xoch storage root;
+renames show their old name), and each of the phase's acceptance criteria not reported on, marked
+"not recorded". The judgment sections -- `## What Changed`, `## Acceptance Criteria`,
+`## Validation`, `## Additional Notes` -- come from markdown on stdin; any left out are "TBD", and a
+terminal stdin just yields the template. `--title`, `--status`, and `--next` override; `--body-file`
+copies a complete snapshot verbatim.
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
 they reject path traversal outside it. `file write` and `file edit` also refuse `state.json` and
@@ -165,6 +177,16 @@ for an arc that has none). The entry keeps its title and any extra details. `--f
 differently-keyed entry -- typically a Planned placeholder -- to replace and take the title from
 (the job's own entry wins when both are listed); `--title` overrides the title. `xoch-open`,
 `xoch-close`, and `xoch-next` use it to keep arc membership current as jobs open and close.
+
+`job close` closes a job only when every closing gate holds, otherwise refusing with the full list
+of unmet conditions: every phase complete or deferred (or `status: implementation_complete` for a job
+with no phases document); for a standard job, `review_status` `pass` or `pass_with_waivers` and a
+recorded `documentation_status`; for a QA job, `qa-report.md` and a `qa_decision`. On success it
+writes `closure.md` from state (summary, phases, review or QA decision, documentation, waivers),
+marks the job closed, clears `current.json` only when it points to this job, and marks the job
+Complete in its arc (reporting any jobs still Planned, or that the arc could not be found).
+`arc close` closes an arc only when no job is still Active or Planned, writing `closure.md` with its
+Complete and Parked jobs.
 
 `arc get` prints an arc's state and membership, as JSON (`{"state": ..., "jobs": ...}`) or readable
 text. `arc update` merges a JSON object from stdin into arc state, all fields or none.

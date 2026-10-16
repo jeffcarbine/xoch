@@ -213,6 +213,18 @@ class Phases {
   }
 
   /**
+   * Records the commit a phase started from (or null when unknown).
+   * @param {number} number - 1-based phase number.
+   * @param {string|null} ref - Commit SHA or null.
+   * @throws {ShapeError} When the phase or ref is invalid.
+   */
+  setStartRef(number, ref) {
+    const index = this.indexOf(number);
+    checkField(`phases: phase ${number}`, 'start_ref', ref, 'string?');
+    this.data.phases[index].start_ref = ref;
+  }
+
+  /**
    * Sets which phase is current, or clears it.
    * @param {number|null} number - 1-based phase number, or null.
    * @throws {ShapeError} When `number` isn't a listed phase.

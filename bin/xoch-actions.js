@@ -18,6 +18,7 @@ import { ArcState } from './lib/arc-state.js';
 import { ArcJobs, SECTIONS as ARC_SECTIONS } from './lib/arc-jobs.js';
 import { CurrentPointer } from './lib/current-pointer.js';
 import { Handoff, HANDOFF_SOURCES } from './lib/handoff.js';
+import { git } from './lib/git.js';
 
 function die(message) {
   process.stderr.write(`Error: ${message}\n`);
@@ -834,55 +835,138 @@ function workflowAction(action, argv) {
   }
 }
 
+/**
+ * The current commit of the project being worked on, or null outside a
+ * git repository or before its first commit.
+ * @returns {string|null}
+ */
+function headRef() {
+  return git(process.cwd(), ['rev-parse', '--verify', '-q', 'HEAD']) || null;
+}
+
+const CHANGE_KINDS = { A: 'added', D: 'deleted', R: 'renamed' };
+
+/**
+ * The "Files Changed" list for a phase: every file changed since the
+ * commit the phase started from -- committed, uncommitted, and untracked
+ * -- excluding Xoch's own storage root.
+ * @param {string|null} startRef
+ * @returns {string}
+ */
+function filesChangedSince(startRef) {
+  if (!startRef) return '- Not recorded: this phase has no start commit';
+  const root = process.cwd();
+  const xochPrefix = `${path.relative(root, path.resolve(xochRoot()))}/`;
+  const entries = new Map();
+  for (const line of git(root, ['diff', '--name-status', startRef]).split('\n').filter(Boolean)) {
+    const [status, first, second] = line.split('\t');
+    const kind = CHANGE_KINDS[status[0]] || 'modified';
+    if (second) entries.set(second, `${kind} from \`${first}\``);
+    else entries.set(first, kind);
+  }
+  for (const file of git(root, ['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean)) {
+    entries.set(file, 'added');
+  }
+  const lines = [...entries.keys()]
+    .filter((file) => !file.startsWith(xochPrefix))
+    .sort()
+    .map((file) => `- \`${file}\` - ${entries.get(file)}`);
+  return lines.length ? lines.join('\n') : '- None';
+}
+
+/**
+ * Splits piped markdown into its "## Heading" sections.
+ * @param {string} text
+ * @returns {Object<string, string>} Heading -> trimmed body.
+ */
+function markdownSections(text) {
+  const sections = {};
+  let current = null;
+  for (const line of text.split('\n')) {
+    const heading = line.match(/^## (.+?)\s*$/);
+    if (heading) {
+      current = heading[1];
+      sections[current] = [];
+    } else if (current) {
+      sections[current].push(line);
+    }
+  }
+  return Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, v.join('\n').trim()]));
+}
+
+/**
+ * Writes a phase snapshot. The mechanical parts -- title, date, next
+ * phase, files changed since the phase started, and its acceptance
+ * criteria -- come from the phases document and git; the judgment
+ * sections (What Changed, Acceptance Criteria results, Validation,
+ * Additional Notes) come from markdown piped on stdin. --body-file copies
+ * a complete snapshot verbatim instead.
+ * @param {string[]} argv - `--job ID --phase N [--title T] [--status S] [--next X] [--body-file FILE]`.
+ */
 function snapshotCreate(argv) {
   const flags = parseFlags(argv, []);
   const jobId = flags.job;
   const phase = flags.phase;
   if (!jobId) die('snapshot create requires --job');
   if (!phase) die('snapshot create requires --phase');
-  const title = flags.title || `Phase ${phase}`;
-  const status = flags.status || 'Complete';
-  const nextText = flags.next || 'TBD';
   const bodyFile = flags['body-file'];
 
-  const dir = path.join(xochRoot(), 'work', 'jobs', jobId, 'snapshots');
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `phase-${phase}.md`);
+  const dir = jobDir(jobId);
+  const snapshotsDir = path.join(dir, 'snapshots');
+  fs.mkdirSync(snapshotsDir, { recursive: true });
+  const file = path.join(snapshotsDir, `phase-${phase}.md`);
 
   if (bodyFile) {
     if (!fs.existsSync(bodyFile)) die(`body file not found: ${bodyFile}`);
     fs.copyFileSync(bodyFile, file);
-  } else {
-    fs.writeFileSync(file, `# Phase ${phase} Snapshot - ${title}
+    console.log(`Snapshot written: ${file}`);
+    return;
+  }
+
+  let entry = null;
+  let autoNext = null;
+  const phases = JobState.exists(dir) ? loadPhases(dir) : null;
+  const n = Number(phase);
+  if (phases && Number.isInteger(n) && n >= 1 && n <= phases.count()) {
+    entry = phases.at(n);
+    autoNext = n < phases.count() ? `Phase ${n + 1} - ${phases.at(n + 1).title}` : 'Final review';
+  }
+
+  const sections = markdownSections(process.stdin.isTTY ? '' : fs.readFileSync(0, 'utf8'));
+  const section = (name) => sections[name] || 'TBD';
+  let criteria = sections['Acceptance Criteria'] || '';
+  const unreported = entry ? entry.acceptance_criteria.filter((ac) => !new RegExp(`\\b${ac}\\b`).test(criteria)) : [];
+  criteria = [criteria, ...unreported.map((ac) => `- ${ac}: not recorded`)].filter(Boolean).join('\n');
+
+  fs.writeFileSync(file, `# Phase ${phase} Snapshot - ${flags.title || (entry ? entry.title : `Phase ${phase}`)}
 
 **Completed**: ${today()}
-**Status**: ${status}
+**Status**: ${flags.status || 'Complete'}
 
 ## What Changed
 
-TBD
+${section('What Changed')}
 
 ## Files Changed
 
-- TBD
+${entry ? filesChangedSince(entry.start_ref) : 'TBD'}
 
 ## Acceptance Criteria
 
-- TBD
+${criteria || 'TBD'}
 
 ## Validation
 
-- TBD
+${section('Validation')}
 
 ## Additional Notes
 
-- TBD
+${section('Additional Notes')}
 
 ## Next
 
-${nextText}
+${flags.next || autoNext || 'TBD'}
 `);
-  }
 
   console.log(`Snapshot written: ${file}`);
 }
@@ -960,6 +1044,7 @@ function phaseAdvance(argv) {
   const common = { phase_count: phases.count(), next_command: 'xoch-do', last_updated: today() };
   if (next <= phases.count()) {
     phases.setCurrent(next);
+    phases.setStartRef(next, headRef());
     state.update({
       ...common, ...currentPhaseFields(phases, next), status: 'phase_ready', current_step: 'implement', phase_index: phases.phaseIndex(),
     });
@@ -1404,11 +1489,136 @@ function handoffClaim(argv) {
   console.log(`Handoff ${flags.id} claimed by ${flags.job}`);
 }
 
+/**
+ * Everything that stops a job from closing, empty when it is ready. A
+ * phase counts as finished when complete or deliberately deferred.
+ * @param {string} dir - Job directory.
+ * @param {Object} state - Job state data.
+ * @returns {string[]}
+ */
+function closeBlockers(dir, state) {
+  const blockers = [];
+  const phases = loadPhases(dir);
+  if (phases) {
+    const open = phases.phaseIndex().filter((p) => !['complete', 'deferred'].includes(p.status));
+    if (open.length) blockers.push(`${open.length} of ${phases.count()} phases are not complete (${open.map((p) => p.phase).join(', ')})`);
+  } else if (state.status !== 'implementation_complete') {
+    blockers.push(`implementation is not complete (status: ${state.status})`);
+  }
+  if (state.job_type === 'qa') {
+    if (!fs.existsSync(path.join(dir, 'qa-report.md'))) blockers.push('qa-report.md is missing (run the QA report step)');
+    if (!state.qa_decision) blockers.push('no QA decision recorded');
+  } else {
+    if (!['pass', 'pass_with_waivers'].includes(state.review_status)) {
+      blockers.push(`review status is ${state.review_status}, not pass or pass_with_waivers`);
+    }
+    if (!state.documentation_status) blockers.push('no documentation status recorded (run xoch-doc)');
+  }
+  return blockers;
+}
+
+/**
+ * Closure notes generated from a job's state, phases, and review status.
+ * @param {string} jobId
+ * @param {Object} state - Job state data.
+ * @param {Phases|null} phases
+ * @returns {string}
+ */
+function jobClosureNotes(jobId, state, phases) {
+  const lines = [`# Closure - ${jobId}`, '', `**Date**: ${today()}`, '**Status**: Closed', '', '## Summary', '', state.title, ''];
+  if (state.description && state.description !== state.title) lines.push(state.description, '');
+  if (phases) {
+    lines.push('## Phases', '', ...phases.phaseIndex().map((p) => `- Phase ${p.phase}: ${p.title} - ${p.status}`), '');
+  }
+  if (state.job_type === 'qa') {
+    lines.push('## QA', '', 'Report: qa-report.md', `Decision: ${state.qa_decision}`, '');
+  } else {
+    lines.push('## Review', '', `${state.review_status} (see review.md)`, '', '## Documentation', '', state.documentation_status, '');
+    lines.push('## Waivers', '', state.review_status === 'pass_with_waivers' ? 'See review.md' : 'None', '');
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Closes a job once every closing gate holds: writes closure.md, marks the
+ * job closed, clears the current pointer only when it points to this job,
+ * and marks the job Complete in its arc. Refuses, listing every unmet
+ * condition, otherwise.
+ * @param {string[]} argv - `--job ID`.
+ */
+function jobClose(argv) {
+  const flags = parseFlags(argv, []);
+  const jobId = flags.job;
+  if (!jobId) die('job close requires --job');
+  const { dir, state } = loadJob(jobId);
+  const data = state.toJSON();
+  if (data.status === 'closed') die(`job ${jobId} is already closed`);
+  const blockers = closeBlockers(dir, data);
+  if (blockers.length) die(`Cannot close job ${jobId}:\n${blockers.map((b) => `- ${b}`).join('\n')}`);
+
+  fs.writeFileSync(path.join(dir, 'closure.md'), jobClosureNotes(jobId, data, loadPhases(dir)));
+  const todayStr = today();
+  state.update({
+    status: 'closed', closure_status: 'closed', next_command: null, current_step: null, closed: todayStr, last_updated: todayStr,
+  });
+  state.save(dir);
+  console.log(`Job closed: ${jobId}`);
+
+  const workDir = path.join(xochRoot(), 'work');
+  if (CurrentPointer.exists(workDir) && CurrentPointer.load(workDir).jobId() === jobId) {
+    fs.unlinkSync(CurrentPointer.pathIn(workDir));
+    console.log(`Cleared pointer: ${CurrentPointer.pathIn(workDir)}`);
+  }
+
+  const arcId = data.arc;
+  if (arcId && arcId !== 'standalone') {
+    if (!ArcState.exists(arcDir(arcId))) {
+      console.log(`Arc ${arcId} not found; its membership was not updated`);
+      return;
+    }
+    const { dir: aDir, jobs } = loadArc(arcId);
+    jobs.move(jobId, 'complete');
+    jobs.save(aDir);
+    const planned = jobs.toJSON().planned.map((e) => e.id);
+    console.log(`Arc ${arcId}: ${jobId} -> Complete${planned.length ? `; still planned: ${planned.join(', ')}` : ''}`);
+  }
+}
+
+/**
+ * Closes an arc once no job is still Active or Planned: marks it closed and
+ * writes closure notes listing its Complete and Parked jobs.
+ * @param {string[]} argv - `--arc ID`.
+ */
+function arcClose(argv) {
+  const flags = parseFlags(argv, []);
+  const arcId = flags.arc;
+  if (!arcId) die('arc close requires --arc');
+  const { dir, state, jobs } = loadArc(arcId);
+  if (state.get('status') === 'closed') die(`arc ${arcId} is already closed`);
+  const members = jobs.toJSON();
+  const open = [['active', members.active], ['planned', members.planned]]
+    .filter(([, entries]) => entries.length)
+    .map(([name, entries]) => `${name} (${entries.map((e) => e.id).join(', ')})`);
+  if (open.length) die(`Cannot close arc ${arcId}: jobs still ${open.join(' or ')}`);
+
+  const list = (entries) => (entries.length ? entries.map((e) => `- ${e.id}${e.title ? ` - ${e.title}` : ''}`) : ['- None']);
+  fs.writeFileSync(path.join(dir, 'closure.md'), [
+    `# Closure - ${arcId}`, '', `**Date**: ${today()}`, '**Status**: Closed', '',
+    '## Complete', '', ...list(members.complete), '', '## Parked', '', ...list(members.parked), '',
+  ].join('\n'));
+  state.update({
+    status: 'closed', closed: today(), next_command: null, last_updated: today(),
+  });
+  state.save(dir);
+  console.log(`Arc closed: ${arcId}`);
+}
+
 function usage() {
   process.stdout.write(`Usage:
   xoch-actions.js job current [--json]
   xoch-actions.js job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
   xoch-actions.js job set-current --job ID
+  xoch-actions.js job close --job ID
   xoch-actions.js qa confirm-env --job ID --env dev|staging --target TEXT
   xoch-actions.js qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
   xoch-actions.js state get --job ID [--field FIELD] [--json]
@@ -1422,6 +1632,7 @@ function usage() {
   xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
   xoch-actions.js arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
   xoch-actions.js arc get --arc ID [--json]
+  xoch-actions.js arc close --arc ID
   xoch-actions.js arc update --arc ID              (JSON object on stdin)
   xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
   xoch-actions.js phase advance --job ID --phase N
@@ -1496,6 +1707,12 @@ function main(argv) {
       break;
     case 'arc:get':
       arcGet(rest);
+      break;
+    case 'arc:close':
+      arcClose(rest);
+      break;
+    case 'job:close':
+      jobClose(rest);
       break;
     case 'arc:update':
       arcUpdate(rest);
@@ -1600,6 +1817,8 @@ export {
   arcJobMove,
   arcGet,
   arcUpdate,
+  arcClose,
+  jobClose,
   workflowAction,
   resolveCurrentPointer,
   snapshotCreate,

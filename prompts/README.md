@@ -150,8 +150,6 @@ Expected core reference files, named for the step they implement rather than the
 
 ```text
 core/advance-core.md          do: advance step
-core/close-arc-core.md        close: arc mode
-core/close-job-core.md        close: job mode (also run by next)
 core/discovery-core.md
 core/doc-check-core.md
 core/doc-write-core.md
@@ -202,7 +200,7 @@ A prompt file may also select text by the engineer's own config, resolved once a
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `discovery.md`, `trace.md`, and `doc.md` should only tell the agent to read core prompts when workflow details are missing. Bundled wrappers pick which core file to read from state or the engineer's message rather than always reading the same one: `open.md` and `do.md` by `current_step`, `close.md` and `revise.md` by mode, and `next.md` by composing `close-job-core.md` then `open-core.md`.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `discovery.md`, `trace.md`, and `doc.md` should only tell the agent to read core prompts when workflow details are missing. Bundled wrappers pick which core file to read from state or the engineer's message rather than always reading the same one: `open.md` and `do.md` by `current_step`, `revise.md` by mode, and `next.md` by running `xoch job close` then `open-core.md`. `close.md` reads no core file at all: it runs the `xoch job close` / `xoch arc close` helpers, which check every closing gate themselves.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
@@ -235,7 +233,7 @@ Use `project-routing.md` in commands that read or write active job artifacts. It
 
 Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json` and, only when a workflow is actually active, reads `workflow-boundary-core.md` for the full protocol -- blocking silent workflow replacement and permitting explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
 
-Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`close-job-core.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
+Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
 Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 

@@ -39,15 +39,20 @@ On `[N]`, stop without changing anything.
 
 ## Step 3: Close The Current Job
 
-Read and follow `~/.xoch/prompts/core/close-job-core.md` in full, for the active job. Its own arc step marks the job Complete in the arc's membership.
+```bash
+xoch job close --job "[job-id]"
+```
 
-If any closing gate stops short of `Job closed.` -- implementation incomplete, review missing with no waiver chosen, a coverage gap, documentation routed to `xoch-doc`, or the engineer choosing to keep the job active -- stop there and end with that gate's own routing. Do not open the next job. The engineer re-runs `xoch-next` once the gate is satisfied.
+The helper checks every closing gate and, on success, writes `closure.md`, clears the pointer, and marks the job Complete in the arc's membership.
+
+If it refuses, relay its list of unmet conditions and stop there, routing to whatever fixes them (`xoch-do` for unfinished phases or review, `xoch-doc` for documentation status). Do not open the next job. The engineer re-runs `xoch-next` once the gate is satisfied.
 
 ## Step 4: Open The Next Job
 
 Once the job is closed, continue in this same response into `~/.xoch/prompts/core/open-core.md`'s Fresh Job flow with `arc: [arc-id]` already settled:
 
-- Use the planned entry's title (or its ID, when it has no title) as the job identifier, and confirm the derived ID/title pair as Fresh Job describes.
+- If the planned entry's ID is already a job folder (a job opened earlier and parked as Planned), resume that job instead of opening a new one: `xoch job set-current`, set `status` back to the open sequence, move it to Active, and continue at its own `current_step`.
+- Otherwise use the planned entry's title (or its ID, when it has no title) as the job identifier, and confirm the derived ID/title pair as Fresh Job describes.
 - Pass the planned entry's ID as `--from` when Fresh Job moves the new job to Active, so the placeholder entry is replaced instead of duplicated.
 - Skip re-asking standalone-versus-arc; ask about single- versus multi-project scope only if the arc's notes don't already settle it.
 
@@ -55,4 +60,4 @@ From here this is exactly `xoch-open`'s flow: `title` -> `spec` -> `plan`, each 
 
 ## Output
 
-Report the closure summary from `close-job-core.md`, then continue directly into opening the next job -- do not print a `Ready for next step` line between them. The response then ends wherever `xoch-open`'s flow ends: at one of its gates, or at `Ready for next step: \`xoch-do\`` once the plan is accepted.
+Report the `job close` output, then continue directly into opening the next job -- do not print a `Ready for next step` line between them. The response then ends wherever `xoch-open`'s flow ends: at one of its gates, or at `Ready for next step: \`xoch-do\`` once the plan is accepted.

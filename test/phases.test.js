@@ -155,4 +155,15 @@ test('a phases document can carry notes that belong to no single phase', () => {
   assert.throws(() => Phases.fromJSON({ notes: 'x' }), /notes/);
 });
 
+test('a phase can record where it started, and only for a listed phase', () => {
+  const phases = Phases.fromJSON(sample());
+  phases.setStartRef(2, 'abc123');
+  assert.strictEqual(phases.at(2).start_ref, 'abc123');
+  assert.strictEqual(phases.at(1).start_ref, null);
+  phases.setStartRef(2, null);
+  assert.strictEqual(phases.at(2).start_ref, null);
+  assert.throws(() => phases.setStartRef(9, 'x'), /phase 9/);
+  assert.throws(() => phases.setStartRef(1, 5), /start_ref/);
+});
+
 run();

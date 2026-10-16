@@ -129,7 +129,13 @@ When a job is active, record one of:
 - waived
 - unknown
 
-For target-model jobs, update or append to the relevant job file returned by `job evidence`: `notes_dir`, `review`, `closure`.
+For target-model jobs, always record it in job state -- `xoch job close` refuses a standard job until it is set:
+
+```bash
+xoch state set --job "[job-id]" --field documentation_status --value "[status]"
+```
+
+Then add any detail (which targets, what changed, why waived) to the relevant job file returned by `job evidence`: `notes_dir` or `review`.
 
 For legacy migration jobs, record equivalent notes in the legacy job folder when useful.
 

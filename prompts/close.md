@@ -7,28 +7,4 @@ description: Close a completed job or an arc, forking on which one applies
 
 {{xoch-partial:workflow-boundary.md}}
 
-`xoch-close` replaces `xoch-close-job` and `xoch-close-arc`. Unlike `xoch-do`'s phase cycle or `xoch-open`'s `title`/`spec`/`plan` chain, closing isn't a sequence of steps -- it's exactly one of two modes, chosen once per invocation and never advanced through.
-
-Decide which mode applies from the engineer's message and `job current --json`:
-
-- The engineer names an arc, or explicitly says "arc" -- close an arc. Read:
-  ```text
-  ~/.xoch/prompts/core/close-arc-core.md
-  ```
-- The engineer names a job, explicitly says "job", or an active job exists and nothing suggests otherwise -- close a job. Read:
-  ```text
-  ~/.xoch/prompts/core/close-job-core.md
-  ```
-- If neither an active job nor the message makes the target clear, ask:
-
-  ```text
-  Close the [J]ob or an [A]rc?
-  ```
-
-Do not read the core file for the mode you are not closing.
-
-To close an arc job and go straight into opening the arc's next planned job, use `xoch-next` instead -- it runs this same job-closing flow, then `xoch-open`'s.
-
-## Output
-
-Follow the chosen mode's own Output section as written.
+Close the arc the engineer names with `xoch arc close --arc "[arc-id]"`; otherwise close the named or active job with `xoch job close --job "[job-id]"`, asking `Close the [J]ob or an [A]rc?` only when neither is clear. The helper checks every closing gate itself and either closes (writing `closure.md`, clearing the pointer, and updating the arc) or refuses with the list of unmet conditions -- relay that list as-is and route to whatever fixes it (`xoch-do` for unfinished phases or review, `xoch-doc` for documentation status, the QA report step for a QA job). Report the helper's output, mention any uncommitted changes from `git status --short` without requiring a commit, and end with `Ready for next step: \`xoch-open\`` (or the next planned arc job via `xoch-next`).

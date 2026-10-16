@@ -184,49 +184,37 @@ If the branch has no upstream, the push fails, or git state is ambiguous, stop t
 
 When confirmed, write a phase snapshot.
 
-For target-model jobs, use the deterministic helpers:
+For target-model jobs, write the snapshot with one call, piping in only the sections that need judgment. The helper fills in everything mechanical itself: the title and date, the next phase (or "Final review"), every file changed since the phase started -- committed, uncommitted, and new, taken from git -- and an entry for each of the phase's acceptance criteria you did not report on ("not recorded"):
 
 ```bash
-xoch snapshot create --job "[job-id]" --phase "[N]" --title "[title]" --next "[next phase or final review]"
-xoch phase advance --job "[job-id]" --phase "[N]"
-```
-
-`phase advance` marks phase N complete in the phases document and makes phase N+1 current, taking its title, goal, type, files, acceptance criteria, and validation from the phases document. When phase N is the last phase, it routes state to `final_review` instead.
-
-After helper use, replace placeholder snapshot content with the actual summary/evidence.
-
-Use this structure:
-
-```markdown
-# Phase [N] Snapshot - [Title]
-
-**Completed**: [today]
-**Status**: Complete
-
+xoch snapshot create --job "[job-id]" --phase "[N]" <<'XOCHEOF'
 ## What Changed
 
-[Summary]
-
-## Files Changed
-
-- `[project]` `[file]` - [what changed]
+[summary of what this phase changed and why]
 
 ## Acceptance Criteria
 
-- AC-001: [status and evidence]
+- AC-001: [met | partial | not met] - [evidence]
 
 ## Validation
 
-- [check] - [result]
+- [check] - [result, including red -> green for behavior tests and coverage for touched files]
 
 ## Additional Notes
 
-[manual testing, skipped checks, risks, commit/push status, or decisions]
-
-## Next
-
-[next phase or final review]
+[manual testing, skipped checks, risks, decisions, and the commit/push choice]
+XOCHEOF
 ```
+
+A section left out is written as "TBD". Pass `--title` or `--next` only to override what the phases document supplies. Read the written snapshot back with `xoch file read` and correct it with `xoch file edit` if the generated parts need a note.
+
+Then advance:
+
+```bash
+xoch phase advance --job "[job-id]" --phase "[N]"
+```
+
+`phase advance` marks phase N complete in the phases document and makes phase N+1 current, taking its title, goal, type, files, acceptance criteria, and validation from the phases document, and recording the commit phase N+1 starts from so its own snapshot can list what it changed. When phase N is the last phase, it routes state to `final_review` instead.
 
 Do not edit the phases document or job state by hand to advance. If another phase exists, `phase advance` leaves job state at:
 
