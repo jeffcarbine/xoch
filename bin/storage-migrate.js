@@ -224,9 +224,26 @@ function executeMigration(plan, { move = defaultMove } = {}) {
     throw e;
   }
   for (const m of plan.moves) {
-    if (path.basename(m.to) === '.xoch') fs.rmSync(m.from, { recursive: true, force: true });
+    const toInRepo = path.basename(m.to) === '.xoch';
+    repointCurrent(m.to, toInRepo ? '.xoch' : m.to);
+    if (toInRepo) fs.rmSync(m.from, { recursive: true, force: true });
     else if (!listDir(m.from).length) fs.rmdirSync(m.from);
   }
+}
+
+/**
+ * Points a moved root's current.json at its job's new directory, written
+ * the way Xoch resolves that root (relative `.xoch` in-repo, absolute when
+ * centralized). A pointer that can't be read or names no job is left alone.
+ * @param {string} root - The root the data moved to.
+ * @param {string} rootAsResolved - That root as Xoch's storage root resolves it.
+ */
+function repointCurrent(root, rootAsResolved) {
+  const file = path.join(root, 'work', 'current.json');
+  const pointer = readJson(file);
+  if (!pointer.job || !pointer.job.id) return;
+  pointer.job.directory = path.join(rootAsResolved, 'work', 'jobs', String(pointer.job.id));
+  fs.writeFileSync(file, `${JSON.stringify(pointer, null, 2)}\n`);
 }
 
 export {

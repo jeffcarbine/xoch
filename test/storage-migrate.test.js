@@ -270,4 +270,36 @@ test('the default mover passes on any other rename error', () => {
   }
 });
 
+test('a repo\'s current pointer is rewritten to the job\'s new location, in both directions', () => {
+  const ctx = scratch();
+  try {
+    const repo = repoWithXoch(ctx, 'alpha', {
+      'work/current.json': JSON.stringify({ version: 1, job: { id: 'j1', directory: '.xoch/work/jobs/j1' }, workflow: null }),
+    });
+    executeMigration(planMigration({ to: 'centralized', home: ctx.home, repos: [repo] }));
+    const central = centralDir(ctx, 'alpha');
+    const pointer = JSON.parse(fs.readFileSync(path.join(central, 'work', 'current.json'), 'utf8'));
+    assert.strictEqual(pointer.job.directory, path.join(central, 'work', 'jobs', 'j1'));
+    assert.strictEqual(pointer.version, 1);
+    executeMigration(planMigration({ to: 'in-repo', home: ctx.home, repos: [] }));
+    const back = JSON.parse(fs.readFileSync(path.join(repo, '.xoch', 'work', 'current.json'), 'utf8'));
+    assert.strictEqual(back.job.directory, path.join('.xoch', 'work', 'jobs', 'j1'));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a pointer that cannot be read or names no job is left as it is', () => {
+  const ctx = scratch();
+  try {
+    const a = repoWithXoch(ctx, 'alpha', { 'work/current.json': '{not json' });
+    const b = repoWithXoch(ctx, 'beta', { 'work/current.json': '{"version": 1}' });
+    executeMigration(planMigration({ to: 'centralized', home: ctx.home, repos: [a, b] }));
+    assert.strictEqual(fs.readFileSync(path.join(centralDir(ctx, 'alpha'), 'work', 'current.json'), 'utf8'), '{not json');
+    assert.strictEqual(fs.readFileSync(path.join(centralDir(ctx, 'beta'), 'work', 'current.json'), 'utf8'), '{"version": 1}');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 run();
