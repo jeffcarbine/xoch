@@ -52,9 +52,7 @@ Every helper resolves where Xoch data lives through `bin/lib/storage-root.js` --
 Job state (`state.json`), phases (`phases.json`), arc state (`state.json`), and arc membership
 (`jobs.json`) are JSON documents owned by these helpers. Each is read and validated through its
 shape class in `bin/lib/` (`JobState`, `Phases`, `ArcState`, `ArcJobs`, `CurrentPointer`); every
-write is validated first and refused, with nothing written, when it doesn't fit. A job or arc that
-still has only the older markdown files (`state.md`, `phases.md`, `jobs.md`, or a `work/current.md`
-pointer) is refused as an old format this version of Xoch no longer reads.
+write is validated first and refused, with nothing written, when it doesn't fit.
 
 ```text
 xoch job current [--json]

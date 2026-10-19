@@ -188,7 +188,7 @@ Resolve the active root directly with `xoch config root`, or read the `directory
 xoch job current --json
 ```
 
-Don't edit the pointer manually. Job state (`state.json`) keeps durable phase and workflow fields; the helper projects active workflow state into `current.json` and migrates older target-model `current.md` pointers when encountered.
+Don't edit the pointer manually. Job state (`state.json`) keeps durable phase and workflow fields; the helper projects active workflow state into `current.json`. Without a `current.json` there is no active job.
 
 Discovery, sidebar, trace, documentation, and map work use managed workflow actions. A new command can't silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
 
