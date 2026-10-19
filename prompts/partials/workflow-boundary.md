@@ -1,8 +1,6 @@
 ## Pending Workflow Boundary
 
-Before starting this command, run `xoch job current --json`. This reads the canonical `.xoch/work/current.json` pointer.
-
-If `workflow` is `null`, continue normally. If a workflow is active, read and follow the full resume/finish/abandon protocol before doing anything else:
+Before starting, run `xoch job current --json`. If `workflow` is `null`, continue. If a workflow is active, first read and follow the resume/finish/abandon protocol in:
 
 ```text
 ~/.xoch/prompts/core/workflow-boundary-core.md
