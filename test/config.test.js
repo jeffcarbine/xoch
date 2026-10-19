@@ -7,6 +7,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { test, run } from './lib/runner.js';
 import { scratch, cleanup, runScript } from './lib/cli.js';
+import { INSTALL_TARGETS, targetDir } from '../bin/lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.join(__dirname, '..', 'config.js');
@@ -14,6 +15,16 @@ const CONFIG_MODULE_URL = pathToFileURL(path.join(__dirname, '..', 'config.js'))
 
 function configPath(ctx) {
   return path.join(ctx.home, '.xoch', 'config.json');
+}
+
+// A config write reinstalls prompts: every INSTALL_TARGETS tool's folder
+// should now hold installed xoch- entries, whichever tools are listed.
+function assertReinstalled(ctx) {
+  for (const target of INSTALL_TARGETS) {
+    const dir = targetDir(target, ctx.home);
+    assert.ok(fs.existsSync(dir), `${target.label} folder exists`);
+    assert.ok(fs.readdirSync(dir).some((name) => name.startsWith('xoch-')), `${target.label} has xoch- entries`);
+  }
 }
 
 function runWithStdin(args, ctx, input) {
@@ -174,9 +185,7 @@ test('set documentation.commentMode also re-renders and reinstalls the prompts',
     const renderedDir = path.join(ctx.home, '.xoch', 'prompts');
     assert.ok(fs.existsSync(renderedDir));
     assert.ok(fs.readdirSync(renderedDir).some((name) => name.endsWith('.md')));
-    const claudeSkillsDir = path.join(ctx.home, '.claude', 'skills');
-    assert.ok(fs.existsSync(claudeSkillsDir));
-    assert.ok(fs.readdirSync(claudeSkillsDir).some((name) => name.startsWith('xoch-')));
+    assertReinstalled(ctx);
   } finally {
     cleanup(ctx);
   }
@@ -187,9 +196,7 @@ test('interactive mode also re-renders and reinstalls the prompts once it finish
   try {
     const result = runWithStdin([], ctx, '1\n2\n2\n\n');
     assert.strictEqual(result.status, 0);
-    const claudeSkillsDir = path.join(ctx.home, '.claude', 'skills');
-    assert.ok(fs.existsSync(claudeSkillsDir));
-    assert.ok(fs.readdirSync(claudeSkillsDir).some((name) => name.startsWith('xoch-')));
+    assertReinstalled(ctx);
   } finally {
     cleanup(ctx);
   }
@@ -200,9 +207,7 @@ test('budgets: updating a skill also re-renders and reinstalls the prompts', () 
   try {
     const result = runWithStdin(['budgets'], ctx, 'spec\n6000\n\n');
     assert.strictEqual(result.status, 0);
-    const claudeSkillsDir = path.join(ctx.home, '.claude', 'skills');
-    assert.ok(fs.existsSync(claudeSkillsDir));
-    assert.ok(fs.readdirSync(claudeSkillsDir).some((name) => name.startsWith('xoch-')));
+    assertReinstalled(ctx);
   } finally {
     cleanup(ctx);
   }
