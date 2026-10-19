@@ -5,31 +5,17 @@ description: Full reference workflow for xoch-revise's arc step
 
 # Xoch - Revise Arc Core
 
-This is the full reference workflow for `xoch-revise`'s arc step. It is rendered to `~/.xoch/prompts/core/revise-arc-core.md` and is not installed as a command.
+The arc step of `xoch-revise`: update an arc's purpose, status, notes, risks, documentation targets, or job membership when the larger goal changes, and record why. Runs with or without an active job.
 
-Revise an arc's purpose, status, notes, risks, documentation targets, or job membership.
+{{xoch-partial:storage-root.md}}
 
-## Purpose
-
-Update an arc when the larger goal changes while preserving why the arc changed. This step replaces the old standalone `xoch-revise-arc` command; it is the arc-level sibling of `xoch-revise`'s spec and plan steps and can run with or without an active job.
-
-## Work Model
-
-Arc files live under:
-
-```text
-.xoch/work/arcs/[arc-id]/
-```
-
-Typical contents: arc state and membership (JSON, read with `xoch arc get` and changed only through `xoch arc update` / `xoch arc job-move`), `notes.md`, and `revisions/`.
-
-Arc membership is represented by job ID references. Job folders remain under `.xoch/work/jobs/`.
+Arc files live under `[xoch-root]/work/arcs/[arc-id]/`: state and membership (helper-owned JSON), `notes.md`, and `revisions/`. Membership is by job ID reference; job folders stay under `[xoch-root]/work/jobs/`.
 
 ## Process
 
 ### Step 1: Identify Arc
 
-If the engineer provides an arc ID, use it. Otherwise list arcs under `[xoch-root]/work/arcs/`. {{xoch-partial:storage-root.md}}
+Use the engineer's arc ID, or the active job's arc. Otherwise list arcs under `[xoch-root]/work/arcs/`.
 
 {{xoch-partial:arc-evidence.md}}
 
@@ -37,17 +23,7 @@ If the engineer provides an arc ID, use it. Otherwise list arcs under `[xoch-roo
 
 ### Step 2: Identify The Revision
 
-Ask what changed:
-
-- purpose or success outcome
-- scope or non-goals
-- job membership
-- job status grouping: active, planned, complete, parked
-- documentation targets
-- risk, constraint, or unresolved question
-- arc status
-
-Clarify whether existing jobs should point back to this arc in their job state's `arc` field.
+Ask what changed: purpose or success outcome, scope or non-goals, job membership, job status grouping (active, planned, complete, parked), documentation targets, risk/constraint/unresolved question, or arc status. Clarify whether existing jobs should point back to this arc in their job state's `arc` field.
 
 ### Step 3: Assess Impact
 
@@ -69,7 +45,7 @@ Then ask:
 
 {{xoch-partial:accept-or-modify.md artifact="arc revision"}}
 
-If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Do not write the revision note, arc files, or job back-references until the engineer chooses `[A]`.
+On `[M]`, ask what to modify, revise the draft, and ask again. Do not write the revision note, arc files, or job back-references before `[A]`.
 
 ### Step 5: Write Revision Note
 
@@ -130,7 +106,7 @@ Do not move job folders.
 
 ### Step 7: Continue Or Route
 
-If the engineer agreed in Step 3 to continue into the active job's spec or plan step, do not stop: continue directly into that step (`revise-spec-core.md` or `revise-plan-core.md`'s own Step 1 onward) in this same response, without printing a `Ready for next step` line.
+If the engineer agreed in Step 3 to continue into the active job's spec or plan step, continue into it (`revise-spec-core.md` or `revise-plan-core.md`'s Step 1 onward) in this same response, without a `Ready for next step` line.
 
 Otherwise recommend the next command:
 
@@ -145,7 +121,7 @@ When continuing into a job step, report only:
 ```text
 Arc revised.
 Arc: [arc-id]
-Revision: .xoch/work/arcs/[arc-id]/revisions/arc-[date].md
+Revision: [revision path]
 ```
 
 and carry on with that step. Otherwise end with:
@@ -153,7 +129,7 @@ and carry on with that step. Otherwise end with:
 ```text
 Arc revised.
 Arc: [arc-id]
-Revision: .xoch/work/arcs/[arc-id]/revisions/arc-[date].md
+Revision: [revision path]
 {{xoch-partial:next-step.md command="[recommended command]"}}
 ```
 
@@ -162,8 +138,6 @@ Revision: .xoch/work/arcs/[arc-id]/revisions/arc-[date].md
 {{xoch-partial:response-ending.md}}
 
 - Arc changes must preserve a revision note.
-- Present the draft revision and get `[A]` acceptance before writing anything.
-- Job membership is by job ID reference.
 - Do not nest, move, archive, or delete job folders from arc commands.
 - Do not update a job's `arc` field without engineer confirmation.
-- Keep arc revisions focused on the shared goal; job-level scope changes belong in `xoch-revise`.
+- Keep arc revisions focused on the shared goal; job-level scope changes belong in the spec or plan step.

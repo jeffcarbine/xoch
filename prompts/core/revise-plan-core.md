@@ -5,35 +5,7 @@ description: Full reference workflow for xoch-revise's plan step
 
 # Xoch - Revise Plan Core
 
-This is the full reference workflow for `xoch-revise`'s plan step. It is rendered to `~/.xoch/prompts/core/revise-plan-core.md` and is not installed as a command.
-
-Revise the job plan after requirements, discoveries, risks, or implementation reality change.
-
-This step replaces the old standalone `xoch-revise-plan` command (and, before it, `replan`), and uses phase language instead of milestone language. It runs on its own in plan-only mode, or right after the spec step (`revise-spec-core.md`) when both change.
-
-## Purpose
-
-Preserve completed phase history, update remaining phases, record why the plan changed, and keep the job moving without losing acceptance-criteria traceability.
-
-This step covers implementation-path changes against a valid spec.
-
-When the definition of done changes, the spec step runs first.
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Revision notes live under:
-
-```text
-.xoch/work/jobs/[job-id]/revisions/
-```
-
-Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
+The plan step of `xoch-revise`, for implementation-path changes against a valid spec. It runs alone in plan-only mode, or right after `revise-spec-core.md` when both change. Preserve completed phase history, update remaining phases, record why the plan changed, and keep AC traceability. Revision notes live under the job's `revisions/` directory.
 
 {{xoch-partial:project-routing.md}}
 
@@ -45,41 +17,20 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 Then load:
 
-- job state, via `xoch state get --job "[job-id]" --json`
-- `spec`
-- `plan`
-- phases via `xoch phase get --job "[job-id]" --json`, or only the affected phases (`--phase N`), when state already has a useful phase index
+- job state, `spec`, and `plan`
+- phases via `xoch phase get --job "[job-id]" --json`, or only the affected phases (`--phase N`) when state already has a useful phase index
 - completed phase snapshots (`current_phase_snapshot`, or list `snapshots_dir`)
 - recent files under `revisions_dir`
-
-If no active job exists, ask for the job ID.
 
 ### Step 2: Confirm Spec Stability
 
 If this step was entered straight from the spec step in the same invocation, the spec was just revised and accepted -- skip this check.
 
-Otherwise, check whether the change is about implementation or requirements. Switch to the spec step (`revise-spec-core.md`) within this same `xoch-revise` invocation, then return here, if the change modifies:
-
-- acceptance criteria
-- scope
-- constraints
-- documentation targets
-- job purpose
-
-Continue with the plan step if the spec remains valid.
+Otherwise, if the change modifies acceptance criteria, scope, constraints, documentation targets, or job purpose, switch to the spec step (`revise-spec-core.md`) in this same invocation, then return here. Continue if the spec remains valid.
 
 ### Step 3: Identify The Plan Change
 
-Ask what changed:
-
-- implementation approach
-- file ownership
-- phase order
-- current phase scope
-- validation strategy
-- dependency or risk
-- discovered complexity
-- arc/job sequencing
+Ask what changed: implementation approach, file ownership, phase order, current phase scope, validation strategy, dependency or risk, discovered complexity, or arc/job sequencing.
 
 For multi-project jobs, also identify project ownership changes and any repository added to or removed from the implementation path. Do not edit `projects.json` implicitly; confirm scope changes with the engineer.
 
@@ -106,11 +57,11 @@ Then ask:
 
 {{xoch-partial:accept-or-modify.md artifact="plan revision"}}
 
-If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Do not write the revision note, `plan.md`, the phases document, or state until the engineer chooses `[A]`.
+On `[M]`, ask what to modify, revise the draft, and ask again. Do not write the revision note, `plan.md`, the phases document, or state before `[A]`.
 
 ### Step 6: Write Revision Note
 
-Write `plan-[date].md` with:
+Write the revision note:
 
 ```bash
 xoch file write --job "[job-id]" --path "revisions/plan-[date].md" <<'XOCHEOF'
@@ -155,8 +106,6 @@ Use this structure:
 - [next command or decision]
 ```
 
-For legacy migration jobs, write the revision note in the legacy job folder.
-
 ### Step 7: Update Plan And Phases
 
 Update `plan.md` with `xoch file write`. Update the phases document by reading it with `xoch phase get --job "[job-id]" --json`, revising that JSON, and writing it back whole:
@@ -187,11 +136,7 @@ xoch state update --job "[job-id]" <<'XOCHEOF'
 XOCHEOF
 ```
 
-If the job should go straight to review, use `"current_step": "final_review"` instead.
-
-and record why implementation is already complete.
-
-For legacy migration jobs, update the legacy tracker or notes in place.
+If implementation is already complete and the job should go straight to review, use `"current_step": "final_review"` instead and record why.
 
 For multi-project jobs, retain an explicit project owner for every revised phase task and sync the revision note, plan, phases, and state from the primary job.
 
@@ -224,7 +169,3 @@ Current phase: [N] - [title]
 
 - Plans describe how; specs describe what.
 - Do not change acceptance criteria in the plan step; switch to the spec step instead.
-- Present the draft revision and get `[A]` acceptance before writing anything.
-- Preserve completed phase history and snapshots.
-- Keep AC traceability after changing phases.
-- Do not move active legacy job folders during the migration.

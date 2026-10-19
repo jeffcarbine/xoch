@@ -5,27 +5,11 @@ description: Full reference workflow for xoch-discovery
 
 # Xoch - Discovery Core
 
-This is the full reference workflow for `xoch-discovery`. It is rendered to `~/.xoch/prompts/core/discovery-core.md` and is not installed as a command.
+Resolve an important unknown (product, domain, design, API, dependency, workflow, compatibility, or implementation) whose answer materially affects a spec, without confusing prior knowledge, evidence, assumptions, and decisions. For an observed defect or failure, use `xoch-trace` instead.
 
-Resolve an important unknown before specification, planning, or implementation continues.
+{{xoch-partial:storage-root.md}}
 
-## Purpose
-
-Guide the engineer and agent through focused research that combines their complementary knowledge without confusing prior knowledge, evidence, assumptions, and decisions.
-
-Use `xoch-discovery` for product, domain, design, API, dependency, workflow, compatibility, or implementation questions whose answers materially affect a spec. Use `xoch-trace` instead for an observed defect or failure that needs root-cause investigation.
-
-## Work Model
-
-Discovery notes live in a shared directory, independent of any job. {{xoch-partial:storage-root.md}}
-
-The directory is:
-
-```text
-[xoch-root]/discoveries/[date]-[topic]-discovery.md
-```
-
-This makes an accepted discovery findable and reusable by a later, unrelated job, and means discovery can start and finish in chat even before any job exists. When a job is active:
+Discovery notes live at `[xoch-root]/discoveries/[date]-[topic]-discovery.md`, independent of any job, so a later unrelated job can reuse them and discovery can run before any job exists. When a job is active:
 
 {{xoch-partial:job-evidence.md}}
 
@@ -58,12 +42,6 @@ Ask or establish:
 - time, access, privacy, or source constraints
 
 Turn a broad uncertainty into a short list of answerable discovery questions.
-
-When a target-model job is active and `xoch-discovery` is not already the active workflow, begin it before further research. Preserve the command that should resume afterward:
-
-```bash
-xoch workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-open | xoch-revise | prior next command]"
-```
 
 ### Step 2: Inventory Available Sources
 
@@ -155,11 +133,11 @@ Then ask:
 Do you want to [A]ccept the findings, request [M]odifications, or [R]esearch further?
 ```
 
-If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`, set the workflow back to `stage: investigating` with `pending_action: continue_discovery`, then agree on the next focused question or source. Do not mark findings accepted until the engineer chooses `[A]`.
+On `[M]`, ask what should change, revise the draft note, and ask again. On `[R]`, set the workflow back to `stage: in_progress` with `pending_action: continue_discovery`, then agree on the next focused question or source. Do not mark findings accepted before `[A]`.
 
 ### Step 8: Record Accepted Discovery
 
-Update the discovery note Step 7 already wrote, in place -- do not write a new one; `xoch discovery write` always creates a fresh, non-colliding file, and this is an edit to the one draft already tracked.
+Edit the discovery note Step 7 wrote, in place. Do not run `xoch discovery write` again; it always creates a new file.
 
 Use this structure:
 
@@ -201,7 +179,7 @@ Use this structure:
 [xoch-open | xoch-revise | more discovery | blocked]
 ```
 
-Discovery notes are shared regardless of job model, including for legacy jobs. For multi-project jobs, write through the primary project's root and synchronize accepted findings to participants.
+For multi-project jobs, write through the primary project's root and sync accepted findings to participants.
 
 Update job state only when discovery affects active workflow routing. Keep it compact:
 

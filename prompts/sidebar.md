@@ -9,11 +9,7 @@ description: Explore a related question without advancing Xoch job state
 
 {{xoch-partial:managed-workflow.md command="xoch-sidebar" pending="continue_sidebar"}}
 
-Explore a related question or tangent while preserving the current job state.
-
-## Purpose
-
-Load enough job context to orient the discussion, answer the engineer's question, and leave phase/job progress unchanged.
+Explore a related question or tangent with enough job context to orient the discussion, leaving job and phase progress unchanged.
 
 {{xoch-partial:project-routing.md}}
 
@@ -21,41 +17,19 @@ Load enough job context to orient the discussion, answer the engineer's question
 
 ### Step 1: Detect Current Job
 
-Use the `xoch job current --json` result from the workflow boundary. It reports target-model or legacy pointer state.
-
-If no active job exists, continue without Xoch job context.
-
-When a target-model job is active and `xoch-sidebar` is not already active, begin the side workflow while preserving the job's current `next_command`:
-
-```bash
-xoch workflow begin --job "[job-id]" --name xoch-sidebar --stage exploring --pending complete_sidebar --return "[current next command]"
-```
+Use the `xoch job current --json` result from the workflow boundary. If no job is active, continue without Xoch job context.
 
 ### Step 2: Load Context
 
 {{xoch-partial:context-economy.md}}
 
-For target-model jobs, read:
+{{xoch-partial:job-evidence.md}}
 
-- job state, via `xoch state get --job "[job-id]" --json`
-- `spec.md`
-- `plan.md`
-- phases, via `xoch phase get --job "[job-id]" --json`
-
-For legacy jobs, read the matching legacy files.
+Read job state, `spec`, `plan`, and phases (`xoch phase get --job "[job-id]" --json`) as the question needs.
 
 ### Step 3: Summarize Current Work
 
-Summarize:
-
-- job ID and title
-- optional arc
-- current phase
-- goal
-- progress
-- next command
-
-Make clear that sidebar does not advance phase state.
+Summarize the job ID and title, arc (if any), current phase, goal, progress, and next command. Make clear that the sidebar does not advance phase state.
 
 ### Step 4: Explore The Question
 
@@ -87,6 +61,5 @@ Sidebar complete.
 
 {{xoch-partial:response-ending.md}}
 
-- Do not change job progress.
-- Do not mark phases complete.
+- Do not change job progress or mark phases complete.
 - If the sidebar changes requirements or implementation structure, route to `xoch-revise`.

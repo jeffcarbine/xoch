@@ -9,35 +9,12 @@ description: Maintain local project and dependency map context for Xoch
 
 {{xoch-partial:managed-workflow.md command="xoch-map" pending="continue_mapping"}}
 
-Maintain lightweight local project and dependency map context.
-
-## Purpose
-
-Help Xoch resolve project names to local repositories, record machine-independent dependency relationships, and prepare repositories for multi-project jobs.
-
-## Scope
-
-`xoch-map` may record:
-
-- local project names and paths
-- package or module names
-- service names and ports
-- dependency direction
-- related docs and README targets
-- commands useful for local validation
-- risks or coupling notes
-
-The machine-local workspace map lives at `~/.xoch/workspace-map.json`. Repo-owned dependency declarations may live at `.xoch/docs/dependencies.json` when the engineer approves that structured documentation artifact.
+Maintain lightweight local project and dependency map context: resolve project names to local repositories, record machine-independent dependency relationships, and prepare repositories for multi-project jobs. It may record project names and paths, package or module names, service names and ports, dependency direction, related docs and README targets, local validation commands, and risks or coupling notes.
 
 ## Storage
 
-Keep local paths in the machine-owned workspace map:
-
-```text
-~/.xoch/workspace-map.json
-```
-
-Keep shareable dependency names and contracts in project documentation. A structured declaration may use:
+- Local paths go only in the machine-owned workspace map, `~/.xoch/workspace-map.json`.
+- Shareable dependency names and contracts go in project documentation, optionally as a structured declaration at `.xoch/docs/dependencies.json` when the engineer approves it:
 
 ```json
 {
@@ -59,25 +36,11 @@ Do not store secrets, credentials, tokens, or private machine details that the e
 
 ### Step 1: Identify Map Goal
 
-Ask whether the map should cover:
-
-- one project
-- related local repositories
-- feature dependencies
-- service/process dependencies
-- documentation targets
-- a job or arc dependency view
+Ask whether the map should cover one project, related local repositories, feature dependencies, service/process dependencies, documentation targets, or a job or arc dependency view.
 
 ### Step 2: Identify Roots
 
-Ask for or infer local roots. Scan only the current root, explicitly named roots, immediate children, or immediate siblings. Examples:
-
-- current repo root
-- sibling project directories
-- monorepo packages
-- service directories
-
-Do not scan broad home directories. Infer candidate names from an approved dependency declaration, package/build manifests, git remote names, or folder names. Show additions, changed paths, and ambiguous names before writing.
+Ask for or infer local roots (the current repo, sibling projects, monorepo packages, service directories). Scan only the current root, explicitly named roots, and their immediate children or siblings; never broad home directories. Infer candidate names from an approved dependency declaration, package/build manifests, git remote names, or folder names. Show additions, changed paths, and ambiguous names before writing.
 
 When proposed map changes require confirmation for an active job, update the managed workflow before asking:
 
@@ -87,15 +50,7 @@ xoch workflow update --job "[job-id]" --name xoch-map --stage awaiting_confirmat
 
 ### Step 3: Inspect Lightly
 
-Read only useful orientation files:
-
-- `README.md`
-- package/build files
-- config manifests
-- `.xoch/docs/dependencies.json`
-- job or arc state when active
-
-Use focused shell commands such as:
+Read only useful orientation files: `README.md`, package/build files, config manifests, `.xoch/docs/dependencies.json`, and job or arc state when active. Use focused shell commands such as:
 
 ```bash
 find . -maxdepth 2 -name README.md -o -name package.json
@@ -119,18 +74,7 @@ Do not replace an existing name with a different path unless the engineer confir
 
 ### Step 5: Model Relationships
 
-Capture:
-
-- project or package ID
-- local path
-- role
-- depends on
-- depended on by
-- docs target
-- validation commands
-- notes or risks
-
-Never put absolute local paths in shareable dependency documentation.
+Capture each project or package's ID, local path, role, what it depends on and what depends on it, docs target, validation commands, and notes or risks. Never put absolute local paths in shareable dependency documentation.
 
 ### Step 6: Resolve Dependencies
 
@@ -173,8 +117,5 @@ Missing dependencies: [count]
 
 {{xoch-partial:response-ending.md}}
 
-- Keep machine paths local and dependency declarations shareable.
-- Do not scan unrelated directories.
-- Do not record secrets.
 - Prefer structured data for dependencies when practical.
 - Do not create a multi-project job without engineer confirmation; route that work to `xoch-open`.

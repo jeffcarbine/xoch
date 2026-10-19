@@ -13,15 +13,9 @@ Show where the active job stands and what remains without changing job, phase, w
 
 ### Step 1: Identify Current Work
 
-Use the result already returned by:
+Use the workflow boundary's `xoch job current --json` result. If no job is active, say so and route to `xoch-open`.
 
-```bash
-xoch job current --json
-```
-
-If no job is active, say so and route to `xoch-open`.
-
-If a managed workflow is active, report its name, stage, pending action, artifact, and return command before phase information. Roadmap is read-only and does not finish or abandon that workflow.
+If a managed workflow is active, report its name, stage, pending action, artifact, and return command before phase information. Do not finish or abandon it.
 
 {{xoch-partial:project-routing.md}}
 
@@ -29,9 +23,7 @@ If a managed workflow is active, report its name, stage, pending action, artifac
 
 {{xoch-partial:job-evidence.md}}
 
-For target-model jobs, read `state` first. Use its phase index, current-phase fields, status, risks, unresolved questions, and next command when they are sufficient.
-
-For legacy jobs, use the existing tracker and milestone files in place without migrating them.
+Read `state` first. Use its phase index, current-phase fields, status, risks, unresolved questions, and next command when they are sufficient.
 
 {{xoch-partial:context-economy.md}}
 
@@ -39,18 +31,7 @@ For legacy jobs, use the existing tracker and milestone files in place without m
 
 Read only the current and upcoming phases, one at a time with `xoch phase get --job "[job-id]" --phase [N] --json`. Do not reread completed snapshots, the full spec, or the full plan unless compact state and phase sections cannot explain the roadmap accurately.
 
-For each remaining phase, capture:
-
-- phase number and title
-- status
-- goal or description
-- owning project when multi-project
-- files or areas marked for work
-- acceptance criteria
-- validation expectations
-- dependencies or blockers
-
-Keep completed phases compact: number, title, and completion status are usually enough.
+For each remaining phase, capture its number and title, status, goal, owning project (multi-project), files or areas, acceptance criteria, validation expectations, and dependencies or blockers. Keep completed phases to number, title, and status.
 
 ### Step 4: Present Roadmap
 
@@ -108,8 +89,5 @@ Ready for next step: `[command]`
 
 {{xoch-partial:response-ending.md}}
 
-- Roadmap is observational only.
-- Do not edit job files, pointers, workflow state, source, docs, or git.
-- Do not mark phases complete or advance them.
-- Prefer compact state and targeted phase sections over broad rereads.
+- Do not edit job files, pointers, workflow state, source, docs, or git, and do not mark phases complete or advance them.
 - Never hide an active managed workflow behind phase status.

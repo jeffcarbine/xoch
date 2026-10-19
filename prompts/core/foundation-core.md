@@ -5,7 +5,7 @@ description: Core Xoch job model reference for agents unfamiliar with Xoch
 
 # Xoch - Foundation Core
 
-This is the recovery reference for agents that do not already know Xoch's job model. It is rendered to `~/.xoch/prompts/core/foundation-core.md` and is not installed as a command.
+Recovery reference for agents that do not already know Xoch's job model.
 
 ## Model
 
@@ -23,21 +23,9 @@ When a material unknown blocks honest specification, use the optional loop:
 spec -> discovery -> spec
 ```
 
-Jobs live under:
+{{xoch-partial:storage-root.md}}
 
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-The active job pointer is:
-
-```text
-.xoch/work/current.json
-```
-
-Query the active pointer with `xoch job current --json`; do not read or edit `current.json` directly unless the helper is unavailable. The helper migrates target-model `current.md` pointers and reports legacy `.xoch/context/current.md` metadata without moving legacy jobs.
-
-Every `.xoch/work/...` path shown in Xoch's prompts is relative to the project's Xoch storage root, `[xoch-root]`, not literally `<repo>/.xoch`. {{xoch-partial:storage-root.md}} The active job's real directory is also in `job current --json`'s `directory` field, and helpers resolve the root themselves, so there is no need to look it up; `xoch config root` prints the exact path only if a check is ever needed.
+Jobs live under `[xoch-root]/work/jobs/[job-id]/`, and the active job pointer is `[xoch-root]/work/current.json`. Query it with `xoch job current --json` (its `directory` field is the active job's real directory); never read or edit `current.json` directly. Helpers resolve the storage root themselves; `xoch config root` prints it if a check is needed.
 
 ## Job Files
 
@@ -77,25 +65,13 @@ A bundled skill never decides or writes a step name itself for a mechanical tran
 
 ## Arcs
 
-Arcs group related jobs by job ID reference:
-
-```text
-.xoch/work/arcs/[arc-id]/
-```
-
-An arc holds `state.json` (purpose, success outcome, status), `jobs.json` (Active/Planned/Complete/Parked membership), `notes.md`, and `revisions/`. Read arc state and membership with `xoch arc get`; change them only with `xoch arc update` and `xoch arc job-move`.
+Arcs group related jobs by job ID reference, under `[xoch-root]/work/arcs/[arc-id]/`. An arc holds `state.json` (purpose, success outcome, status), `jobs.json` (Active/Planned/Complete/Parked membership), `notes.md`, and `revisions/`. Read arc state and membership with `xoch arc get`; change them only with `xoch arc update` and `xoch arc job-move`.
 
 Do not nest job folders inside arcs. `xoch-open` sets one up when work has multiple related jobs under a larger goal.
 
 ## Multi-Project Jobs
 
-Standalone jobs need no additional scope file. A job spanning repositories stores optional routing metadata at:
-
-```text
-.xoch/work/jobs/[job-id]/projects.json
-```
-
-One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and the active pointer are always project-specific and are never synchronized. Use `xoch project-scope` for routing and `xoch context-sync` after canonical job-context writes.
+Standalone jobs need no scope file. A job spanning repositories stores routing metadata in its job directory's `projects.json`. One listed project is primary and owns canonical shared job artifacts. Participant repositories may hold synchronized mirrors of the same job folder. Implementation files and the active pointer are always project-specific and are never synchronized. Use `xoch project-scope` for routing and `xoch context-sync` after canonical job-context writes.
 
 {{xoch-partial:context-economy.md}}
 
@@ -152,4 +128,5 @@ Before every stateful Xoch command, enforce the shared workflow boundary. Finish
 - Treat phase boundaries as hard stops: `xoch-do`'s `implement` step works only on the current phase, its `advance` step only reviews and advances it, and neither starts the next phase.
 - Put summaries, files, validation, caveats, and notes before the final command line.
 - The final line should be a text-game choice or `Ready for next step: ...`; after that final line, stop instead of executing the next command.
-- Do not commit, push, stash, reset, or otherwise manage git history unless the engineer explicitly asks or the active prompt asks and the engineer confirms.
+
+{{xoch-partial:engineer-git-rule.md}}
