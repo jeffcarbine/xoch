@@ -13,6 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isMainModule } from './lib/is-main.js';
+import { INSTALL_TARGETS, formatTargetLabels } from './lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
@@ -53,7 +54,7 @@ function usage() {
   console.log(`Usage:
   xoch <job|state|arc|pointer|workflow|snapshot|phase|file|discovery|handoff|qa> ...   Deterministic job/workflow actions (see xoch-actions.js)
   xoch config ...                                                 Engineer-facing config: storage mode, documentation comment mode, token budgets, and config root lookup
-  xoch init                                                       Render prompts and install skill files for Copilot, Codex, Claude Code, and Kiro
+  xoch init                                                       Render prompts and install skill files for ${formatTargetLabels(INSTALL_TARGETS, 'and')}
   xoch remove                                                     Reverse xoch init: remove installed skill files and ~/.xoch
   xoch verify                                                     Confirm the CLI and rendered prompts are correctly in place
   xoch archive ...

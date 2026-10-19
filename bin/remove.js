@@ -2,9 +2,10 @@
 'use strict';
 
 // Xoch Remove
-// Reverses xoch init's four tool installs and cleans up ~/.xoch runtime
-// state. `npm uninstall -g` only removes files under node_modules, so this
-// is the documented way to clean up what init copied outside it (AC-010).
+// Reverses xoch init's installs for every INSTALL_TARGETS tool and cleans
+// up ~/.xoch runtime state. `npm uninstall -g` only removes files under
+// node_modules, so this is the documented way to clean up what init copied
+// outside it (AC-010).
 // Also home to `verify()`, the programmatic check the xoch-meow prompt
 // runs to confirm the CLI and rendered prompts are both in place (AC-006).
 
@@ -12,9 +13,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isMainModule } from './lib/is-main.js';
+import { XOCH_RUNTIME_DIR, PROMPTS_DIR } from './init.js';
 import {
-  COPILOT_DIR, CODEX_DIR, CLAUDE_DIR, KIRO_DIR, XOCH_RUNTIME_DIR, PROMPTS_DIR,
-} from './init.js';
+  INSTALL_TARGETS, targetDir, isDirNoFollow, formatTargetLabels,
+} from './lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
@@ -24,94 +26,20 @@ const YELLOW = '\x1b[1;33m';
 const RED = '\x1b[0;31m';
 const NC = '\x1b[0m';
 
-// Matches init.js's own isFileOrSymlink/isDirNoFollow -- duplicated rather
-// than exported since each bin/*.js script stays self-contained.
-//
-// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18): the catch
-// branch below is a TOCTOU guard -- it only fires when `p` (just listed
-// by the caller's own fs.readdirSync) is deleted by something else
-// between that listing and this lstat call. Not dead code: removing it
-// would let a genuine race throw an uncaught exception instead of
-// harmlessly skipping the vanished entry. Not deterministically
-// testable: triggering it requires an external process to delete the
-// exact path in the microtask gap between readdirSync and lstatSync,
-// which can't be constructed without mocking fs (a pattern this
-// codebase deliberately avoids -- see test/lib/cli.js's real-subprocess
-// philosophy). Unlike isDirNoFollow() below, whose catch branch is
-// already covered deterministically (it also fires whenever the target
-// directory simply doesn't exist yet, not only on a race).
-function isFileOrSymlink(p) {
-  try {
-    const lst = fs.lstatSync(p);
-    return lst.isSymbolicLink() || lst.isFile();
-  } catch {
-    return false;
-  }
-}
-
-function isDirNoFollow(p) {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function removeCopilot() {
-  if (!isDirNoFollow(COPILOT_DIR)) return 0;
+// Removes every installed xoch entry from `target`'s folder, leaving
+// anything not shaped like one of Xoch's own entries alone. Returns how
+// many entries were removed.
+function removeTarget(target) {
+  const dir = targetDir(target);
+  if (!isDirNoFollow(dir)) return 0;
 
   let removed = 0;
-  for (const name of fs.readdirSync(COPILOT_DIR)) {
-    if (!name.startsWith('xoch-') || !name.endsWith('.prompt.md')) continue;
-    const installedPath = path.join(COPILOT_DIR, name);
-    if (!isFileOrSymlink(installedPath)) continue;
-    fs.unlinkSync(installedPath);
-    console.log(`  ${YELLOW}✗${NC} Removed: ${name} (Copilot)`);
-    removed += 1;
-  }
-  return removed;
-}
-
-function removeCodex() {
-  if (!isDirNoFollow(CODEX_DIR)) return 0;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(CODEX_DIR)) {
-    if (!name.startsWith('xoch-')) continue;
-    const installedPath = path.join(CODEX_DIR, name);
-    if (!isDirNoFollow(installedPath)) continue;
-    fs.rmSync(installedPath, { recursive: true, force: true });
-    console.log(`  ${YELLOW}✗${NC} Removed: ${name} (Codex)`);
-    removed += 1;
-  }
-  return removed;
-}
-
-function removeClaude() {
-  if (!isDirNoFollow(CLAUDE_DIR)) return 0;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(CLAUDE_DIR)) {
-    if (!name.startsWith('xoch-')) continue;
-    const installedPath = path.join(CLAUDE_DIR, name);
-    if (!isDirNoFollow(installedPath)) continue;
-    fs.rmSync(installedPath, { recursive: true, force: true });
-    console.log(`  ${YELLOW}✗${NC} Removed: ${name} (Claude Code)`);
-    removed += 1;
-  }
-  return removed;
-}
-
-function removeKiro() {
-  if (!isDirNoFollow(KIRO_DIR)) return 0;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(KIRO_DIR)) {
-    if (!name.startsWith('xoch-') || !name.endsWith('.md')) continue;
-    const installedPath = path.join(KIRO_DIR, name);
-    if (!fs.statSync(installedPath).isFile()) continue;
-    fs.unlinkSync(installedPath);
-    console.log(`  ${YELLOW}✗${NC} Removed: ${name} (Kiro)`);
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.startsWith('xoch-') || !name.endsWith(target.suffix)) continue;
+    const installedPath = path.join(dir, name);
+    if (!target.isEntry(installedPath)) continue;
+    target.removeEntry(installedPath);
+    console.log(`  ${YELLOW}✗${NC} Removed: ${name} (${target.label})`);
     removed += 1;
   }
   return removed;
@@ -133,9 +61,9 @@ function remove() {
   console.log('====================');
   console.log('');
 
-  const removed = removeCopilot() + removeCodex() + removeClaude() + removeKiro();
+  const removed = INSTALL_TARGETS.reduce((sum, target) => sum + removeTarget(target), 0);
   if (removed === 0) {
-    console.log('No installed xoch skill files found in Copilot, Codex, Claude Code, or Kiro.');
+    console.log(`No installed xoch skill files found in ${formatTargetLabels(INSTALL_TARGETS, 'or')}.`);
   }
   console.log('');
   removeXochRuntime();
@@ -199,10 +127,7 @@ if (isMainModule(import.meta.url)) {
 }
 
 export {
-  removeCopilot,
-  removeCodex,
-  removeClaude,
-  removeKiro,
+  removeTarget,
   removeXochRuntime,
   remove,
   verify,

@@ -7,6 +7,7 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { test, run as runTests } from './lib/runner.js';
 import { scratch, cleanup, runScript } from './lib/cli.js';
+import { CLAUDE, INSTALL_TARGETS } from '../bin/lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,6 +15,13 @@ const SCRIPT = path.join(__dirname, '..', 'bin', 'prompt-check.js');
 const REAL_XOCH_JS = path.join(__dirname, '..', 'bin', 'xoch.js');
 const REAL_INIT_JS = path.join(__dirname, '..', 'bin', 'init.js');
 const REAL_IS_MAIN_JS = path.join(__dirname, '..', 'bin', 'lib', 'is-main.js');
+const REAL_INSTALL_TARGETS_JS = path.join(__dirname, '..', 'bin', 'lib', 'install-targets.js');
+
+// Claude-specific checks only apply when Claude Code is in INSTALL_TARGETS,
+// so a build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+function testWhenClaudeListed(name, fn) {
+  if (INSTALL_TARGETS.includes(CLAUDE)) test(name, fn);
+}
 
 // Pure functions (no process.exit calls) -- safe to import in-process.
 const { listJsFilesRecursive, scanForUnresolvedMarkers } = await import(pathToFileURL(SCRIPT).href);
@@ -25,9 +33,9 @@ function run(args, ctx) {
 // Direct call to an exported function that may call process.exit(),
 // isolated in its own subprocess so a failure exit doesn't kill the test
 // runner. Used for checkHelperNaming/checkSyntax/resolveRoot/
-// checkClaudeSkill, whose interesting failure branches are either faster
+// checkInstalledTargets, whose interesting failure branches are either faster
 // to construct directly than through the full `run` pipeline, or (for
-// checkClaudeSkill) impossible to reach through it at all -- see below.
+// checkInstalledTargets) impossible to reach through it at all -- see below.
 function callExported(fnName, args, ctx) {
   const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
   const script = `import(${specifier}).then((m) => m.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')}));`;
@@ -318,7 +326,7 @@ test('runInit falls back to exit code 1 when the init subprocess is killed by a 
 });
 
 // ---------------------------------------------------------------------
-// checkClaudeSkill (direct call)
+// checkInstalledTargets (direct call)
 //
 // This can't be reached through the full `run` pipeline: xoch init
 // always installs a prompt and its Claude skill together (already proven
@@ -334,35 +342,35 @@ function tempHomeFixture(ctx) {
   return home;
 }
 
-test('checkClaudeSkill is a no-op when the rendered prompts directory does not exist', () => {
+test('checkInstalledTargets is a no-op when the rendered prompts directory does not exist', () => {
   const ctx = scratch();
   try {
-    const result = callExported('checkClaudeSkill', [path.join(ctx.cwd, 'nonexistent-home')], ctx);
+    const result = callExported('checkInstalledTargets', [path.join(ctx.cwd, 'nonexistent-home')], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('checkClaudeSkill skips non-.md and non-file entries in the prompts directory', () => {
+test('checkInstalledTargets skips non-.md and non-file entries in the prompts directory', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
     fs.writeFileSync(path.join(home, '.xoch', 'prompts', 'README.txt'), 'ignore');
     fs.mkdirSync(path.join(home, '.xoch', 'prompts', 'core'));
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('checkClaudeSkill fails when a rendered prompt has no matching Claude skill', () => {
+testWhenClaudeListed('checkInstalledTargets fails when a rendered prompt has no matching Claude skill', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
     fs.writeFileSync(path.join(home, '.xoch', 'prompts', 'meow.md'), 'body');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /missing Claude skill xoch-meow/);
   } finally {
@@ -370,7 +378,7 @@ test('checkClaudeSkill fails when a rendered prompt has no matching Claude skill
   }
 });
 
-test('checkClaudeSkill fails when the Claude skill permits model invocation', () => {
+testWhenClaudeListed('checkInstalledTargets fails when the Claude skill permits model invocation', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
@@ -378,7 +386,7 @@ test('checkClaudeSkill fails when the Claude skill permits model invocation', ()
     const skillDir = path.join(home, '.claude', 'skills', 'xoch-meow');
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: meow\n---\n\nBody, no invocation guard.\n');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /permits model invocation/);
   } finally {
@@ -386,7 +394,7 @@ test('checkClaudeSkill fails when the Claude skill permits model invocation', ()
   }
 });
 
-test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude skill', () => {
+testWhenClaudeListed('checkInstalledTargets passes when every prompt has a correctly-guarded Claude skill', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
@@ -394,7 +402,7 @@ test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude s
     const skillDir = path.join(home, '.claude', 'skills', 'xoch-meow');
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: meow\ndisable-model-invocation: true\n---\n\nBody.\n');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
@@ -423,6 +431,8 @@ function buildFixtureRoot(ctx) {
   // equivalent CLI-entry guard) relative to their own location, so this
   // fixture needs a real copy alongside them too.
   fs.copyFileSync(REAL_IS_MAIN_JS, path.join(root, 'bin', 'lib', 'is-main.js'));
+  // ...and ./lib/install-targets.js, which both import for the tool list.
+  fs.copyFileSync(REAL_INSTALL_TARGETS_JS, path.join(root, 'bin', 'lib', 'install-targets.js'));
   fs.writeFileSync(path.join(root, 'bin', 'helper-one.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'bin', 'lib', 'sub-helper.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'prompts', 'meow.md'), '---\nname: meow\ndescription: A test prompt\n---\n\nHello, meow.\n');

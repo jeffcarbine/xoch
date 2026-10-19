@@ -11,6 +11,7 @@ import os from 'os';
 import { isMainModule } from './bin/lib/is-main.js';
 import { readJson, updateJson } from './bin/lib/json-store.js';
 import { reinstall } from './bin/init.js';
+import { INSTALL_TARGETS, formatTargetLabels } from './bin/lib/install-targets.js';
 import {
   findRepos, planMigration, executeMigration, describePlan,
 } from './bin/storage-migrate.js';
@@ -556,7 +557,7 @@ function usage() {
   node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
   node config.js budgets                      Interactively review/update token budgets
 
-Every config-writing command re-renders and reinstalls prompts for Copilot, Codex, Claude Code, and Kiro, so installed prompts always reflect the current config.`);
+Every config-writing command re-renders and reinstalls prompts for ${formatTargetLabels(INSTALL_TARGETS, 'and')}, so installed prompts always reflect the current config.`);
 }
 
 // Takes an explicit argv (like every other bin/ script's main(argv)) so

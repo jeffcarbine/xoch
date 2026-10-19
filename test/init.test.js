@@ -8,12 +8,23 @@ import { spawnSync } from 'child_process';
 import { test, run } from './lib/runner.js';
 import { runScript } from './lib/cli.js';
 import { fileURLToPath, pathToFileURL } from 'url';
+import {
+  COPILOT, CODEX, CLAUDE, KIRO, INSTALL_TARGETS, targetDir, installedName,
+} from '../bin/lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const REAL_SCRIPT = path.join(__dirname, '..', 'bin', 'init.js');
 const REAL_DISPATCHER = path.join(__dirname, '..', 'bin', 'xoch.js');
 const REAL_IS_MAIN_JS = path.join(__dirname, '..', 'bin', 'lib', 'is-main.js');
+const REAL_INSTALL_TARGETS_JS = path.join(__dirname, '..', 'bin', 'lib', 'install-targets.js');
+
+// Tool-specific tests only apply when that tool is in INSTALL_TARGETS, so a
+// build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+const listed = (target) => INSTALL_TARGETS.includes(target);
+function testWhenListed(target, name, fn) {
+  if (listed(target)) test(name, fn);
+}
 
 // init.js's *source* paths (prompts/) are derived from __dirname (one
 // level up, since init.js lives in bin/), not cwd or $HOME, so isolating
@@ -46,6 +57,8 @@ fs.copyFileSync(REAL_SCRIPT, SCRATCH_SCRIPT);
 // guard) relative to its own location, so the scratch copy needs a real
 // copy alongside it too.
 fs.copyFileSync(REAL_IS_MAIN_JS, path.join(SCRATCH_BIN_DIR, 'lib', 'is-main.js'));
+// Same for ./lib/install-targets.js, which holds every tool init installs to.
+fs.copyFileSync(REAL_INSTALL_TARGETS_JS, path.join(SCRATCH_BIN_DIR, 'lib', 'install-targets.js'));
 
 function scratch() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-test-home-'));
@@ -87,19 +100,19 @@ function xochDir(ctx) {
 }
 
 function copilotDir(ctx) {
-  return path.join(ctx.home, 'Library', 'Application Support', 'Code', 'User', 'prompts');
+  return targetDir(COPILOT, ctx.home);
 }
 
 function codexDir(ctx) {
-  return path.join(ctx.home, '.codex', 'skills');
+  return targetDir(CODEX, ctx.home);
 }
 
 function claudeDir(ctx) {
-  return path.join(ctx.home, '.claude', 'skills');
+  return targetDir(CLAUDE, ctx.home);
 }
 
 function kiroDir(ctx) {
-  return path.join(ctx.home, '.kiro', 'steering');
+  return targetDir(KIRO, ctx.home);
 }
 
 test('a missing prompts/ directory is rejected', () => {
@@ -114,7 +127,7 @@ test('a missing prompts/ directory is rejected', () => {
   }
 });
 
-test('a full init renders prompts and installs to all four targets', () => {
+test('a full init renders prompts and installs to every listed target', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx);
@@ -128,25 +141,37 @@ test('a full init renders prompts and installs to all four targets', () => {
     assert.ok(!fs.existsSync(path.join(xochDir(ctx), 'prompts', 'README.md')));
     assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'core', 'core-thing.md')));
 
-    // Copilot: symlink.
-    const copilotTarget = path.join(copilotDir(ctx), 'xoch-meow.prompt.md');
-    assert.ok(fs.lstatSync(copilotTarget).isSymbolicLink());
+    for (const target of INSTALL_TARGETS) {
+      assert.ok(fs.existsSync(path.join(targetDir(target, ctx.home), installedName(target, 'meow'))), target.label);
+    }
 
-    // Codex: copied SKILL.md + generated agents/openai.yaml.
-    const codexSkillDir = path.join(codexDir(ctx), 'xoch-meow');
-    assert.ok(fs.existsSync(path.join(codexSkillDir, 'SKILL.md')));
-    const openaiYaml = fs.readFileSync(path.join(codexSkillDir, 'agents', 'openai.yaml'), 'utf8');
-    assert.match(openaiYaml, /display_name: "Xoch meow"/);
-    assert.match(openaiYaml, /short_description: "A test prompt"/);
-    assert.match(openaiYaml, /\$meow/);
+    if (listed(COPILOT)) {
+      // Copilot: symlink.
+      const copilotTarget = path.join(copilotDir(ctx), 'xoch-meow.prompt.md');
+      assert.ok(fs.lstatSync(copilotTarget).isSymbolicLink());
+    }
 
-    // Claude: SKILL.md with an injected disable-model-invocation line.
-    const claudeSkill = fs.readFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'utf8');
-    assert.match(claudeSkill, /disable-model-invocation: true/);
+    if (listed(CODEX)) {
+      // Codex: copied SKILL.md + generated agents/openai.yaml.
+      const codexSkillDir = path.join(codexDir(ctx), 'xoch-meow');
+      assert.ok(fs.existsSync(path.join(codexSkillDir, 'SKILL.md')));
+      const openaiYaml = fs.readFileSync(path.join(codexSkillDir, 'agents', 'openai.yaml'), 'utf8');
+      assert.match(openaiYaml, /display_name: "Xoch meow"/);
+      assert.match(openaiYaml, /short_description: "A test prompt"/);
+      assert.match(openaiYaml, /\$meow/);
+    }
 
-    // Kiro: .md with an injected inclusion line.
-    const kiroFile = fs.readFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'utf8');
-    assert.match(kiroFile, /inclusion: manual/);
+    if (listed(CLAUDE)) {
+      // Claude: SKILL.md with an injected disable-model-invocation line.
+      const claudeSkill = fs.readFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'utf8');
+      assert.match(claudeSkill, /disable-model-invocation: true/);
+    }
+
+    if (listed(KIRO)) {
+      // Kiro: .md with an injected inclusion line.
+      const kiroFile = fs.readFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'utf8');
+      assert.match(kiroFile, /inclusion: manual/);
+    }
   } finally {
     cleanup(ctx);
   }
@@ -190,16 +215,20 @@ test('a prompt without frontmatter passes through Claude/Kiro installation uncha
     fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), 'No frontmatter here.\n');
     const result = runInit(fixture, ctx);
     assert.strictEqual(result.status, 0);
-    const claudeSkill = fs.readFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'utf8');
-    assert.strictEqual(claudeSkill, 'No frontmatter here.\n');
-    const kiroFile = fs.readFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'utf8');
-    assert.strictEqual(kiroFile, 'No frontmatter here.\n');
+    if (listed(CLAUDE)) {
+      const claudeSkill = fs.readFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'utf8');
+      assert.strictEqual(claudeSkill, 'No frontmatter here.\n');
+    }
+    if (listed(KIRO)) {
+      const kiroFile = fs.readFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'utf8');
+      assert.strictEqual(kiroFile, 'No frontmatter here.\n');
+    }
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a prompt with unclosed frontmatter passes through unchanged', () => {
+testWhenListed(CLAUDE, 'a prompt with unclosed frontmatter passes through unchanged', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });
@@ -213,7 +242,7 @@ test('a prompt with unclosed frontmatter passes through unchanged', () => {
   }
 });
 
-test('a prompt missing name:/description: lines yields empty Codex frontmatter fields', () => {
+testWhenListed(CODEX, 'a prompt missing name:/description: lines yields empty Codex frontmatter fields', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });
@@ -509,7 +538,7 @@ test('a partial that itself contains an unresolved partial reference is caught a
   }
 });
 
-test('a second run replaces existing Copilot symlinks and reports no orphans', () => {
+testWhenListed(COPILOT, 'a second run replaces existing Copilot symlinks and reports no orphans', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });
@@ -525,33 +554,28 @@ test('a second run replaces existing Copilot symlinks and reports no orphans', (
   }
 });
 
-test('removing a prompt and reinitializing cleans up its orphaned entries in all four targets', () => {
+test('removing a prompt and reinitializing cleans up its orphaned entries in every listed target', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });
     fs.writeFileSync(path.join(fixture.promptsDir, 'other.md'), '---\nname: other\ndescription: Other\n---\n\nOther body.\n');
     runInit(fixture, ctx);
+    const otherEntry = (target) => path.join(targetDir(target, ctx.home), installedName(target, 'other'));
 
-    assert.ok(fs.existsSync(path.join(copilotDir(ctx), 'xoch-other.prompt.md')));
-    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-other')));
-    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-other')));
-    assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'xoch-other.md')));
+    for (const target of INSTALL_TARGETS) assert.ok(fs.existsSync(otherEntry(target)), target.label);
 
     fs.rmSync(path.join(fixture.promptsDir, 'other.md'));
     const result = runInit(fixture, ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Removed orphaned: xoch-other/);
 
-    assert.ok(!fs.existsSync(path.join(copilotDir(ctx), 'xoch-other.prompt.md')));
-    assert.ok(!fs.existsSync(path.join(codexDir(ctx), 'xoch-other')));
-    assert.ok(!fs.existsSync(path.join(claudeDir(ctx), 'xoch-other')));
-    assert.ok(!fs.existsSync(path.join(kiroDir(ctx), 'xoch-other.md')));
+    for (const target of INSTALL_TARGETS) assert.ok(!fs.existsSync(otherEntry(target)), target.label);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a stray "README" entry in an installed target is cleaned up regardless of source', () => {
+testWhenListed(COPILOT, 'a stray "README" entry in an installed target is cleaned up regardless of source', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });
@@ -573,40 +597,47 @@ test('cleanup skips entries in each target that do not match the expected xoch- 
 
     // Copilot expects xoch-*.prompt.md *files* (or symlinks); a same-named
     // directory is left alone rather than removed.
-    fs.mkdirSync(copilotDir(ctx), { recursive: true });
-    fs.mkdirSync(path.join(copilotDir(ctx), 'xoch-adir.prompt.md'));
+    if (listed(COPILOT)) {
+      fs.mkdirSync(copilotDir(ctx), { recursive: true });
+      fs.mkdirSync(path.join(copilotDir(ctx), 'xoch-adir.prompt.md'));
+    }
 
     // Codex/Claude expect xoch-* *directories*; a non-"xoch-" entry and a
     // same-named plain file are both left alone.
-    fs.mkdirSync(codexDir(ctx), { recursive: true });
-    fs.writeFileSync(path.join(codexDir(ctx), 'not-ours'), 'ignore');
-    fs.writeFileSync(path.join(codexDir(ctx), 'xoch-afile'), 'ignore');
-    fs.mkdirSync(claudeDir(ctx), { recursive: true });
-    fs.writeFileSync(path.join(claudeDir(ctx), 'not-ours'), 'ignore');
-    fs.writeFileSync(path.join(claudeDir(ctx), 'xoch-afile'), 'ignore');
+    for (const target of [CODEX, CLAUDE].filter(listed)) {
+      fs.mkdirSync(targetDir(target, ctx.home), { recursive: true });
+      fs.writeFileSync(path.join(targetDir(target, ctx.home), 'not-ours'), 'ignore');
+      fs.writeFileSync(path.join(targetDir(target, ctx.home), 'xoch-afile'), 'ignore');
+    }
 
     // Kiro expects xoch-*.md *files*; a non-"xoch-" entry and a same-named
     // directory are both left alone.
-    fs.mkdirSync(kiroDir(ctx), { recursive: true });
-    fs.writeFileSync(path.join(kiroDir(ctx), 'not-ours.md'), 'ignore');
-    fs.mkdirSync(path.join(kiroDir(ctx), 'xoch-adir.md'));
+    if (listed(KIRO)) {
+      fs.mkdirSync(kiroDir(ctx), { recursive: true });
+      fs.writeFileSync(path.join(kiroDir(ctx), 'not-ours.md'), 'ignore');
+      fs.mkdirSync(path.join(kiroDir(ctx), 'xoch-adir.md'));
+    }
 
     const result = runInit(fixture, ctx);
     assert.strictEqual(result.status, 0);
 
-    assert.ok(fs.statSync(path.join(copilotDir(ctx), 'xoch-adir.prompt.md')).isDirectory());
-    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'not-ours')));
-    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-afile')));
-    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'not-ours')));
-    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-afile')));
-    assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'not-ours.md')));
-    assert.ok(fs.statSync(path.join(kiroDir(ctx), 'xoch-adir.md')).isDirectory());
+    if (listed(COPILOT)) {
+      assert.ok(fs.statSync(path.join(copilotDir(ctx), 'xoch-adir.prompt.md')).isDirectory());
+    }
+    for (const target of [CODEX, CLAUDE].filter(listed)) {
+      assert.ok(fs.existsSync(path.join(targetDir(target, ctx.home), 'not-ours')));
+      assert.ok(fs.existsSync(path.join(targetDir(target, ctx.home), 'xoch-afile')));
+    }
+    if (listed(KIRO)) {
+      assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'not-ours.md')));
+      assert.ok(fs.statSync(path.join(kiroDir(ctx), 'xoch-adir.md')).isDirectory());
+    }
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a non-prompt-related file in the Copilot directory is left alone', () => {
+testWhenListed(COPILOT, 'a non-prompt-related file in the Copilot directory is left alone', () => {
   const ctx = scratch();
   try {
     const fixture = buildFixture(ctx, { withCore: false });

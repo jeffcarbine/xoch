@@ -9,6 +9,7 @@ import os from 'os';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { isMainModule } from './lib/is-main.js';
+import { INSTALL_TARGETS, targetDir } from './lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -150,22 +151,21 @@ function scanForUnresolvedMarkers(dir) {
   return false;
 }
 
-function checkClaudeSkill(tempHome) {
+// Runs each listed install target's own verify() (currently only Claude
+// Code has one) against every rendered prompt that init installed under
+// `tempHome`.
+function checkInstalledTargets(tempHome) {
   const promptsDir = path.join(tempHome, '.xoch', 'prompts');
-  const skillsDir = path.join(tempHome, '.claude', 'skills');
   if (!fs.existsSync(promptsDir)) return;
 
+  const checked = INSTALL_TARGETS.filter((target) => target.verify);
   for (const name of fs.readdirSync(promptsDir)) {
     const full = path.join(promptsDir, name);
     if (!fs.statSync(full).isFile() || !name.endsWith('.md')) continue;
     const promptName = path.basename(name, '.md');
-    const claudeSkill = path.join(skillsDir, `xoch-${promptName}`, 'SKILL.md');
-    if (!fs.existsSync(claudeSkill)) {
-      fail(`Prompt check failed: missing Claude skill xoch-${promptName}`, 1);
-    }
-    const content = fs.readFileSync(claudeSkill, 'utf8');
-    if (!/^disable-model-invocation: true$/m.test(content)) {
-      fail(`Prompt check failed: Claude skill xoch-${promptName} permits model invocation`, 1);
+    for (const target of checked) {
+      const problem = target.verify(targetDir(target, tempHome), promptName);
+      if (problem) fail(`Prompt check failed: ${problem}`, 1);
     }
   }
 }
@@ -185,7 +185,7 @@ function run(argv) {
       fail('Prompt check failed: unresolved partial or variable', 1);
     }
 
-    checkClaudeSkill(tempHome);
+    checkInstalledTargets(tempHome);
   } finally {
     fs.rmSync(tempHome, { recursive: true, force: true });
   }
@@ -206,6 +206,6 @@ export {
   checkSyntax,
   runInit,
   scanForUnresolvedMarkers,
-  checkClaudeSkill,
+  checkInstalledTargets,
   run,
 };

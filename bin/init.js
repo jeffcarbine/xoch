@@ -2,17 +2,20 @@
 'use strict';
 
 // Xoch Init
-// Renders Xoch prompts and installs them for Copilot, Codex, Claude Code,
-// and Kiro. Adapted from the old install.js: the package-relative helper
-// script copy (installHelpers(), ~/.xoch/bin) is gone now that bin/xoch.js
-// is an in-process dispatcher engineers reach via the npm-installed `xoch`
-// binary instead of copied standalone scripts.
+// Renders Xoch prompts and installs them for each tool in INSTALL_TARGETS
+// (bin/lib/install-targets.js). Adapted from the old install.js: the
+// package-relative helper script copy (installHelpers(), ~/.xoch/bin) is
+// gone now that bin/xoch.js is an in-process dispatcher engineers reach via
+// the npm-installed `xoch` binary instead of copied standalone scripts.
 
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { isMainModule } from './lib/is-main.js';
+import {
+  INSTALL_TARGETS, targetDir, isDirNoFollow, injectFrontmatterLine,
+} from './lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,11 +34,6 @@ const CONFIG_PATH = path.join(XOCH_RUNTIME_DIR, 'config.json');
 // the installed runtime can't require this root-level file, so the table is
 // duplicated rather than shared across the install boundary.
 const DEFAULT_SKILL_BUDGETS = { spec: 5000, plan: 7000 };
-
-const COPILOT_DIR = path.join(os.homedir(), 'Library', 'Application Support', 'Code', 'User', 'prompts');
-const CODEX_DIR = path.join(os.homedir(), '.codex', 'skills');
-const CLAUDE_DIR = path.join(os.homedir(), '.claude', 'skills');
-const KIRO_DIR = path.join(os.homedir(), '.kiro', 'steering');
 
 const GREEN = '\x1b[0;32m';
 const YELLOW = '\x1b[1;33m';
@@ -64,7 +62,7 @@ const NC = '\x1b[0m';
 // test/init.test.js and test/xoch-dispatch.test.js's "real
 // (non-scratch) coverage" tests, which close every other real-file gap
 // that doesn't require malformed input (happy-path install/cleanup for
-// all four tools, idempotent re-run, orphan cleanup, config
+// every install target, idempotent re-run, orphan cleanup, config
 // seed/preserve/corrupt-recovery, and direct non-dispatcher
 // invocation).
 function failRender(message) {
@@ -344,64 +342,23 @@ function seedConfig() {
   console.log('');
 }
 
-// True if `p` is a regular file OR any symlink (valid or broken),
-// matching bash's `[ -f "$p" ] || [ -L "$p" ]`.
-function isFileOrSymlink(p) {
-  try {
-    const lst = fs.lstatSync(p);
-    return lst.isSymbolicLink() || lst.isFile();
-  } catch {
-    return false;
-  }
-}
-
-function isDirNoFollow(p) {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-// Inserts `line` immediately above the frontmatter-closing "---" (only
-// when line 1 opens frontmatter and a later line closes it) -- matches
-// the bash originals' awk scans exactly, including files with no
-// frontmatter or unclosed frontmatter passing through unchanged.
-function injectFrontmatterLine(text, line) {
-  const lines = text.split('\n');
-  let inFrontmatter = false;
-  const out = [];
-  for (let idx = 0; idx < lines.length; idx += 1) {
-    const current = lines[idx];
-    if (idx === 0 && current === '---') {
-      inFrontmatter = true;
-      out.push(current);
-      continue;
-    }
-    if (inFrontmatter && current === '---') {
-      out.push(line);
-      inFrontmatter = false;
-      out.push(current);
-      continue;
-    }
-    out.push(current);
-  }
-  return out.join('\n');
-}
-
-function cleanupCopilot() {
-  if (!isDirNoFollow(COPILOT_DIR)) return;
+// Deletes installed entries in `target`'s folder whose source prompt no
+// longer exists (or that are a stray README), leaving anything that isn't
+// shaped like one of Xoch's own entries alone.
+function cleanupTarget(target) {
+  const dir = targetDir(target);
+  if (!isDirNoFollow(dir)) return;
 
   let removed = 0;
-  for (const name of fs.readdirSync(COPILOT_DIR)) {
-    if (!name.startsWith('xoch-') || !name.endsWith('.prompt.md')) continue;
-    const installedPath = path.join(COPILOT_DIR, name);
-    if (!isFileOrSymlink(installedPath)) continue;
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.startsWith('xoch-') || !name.endsWith(target.suffix)) continue;
+    const installedPath = path.join(dir, name);
+    if (!target.isEntry(installedPath)) continue;
 
-    const installedName = name.slice('xoch-'.length, -'.prompt.md'.length);
+    const installedName = name.slice('xoch-'.length, name.length - target.suffix.length);
     const sourceExists = fs.existsSync(path.join(PROMPTS_DIR, `${installedName}.md`));
     if (installedName === 'README' || !sourceExists) {
-      fs.unlinkSync(installedPath);
+      target.removeEntry(installedPath);
       console.log(`  ${YELLOW}✗${NC} Removed orphaned: xoch-${installedName}`);
       removed += 1;
     }
@@ -410,178 +367,37 @@ function cleanupCopilot() {
   if (removed > 0) console.log('');
 }
 
-function cleanupCodex() {
-  if (!isDirNoFollow(CODEX_DIR)) return;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(CODEX_DIR)) {
-    if (!name.startsWith('xoch-')) continue;
-    const installedPath = path.join(CODEX_DIR, name);
-    if (!isDirNoFollow(installedPath)) continue;
-
-    const installedName = name.slice('xoch-'.length);
-    const sourceExists = fs.existsSync(path.join(PROMPTS_DIR, `${installedName}.md`));
-    if (installedName === 'README' || !sourceExists) {
-      fs.rmSync(installedPath, { recursive: true, force: true });
-      console.log(`  ${YELLOW}✗${NC} Removed orphaned: xoch-${installedName}`);
-      removed += 1;
-    }
+// Installs every rendered prompt into `target`'s folder, creating it first
+// when needed.
+function installTarget(target) {
+  const dir = targetDir(target);
+  if (!isDirNoFollow(dir)) {
+    console.log(`${YELLOW}${target.dirDescription} directory not found. Creating...${NC}`);
+    fs.mkdirSync(dir, { recursive: true });
   }
 
-  if (removed > 0) console.log('');
-}
-
-function cleanupClaude() {
-  if (!isDirNoFollow(CLAUDE_DIR)) return;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(CLAUDE_DIR)) {
-    if (!name.startsWith('xoch-')) continue;
-    const installedPath = path.join(CLAUDE_DIR, name);
-    if (!isDirNoFollow(installedPath)) continue;
-
-    const installedName = name.slice('xoch-'.length);
-    const sourceExists = fs.existsSync(path.join(PROMPTS_DIR, `${installedName}.md`));
-    if (installedName === 'README' || !sourceExists) {
-      fs.rmSync(installedPath, { recursive: true, force: true });
-      console.log(`  ${YELLOW}✗${NC} Removed orphaned: xoch-${installedName}`);
-      removed += 1;
-    }
-  }
-
-  if (removed > 0) console.log('');
-}
-
-function cleanupKiro() {
-  if (!isDirNoFollow(KIRO_DIR)) return;
-
-  let removed = 0;
-  for (const name of fs.readdirSync(KIRO_DIR)) {
-    if (!name.startsWith('xoch-') || !name.endsWith('.md')) continue;
-    const installedPath = path.join(KIRO_DIR, name);
-    if (!fs.statSync(installedPath).isFile()) continue;
-
-    const installedName = name.slice('xoch-'.length, -'.md'.length);
-    const sourceExists = fs.existsSync(path.join(PROMPTS_DIR, `${installedName}.md`));
-    if (installedName === 'README' || !sourceExists) {
-      fs.unlinkSync(installedPath);
-      console.log(`  ${YELLOW}✗${NC} Removed orphaned: xoch-${installedName}`);
-      removed += 1;
-    }
-  }
-
-  if (removed > 0) console.log('');
-}
-
-function installCopilot() {
-  if (!isDirNoFollow(COPILOT_DIR)) {
-    console.log(`${YELLOW}VS Code prompts directory not found. Creating...${NC}`);
-    fs.mkdirSync(COPILOT_DIR, { recursive: true });
-  }
-
-  console.log('Installing for GitHub Copilot...');
+  console.log(`Installing for ${target.installHeading}...`);
 
   for (const promptFile of listMdFiles(PROMPTS_DIR)) {
     const filename = path.basename(promptFile, '.md');
-    const target = path.join(COPILOT_DIR, `xoch-${filename}.prompt.md`);
-
-    if (isFileOrSymlink(target)) fs.unlinkSync(target);
-    fs.symlinkSync(promptFile, target);
-    console.log(`  ${GREEN}✓${NC} xoch-${filename} → Copilot`);
+    target.install(promptFile, filename, dir);
+    console.log(`  ${GREEN}✓${NC} xoch-${filename} → ${target.label}`);
   }
 }
 
-function installCodex() {
-  if (!isDirNoFollow(CODEX_DIR)) {
-    console.log(`${YELLOW}Codex skills directory not found. Creating...${NC}`);
-    fs.mkdirSync(CODEX_DIR, { recursive: true });
-  }
-
-  console.log('Installing for Codex...');
-
-  for (const promptFile of listMdFiles(PROMPTS_DIR)) {
-    const filename = path.basename(promptFile, '.md');
-    const skillDir = path.join(CODEX_DIR, `xoch-${filename}`);
-
-    fs.mkdirSync(path.join(skillDir, 'agents'), { recursive: true });
-
-    // Copy (not symlink) the prompt as SKILL.md for Codex -- Codex
-    // appears to not discover symlinked files.
-    fs.copyFileSync(promptFile, path.join(skillDir, 'SKILL.md'));
-
-    const promptText = fs.readFileSync(promptFile, 'utf8');
-    const nameLine = promptText.split('\n').find((line) => line.startsWith('name:')) || '';
-    const descLine = promptText.split('\n').find((line) => line.startsWith('description:')) || '';
-    const skillName = nameLine.replace('name: ', '');
-    const skillDesc = descLine.replace('description: ', '');
-
-    const openaiYaml = `interface:\n  display_name: "Xoch ${filename}"\n  short_description: "${skillDesc}"\n  default_prompt: "Use $${skillName} to invoke this Xoch workflow step."\n`;
-    fs.writeFileSync(path.join(skillDir, 'agents', 'openai.yaml'), openaiYaml);
-
-    console.log(`  ${GREEN}✓${NC} xoch-${filename} → Codex`);
-  }
-}
-
-function installClaude() {
-  if (!isDirNoFollow(CLAUDE_DIR)) {
-    console.log(`${YELLOW}Claude Code skills directory not found. Creating...${NC}`);
-    fs.mkdirSync(CLAUDE_DIR, { recursive: true });
-  }
-
-  console.log('Installing for Claude Code...');
-
-  for (const promptFile of listMdFiles(PROMPTS_DIR)) {
-    const filename = path.basename(promptFile, '.md');
-    const skillDir = path.join(CLAUDE_DIR, `xoch-${filename}`);
-
-    fs.mkdirSync(skillDir, { recursive: true });
-
-    // Xoch lifecycle commands should only run when the engineer invokes them.
-    const rendered = injectFrontmatterLine(fs.readFileSync(promptFile, 'utf8'), 'disable-model-invocation: true');
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), rendered);
-
-    console.log(`  ${GREEN}✓${NC} xoch-${filename} → Claude Code`);
-  }
-}
-
-function installKiro() {
-  if (!isDirNoFollow(KIRO_DIR)) {
-    console.log(`${YELLOW}Kiro steering directory not found. Creating...${NC}`);
-    fs.mkdirSync(KIRO_DIR, { recursive: true });
-  }
-
-  console.log('Installing for Kiro...');
-
-  for (const promptFile of listMdFiles(PROMPTS_DIR)) {
-    const filename = path.basename(promptFile, '.md');
-    const target = path.join(KIRO_DIR, `xoch-${filename}.md`);
-
-    // Kiro only surfaces a steering file as an on-demand slash command with inclusion: manual.
-    const rendered = injectFrontmatterLine(fs.readFileSync(promptFile, 'utf8'), 'inclusion: manual');
-    fs.writeFileSync(target, rendered);
-
-    console.log(`  ${GREEN}✓${NC} xoch-${filename} → Kiro`);
-  }
-}
-
-// Renders and (re)installs prompts to all four tool targets -- everything
-// `main()` does except seedConfig(), which callers that already just wrote
-// config.json (config.js's mutating commands) don't need to repeat. This is
-// the single function `xoch config` calls after any config write, so
-// installed prompts never drift from the engineer's current settings.
+// Renders and (re)installs prompts to every INSTALL_TARGETS tool --
+// everything `main()` does except seedConfig(), which callers that already
+// just wrote config.json (config.js's mutating commands) don't need to
+// repeat. This is the single function `xoch config` calls after any config
+// write, so installed prompts never drift from the engineer's current
+// settings.
 function reinstall() {
   renderPrompts();
-  cleanupCopilot();
-  cleanupCodex();
-  cleanupClaude();
-  cleanupKiro();
-  installCopilot();
-  console.log('');
-  installCodex();
-  console.log('');
-  installClaude();
-  console.log('');
-  installKiro();
+  for (const target of INSTALL_TARGETS) cleanupTarget(target);
+  INSTALL_TARGETS.forEach((target, idx) => {
+    if (idx > 0) console.log('');
+    installTarget(target);
+  });
 }
 
 function main() {
@@ -609,11 +425,9 @@ function main() {
   console.log(`${GREEN}Initialization complete!${NC}`);
   console.log('');
   console.log('Usage:');
-  console.log('  GitHub Copilot: Type #xoch-meow in chat');
-  console.log('  Codex: Type $xoch-meow in chat');
-  console.log('  Claude Code: Type /xoch-meow in chat');
-  console.log('  Cursor: Type #xoch-meow in chat (uses VS Code prompts)');
-  console.log('  Kiro: Type #xoch-meow in chat');
+  for (const target of INSTALL_TARGETS) {
+    for (const line of target.usage) console.log(`  ${line}`);
+  }
   console.log('');
   console.log("Note: You may need to restart your AI tool if its skills directory was just created.");
 }
@@ -629,24 +443,14 @@ export {
   XOCH_RUNTIME_DIR,
   PROMPTS_DIR,
   CORE_PROMPTS_DIR,
-  COPILOT_DIR,
-  CODEX_DIR,
-  CLAUDE_DIR,
-  KIRO_DIR,
   renderPromptFile,
   renderPrompts,
   seedConfig,
   listMdFiles,
   hasUnresolvedPartial,
   injectFrontmatterLine,
-  cleanupCopilot,
-  cleanupCodex,
-  cleanupClaude,
-  cleanupKiro,
-  installCopilot,
-  installCodex,
-  installClaude,
-  installKiro,
+  cleanupTarget,
+  installTarget,
   reinstall,
   main,
 };

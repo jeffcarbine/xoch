@@ -5,30 +5,37 @@ import fs from 'fs';
 import path from 'path';
 import { test, run } from './lib/runner.js';
 import { scratch, cleanup, runScript } from './lib/cli.js';
+import {
+  COPILOT, CODEX, CLAUDE, KIRO, INSTALL_TARGETS, targetDir, installedName,
+} from '../bin/lib/install-targets.js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const REMOVE_SCRIPT = path.join(__dirname, '..', 'bin', 'remove.js');
 
+// Tool-specific checks only apply when that tool is in INSTALL_TARGETS, so a
+// build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+const listed = (target) => INSTALL_TARGETS.includes(target);
+
 function xochDir(ctx) {
   return path.join(ctx.home, '.xoch');
 }
 
 function copilotDir(ctx) {
-  return path.join(ctx.home, 'Library', 'Application Support', 'Code', 'User', 'prompts');
+  return targetDir(COPILOT, ctx.home);
 }
 
 function codexDir(ctx) {
-  return path.join(ctx.home, '.codex', 'skills');
+  return targetDir(CODEX, ctx.home);
 }
 
 function claudeDir(ctx) {
-  return path.join(ctx.home, '.claude', 'skills');
+  return targetDir(CLAUDE, ctx.home);
 }
 
 function kiroDir(ctx) {
-  return path.join(ctx.home, '.kiro', 'steering');
+  return targetDir(KIRO, ctx.home);
 }
 
 // Simulates what a prior `xoch init` run (plus a pre-migration leftover
@@ -41,42 +48,43 @@ function buildInstalledFixture(ctx) {
   fs.mkdirSync(path.join(xochDir(ctx), 'bin'), { recursive: true });
   fs.writeFileSync(path.join(xochDir(ctx), 'bin', 'leftover.js'), '// pre-migration leftover\n');
 
-  fs.mkdirSync(copilotDir(ctx), { recursive: true });
-  fs.writeFileSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md'), 'installed');
-  fs.writeFileSync(path.join(copilotDir(ctx), 'unrelated.prompt.md'), 'not ours');
+  if (listed(COPILOT)) {
+    fs.mkdirSync(copilotDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md'), 'installed');
+    fs.writeFileSync(path.join(copilotDir(ctx), 'unrelated.prompt.md'), 'not ours');
+  }
 
-  fs.mkdirSync(path.join(codexDir(ctx), 'xoch-meow', 'agents'), { recursive: true });
-  fs.writeFileSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md'), 'installed');
-  fs.mkdirSync(path.join(codexDir(ctx), 'not-ours'), { recursive: true });
-  fs.writeFileSync(path.join(codexDir(ctx), 'not-ours', 'file'), 'not ours');
+  if (listed(CODEX)) {
+    fs.mkdirSync(path.join(codexDir(ctx), 'xoch-meow', 'agents'), { recursive: true });
+    fs.writeFileSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md'), 'installed');
+    fs.mkdirSync(path.join(codexDir(ctx), 'not-ours'), { recursive: true });
+    fs.writeFileSync(path.join(codexDir(ctx), 'not-ours', 'file'), 'not ours');
+  }
 
-  fs.mkdirSync(path.join(claudeDir(ctx), 'xoch-meow'), { recursive: true });
-  fs.writeFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'installed');
-  fs.mkdirSync(path.join(claudeDir(ctx), 'not-ours'), { recursive: true });
-  fs.writeFileSync(path.join(claudeDir(ctx), 'not-ours', 'file'), 'not ours');
+  if (listed(CLAUDE)) {
+    fs.mkdirSync(path.join(claudeDir(ctx), 'xoch-meow'), { recursive: true });
+    fs.writeFileSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md'), 'installed');
+    fs.mkdirSync(path.join(claudeDir(ctx), 'not-ours'), { recursive: true });
+    fs.writeFileSync(path.join(claudeDir(ctx), 'not-ours', 'file'), 'not ours');
+  }
 
-  fs.mkdirSync(kiroDir(ctx), { recursive: true });
-  fs.writeFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'installed');
-  fs.writeFileSync(path.join(kiroDir(ctx), 'not-ours.md'), 'not ours');
+  if (listed(KIRO)) {
+    fs.mkdirSync(kiroDir(ctx), { recursive: true });
+    fs.writeFileSync(path.join(kiroDir(ctx), 'xoch-meow.md'), 'installed');
+    fs.writeFileSync(path.join(kiroDir(ctx), 'not-ours.md'), 'not ours');
+  }
 }
 
-// No test here triggers isFileOrSymlink()'s catch branch
-// (bin/remove.js:~29) -- see the DOCUMENTED COVERAGE EXCEPTION comment
-// at that site in bin/remove.js. It's a TOCTOU guard reachable only by
-// an external process deleting a just-listed path in the microtask gap
-// before lstat, which can't be constructed deterministically without
-// mocking fs.
-test('xoch remove removes rendered skill files from all four tool directories', () => {
+test('xoch remove removes rendered skill files from every listed tool directory', () => {
   const ctx = scratch();
   try {
     buildInstalledFixture(ctx);
     const result = runScript(REMOVE_SCRIPT, [], ctx);
     assert.strictEqual(result.status, 0);
 
-    assert.ok(!fs.existsSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')));
-    assert.ok(!fs.existsSync(path.join(codexDir(ctx), 'xoch-meow')));
-    assert.ok(!fs.existsSync(path.join(claudeDir(ctx), 'xoch-meow')));
-    assert.ok(!fs.existsSync(path.join(kiroDir(ctx), 'xoch-meow.md')));
+    for (const target of INSTALL_TARGETS) {
+      assert.ok(!fs.existsSync(path.join(targetDir(target, ctx.home), installedName(target, 'meow'))), target.label);
+    }
   } finally {
     cleanup(ctx);
   }
@@ -102,10 +110,10 @@ test('xoch remove leaves unrelated files in each tool directory untouched', () =
     const result = runScript(REMOVE_SCRIPT, [], ctx);
     assert.strictEqual(result.status, 0);
 
-    assert.ok(fs.existsSync(path.join(copilotDir(ctx), 'unrelated.prompt.md')));
-    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'not-ours', 'file')));
-    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'not-ours', 'file')));
-    assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'not-ours.md')));
+    if (listed(COPILOT)) assert.ok(fs.existsSync(path.join(copilotDir(ctx), 'unrelated.prompt.md')));
+    if (listed(CODEX)) assert.ok(fs.existsSync(path.join(codexDir(ctx), 'not-ours', 'file')));
+    if (listed(CLAUDE)) assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'not-ours', 'file')));
+    if (listed(KIRO)) assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'not-ours.md')));
   } finally {
     cleanup(ctx);
   }
@@ -122,7 +130,7 @@ test('xoch remove is a no-op that still exits 0 when nothing was ever installed'
 });
 
 // No test here triggers verify()'s "CLI version could not be determined"
-// branch (bin/remove.js:~156) -- see the DOCUMENTED COVERAGE EXCEPTION
+// branch (bin/remove.js:~88) -- see the DOCUMENTED COVERAGE EXCEPTION
 // comment at that site in bin/remove.js. pkg.version is read from this
 // repo's own real package.json at module-load time, which npm
 // guarantees has a non-empty version string; triggering the branch

@@ -132,6 +132,14 @@ Installer expectations:
 - install Claude Code commands as personal skills under `~/.claude/skills/`
 - keep command inventory aligned with `prompts/README.md`
 
+### Install Targets
+
+Every AI tool `xoch init` installs into is one entry in `bin/lib/install-targets.js`, and the tools actually used are the single `INSTALL_TARGETS = [...]` line in that file. `init.js`, `remove.js`, `prompt-check.js`, and the `xoch`/`config` help text all loop over that list instead of naming tools themselves.
+
+To add a tool, define its entry next to the others -- folder (`homeDir`), installed-entry naming (`suffix`, `isEntry`, `removeEntry`), `install()`, its `usage` lines, and an optional `verify()` for `prompt-check` -- then add it to `INSTALL_TARGETS`. To drop one (for example, a downstream build that only ships Kiro), remove it from that line only; leave its entry defined.
+
+Keep `INSTALL_TARGETS` on one line so a downstream build can replace it with a single literal find/replace. Tests that check one tool's specific install shape only run when that tool is listed, so a shortened list still passes `npm test`.
+
 Prompt partials live under `prompts/partials/` and use `{{xoch-partial:...}}` include syntax. Keep partials small, deterministic, and documented in `prompts/README.md`.
 
 ---

@@ -19,8 +19,8 @@ a clone of this repo).
 
 Renders `prompts/` (resolving `{{xoch-partial:...}}` references) into `~/.xoch/prompts`, seeds
 `~/.xoch/config.json` with default token budgets, and installs the rendered top-level commands
-into every supported AI tool's directory (Copilot, Codex, Claude Code, Kiro), removing any stale
-`xoch-*` entry whose source prompt no longer exists.
+into every AI tool listed in `lib/install-targets.js` (Copilot, Codex, Claude Code, Kiro by
+default), removing any stale `xoch-*` entry whose source prompt no longer exists.
 
 ```text
 xoch init
@@ -28,7 +28,7 @@ xoch init
 
 ### `remove.js`
 
-Reverses `init.js`: removes every installed `xoch-*` entry from all four tool directories and
+Reverses `init.js`: removes every installed `xoch-*` entry from each listed tool's directory and
 deletes `~/.xoch` outright (rendered prompts, `config.json`, and any leftover `~/.xoch/bin` from a
 pre-migration install), without touching unrelated files in any tool's directory. `npm uninstall -g`
 alone can't do this, since it only cleans `node_modules`.

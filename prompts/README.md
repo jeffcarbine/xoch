@@ -325,7 +325,7 @@ The installer should:
 - skip `prompts/partials/` fragments
 - render but do not install `prompts/core/` reference prompts
 - remove stale installed `xoch-*` commands whose source prompt no longer exists
-- render prompt partials before installing prompts for Copilot, Codex, Claude Code, or Kiro
+- render prompt partials before installing prompts for each tool in `bin/lib/install-targets.js`
 - install Claude Code commands as user-invoked personal skills under `~/.claude/skills/`
 - install Kiro commands as manual-inclusion steering files under `~/.kiro/steering/`
 - fail if rendered prompts contain unresolved partial markers

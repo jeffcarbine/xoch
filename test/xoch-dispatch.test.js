@@ -6,6 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { test, run as runTests } from './lib/runner.js';
 import { scratch, cleanup, runScript } from './lib/cli.js';
+import {
+  COPILOT, CODEX, CLAUDE, INSTALL_TARGETS, targetDir, installedName,
+} from '../bin/lib/install-targets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,6 +19,10 @@ const GENERATE_ID_SCRIPT = path.join(__dirname, '..', 'bin', 'generate-job-id.js
 const ARCHIVE_SCRIPT = path.join(__dirname, '..', 'bin', 'archive-actions.js');
 const GIT_STATE_SCRIPT = path.join(__dirname, '..', 'bin', 'git-state.js');
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+
+// Tool-specific checks only apply when that tool is in INSTALL_TARGETS, so a
+// build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+const listed = (target) => INSTALL_TARGETS.includes(target);
 
 function run(args, ctx, input) {
   return runScript(SCRIPT, args, ctx, input);
@@ -310,9 +317,9 @@ test('every standalone-script namespace reaches its module without a dispatcher 
 // against this repo's real prompts/ can reach.
 //
 // No test here deliberately exercises failRender() or its call sites
-// (bin/init.js:70, malformed-partial/malformed-config/render-failure
-// paths), the unresolved-partial check (bin/init.js:303), or the
-// "prompts/ directory not found" branch (bin/init.js:597) -- see the
+// (bin/init.js:68, malformed-partial/malformed-config/render-failure
+// paths), the unresolved-partial check (bin/init.js:301), or the
+// "prompts/ directory not found" branch (bin/init.js:413) -- see the
 // DOCUMENTED COVERAGE EXCEPTION comments at those sites in bin/init.js.
 // Those exact behaviors are already covered at 100% by
 // test/init.test.js's scratch-copied bin/init.js, which relocates the
@@ -325,22 +332,19 @@ function xochDir(ctx) {
 }
 
 function copilotDir(ctx) {
-  return path.join(ctx.home, 'Library', 'Application Support', 'Code', 'User', 'prompts');
+  return targetDir(COPILOT, ctx.home);
 }
 
 function codexDir(ctx) {
-  return path.join(ctx.home, '.codex', 'skills');
+  return targetDir(CODEX, ctx.home);
 }
 
 function claudeDir(ctx) {
-  return path.join(ctx.home, '.claude', 'skills');
+  return targetDir(CLAUDE, ctx.home);
 }
 
-function kiroDir(ctx) {
-  return path.join(ctx.home, '.kiro', 'steering');
-}
 
-test('a real xoch init renders and installs this repo\'s actual prompts to all four targets', () => {
+test('a real xoch init renders and installs this repo\'s actual prompts to every listed target', () => {
   const ctx = scratch();
   try {
     const result = run(['init'], ctx);
@@ -348,16 +352,18 @@ test('a real xoch init renders and installs this repo\'s actual prompts to all f
     assert.match(result.stdout, /Initialization complete!/);
     assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'meow.md')));
     assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'core')));
-    assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
-    assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md')));
-    assert.ok(fs.existsSync(path.join(kiroDir(ctx), 'xoch-meow.md')));
+    for (const target of INSTALL_TARGETS) {
+      assert.ok(fs.existsSync(path.join(targetDir(target, ctx.home), installedName(target, 'meow'))), target.label);
+    }
+    if (listed(COPILOT)) assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+    if (listed(CODEX)) assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md')));
+    if (listed(CLAUDE)) assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md')));
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a second real xoch init run is idempotent, replaces existing Copilot symlinks, and reports no orphans', () => {
+test('a second real xoch init run is idempotent, replaces any existing Copilot symlinks, and reports no orphans', () => {
   const ctx = scratch();
   try {
     run(['init'], ctx);
@@ -365,29 +371,30 @@ test('a second real xoch init run is idempotent, replaces existing Copilot symli
     assert.strictEqual(second.status, 0);
     assert.ok(!second.stdout.includes('Removed orphaned'));
     assert.match(second.stdout, /Token budgets already present/);
-    assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+    if (listed(COPILOT)) assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a real xoch init cleans up a stray orphaned entry in all four tool directories', () => {
+test('a real xoch init cleans up a stray orphaned entry in every listed tool directory', () => {
   const ctx = scratch();
   try {
-    fs.mkdirSync(copilotDir(ctx), { recursive: true });
-    fs.writeFileSync(path.join(copilotDir(ctx), 'xoch-nonexistent.prompt.md'), 'stray');
-    fs.mkdirSync(path.join(codexDir(ctx), 'xoch-nonexistent', 'agents'), { recursive: true });
-    fs.mkdirSync(path.join(claudeDir(ctx), 'xoch-nonexistent'), { recursive: true });
-    fs.mkdirSync(kiroDir(ctx), { recursive: true });
-    fs.writeFileSync(path.join(kiroDir(ctx), 'xoch-nonexistent.md'), 'stray');
+    // Each stray is written by the tool's own install step, so it has
+    // exactly the shape a real (since-deleted) prompt would have left.
+    const strayPrompt = path.join(ctx.home, 'nonexistent.md');
+    fs.writeFileSync(strayPrompt, '---\nname: nonexistent\n---\n\nstray\n');
+    const strayEntry = (target) => path.join(targetDir(target, ctx.home), installedName(target, 'nonexistent'));
+    for (const target of INSTALL_TARGETS) {
+      fs.mkdirSync(targetDir(target, ctx.home), { recursive: true });
+      target.install(strayPrompt, 'nonexistent', targetDir(target, ctx.home));
+      assert.ok(fs.existsSync(strayEntry(target)), target.label);
+    }
 
     const result = run(['init'], ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Removed orphaned: xoch-nonexistent/);
-    assert.ok(!fs.existsSync(path.join(copilotDir(ctx), 'xoch-nonexistent.prompt.md')));
-    assert.ok(!fs.existsSync(path.join(codexDir(ctx), 'xoch-nonexistent')));
-    assert.ok(!fs.existsSync(path.join(claudeDir(ctx), 'xoch-nonexistent')));
-    assert.ok(!fs.existsSync(path.join(kiroDir(ctx), 'xoch-nonexistent.md')));
+    for (const target of INSTALL_TARGETS) assert.ok(!fs.existsSync(strayEntry(target)), target.label);
   } finally {
     cleanup(ctx);
   }
