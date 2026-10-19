@@ -12,7 +12,7 @@ Use Xoch to work on Xoch:
 xoch-open -> xoch-do -> xoch-doc -> xoch-close
 ```
 
-For this repository, older migration jobs may still live under `.xoch/context/`. New job guidance should target the resolved Xoch storage root's `work/` directory — `.xoch/work/` by default, or `~/.xoch/projects/<slug>/work/` when `storage.mode` is set to `centralized` (`xoch config set storage.mode centralized`, or hand-edit `~/.xoch/config.json`). Resolve it with `xoch config root`.
+Job guidance should target the resolved Xoch storage root's `work/` directory — `~/.xoch/projects/<slug>/work/` by default (centralized storage), or `.xoch/work/` when `storage.mode` is `in-repo` (`xoch config set storage.mode in-repo`, or hand-edit `~/.xoch/config.json`). Resolve it with `xoch config root`.
 
 ---
 
@@ -44,9 +44,8 @@ When adding or changing prompts:
 - keep the prompt readable as plain Markdown
 - use Xoch vocabulary: job, phase, arc, work, docs
 - route to current command names
-- preserve legacy `.xoch/context/` only as a migration fallback
 - avoid QA or PR handoff ceremony in the core workflow
-- update `prompts/README.md`, `README.md`, and `SYSTEM_DESIGN.md` when behavior changes
+- update `prompts/README.md` and `README.md` when behavior changes
 
 ---
 
@@ -93,7 +92,6 @@ Xoch docs should describe the current system, not a historical changelog.
 Update docs when behavior changes:
 
 - `README.md` for user-facing workflow and installation guidance
-- `SYSTEM_DESIGN.md` for architecture and state model
 - `prompts/README.md` for command inventory and prompt behavior
 - `CONTRIBUTING.md` for contributor workflow
 

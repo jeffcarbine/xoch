@@ -127,8 +127,10 @@ partials/accept-or-modify.md
 partials/action-choice.md
 partials/arc-context.md
 partials/arc-evidence.md
+partials/arc-signals.md
 partials/behavior-tests.md
 partials/budget-check.md
+partials/commit-message.md
 partials/context-economy.md
 partials/coverage-gate.md
 partials/current-phase-context.md
@@ -154,7 +156,7 @@ core/advance-core.md          do: advance step
 core/discovery-core.md
 core/doc-check-core.md
 core/doc-write-core.md
-core/foundation-core.md
+core/foundation-core.md       recovery reference for agents new to Xoch; not loaded by any prompt
 core/implement-core.md        do: implement step
 core/open-core.md             open: entry modes and title step (also run by next)
 core/plan-core.md             open: plan step
@@ -201,7 +203,7 @@ A prompt file may also select text by the engineer's own config, resolved once a
 
 Rendered prompts are written to `~/.xoch/prompts/` and installed from there.
 
-Core reference prompts are rendered to `~/.xoch/prompts/core/`. Token-light wrapper prompts such as `discovery.md`, `trace.md`, and `doc.md` should only tell the agent to read core prompts when workflow details are missing. Bundled wrappers pick which core file to read from state or the engineer's message rather than always reading the same one: `open.md` and `do.md` by `current_step`, `revise.md` by mode, and `next.md` by running `xoch job close` then `open-core.md`. `close.md` reads no core file at all: it runs the `xoch job close` / `xoch arc close` helpers, which check every closing gate themselves.
+Core reference prompts are rendered to `~/.xoch/prompts/core/`. Wrapper prompts such as `discovery.md`, `trace.md`, and `doc.md` tell the agent to read their core only when workflow details are missing. A wrapper that includes `managed-workflow.md` begins its side workflow itself; its core never begins it again. Bundled wrappers pick which core file to read from state or the engineer's message rather than always reading the same one: `open.md` and `do.md` by `current_step`, `revise.md` by mode, and `next.md` by running `xoch job close` then `open-core.md`. `close.md` reads no core file at all: it runs the `xoch job close` / `xoch arc close` helpers, which check every closing gate themselves.
 
 Use `action-choice.md` when a prompt asks who should perform the next action. Use `next-step.md` for command routing at the end of a prompt. Rendered prompts should use the consistent phrasing:
 
@@ -224,11 +226,11 @@ Ready for next step: `xoch-pr` | `xoch-close`
 
 Use `response-ending.md` in prompt rules to keep final responses ordered. Summaries, files, snapshots, notes, and caveats should come before the last line; the last line should be either a text-game choice or `Ready for next step: ...`.
 
-Use `phase-boundary.md` in phase commands. It tells agents that `Ready for next step: ...` is a stop sign and that `do` must not roll into later phases without a fresh engineer invocation.
+Use `phase-boundary.md` only in the job-type cores (`standard-job-core.md`, `qa-job-core.md`), which every `do` step loads before its step core. It tells agents that `Ready for next step: ...` is a stop sign and that `do` must not roll into later phases without a fresh engineer invocation. Step cores do not repeat it.
 
 Use `context-economy.md` anywhere a prompt may decide which files to inspect. It keeps token budgets modest, avoids rereading files when current conversation context is sufficient, and prefers targeted snippets, search, and diffs before full-file reads.
 
-Use `state-phase-index.md` in commands that repeatedly orient around the active phase. It keeps job state (read with `xoch state get`) useful as a compact current-phase index so agents do not need to reread full `spec.md`, `plan.md`, or `phases.json` on every `do` loop.
+Use `state-phase-index.md` where a prompt orients on phase progress without a current phase to read (today, `review-core.md`). It names the job-state fields that serve as a compact phase index, so agents do not reread full `spec.md`, `plan.md`, or `phases.json`. Prompts that read the current phase use `current-phase-context.md` instead.
 
 Use `storage-root.md` wherever a prompt names `[xoch-root]`. It renders the configured storage location (`~/.xoch/projects/[repo-slug]/` when centralized, `.xoch/` in-repo) at install time, so the agent never has to look it up. Likewise `do.md` and `advance-core.md` render only the configured `git.behavior`'s instructions, so a setting changed mid-session still reaches an agent working from memory.
 
@@ -236,13 +238,17 @@ Use `project-routing.md` in commands that read or write active job artifacts. It
 
 Use `workflow-boundary.md` at the start of every stateful command. It queries `current.json` and, only when a workflow is actually active, reads `workflow-boundary-core.md` for the full protocol -- blocking silent workflow replacement and permitting explicitly chained commands only after pending wrap-up succeeds. `managed-workflow.md` gives discovery, sidebar, trace, doc, and map a common begin/resume/complete lifecycle.
 
-Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`/`patch.md`. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
+Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write-tests-first, confirm-red, coverage-backfill-is-different discipline. Use `coverage-gate.md` in `plan-core.md`/`review-core.md`; `patch.md` states its own coverage-waiver rule. It sets the 100%-by-default, non-waivable-outside-`xoch-patch` coverage rule and the narrow documented-exception mechanism for a branch proven both non-removable and non-fake-testable.
 
-Use `xoch-file-helper-rule.md` in `spec-core.md`, `plan-core.md`, `revise-spec-core.md`, `revise-plan-core.md`, `trace-core.md`, and `implement-core.md`. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
+Use `xoch-file-helper-rule.md` in every prompt that writes job-scoped prose artifacts: `doc.md` and the spec, plan, revise-spec, revise-plan, implement, trace, and QA cores. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
+
+Use `arc-signals.md` wherever a prompt decides whether work is one job or an arc (`open-core.md`, `spec-core.md`), so both apply the same signals.
+
+Use `commit-message.md` wherever a prompt drafts a commit message (`advance-core.md`, once, outside its `git.behavior` marker). It sets the message source, shape, and the no-identifiers, no-attribution, no-mid-sentence-line-break rules. A partial nested inside a `{{xoch-config:...}}` value must contain no `"` or `}}`.
 
 ## Multi-Project Jobs
 
-Standalone jobs remain unchanged. Multi-project jobs add `.xoch/work/jobs/[job-id]/projects.json` with one primary project and one or more participants. The primary project owns canonical shared job artifacts; participant job folders are synchronized mirrors.
+Standalone jobs remain unchanged. Multi-project jobs add `projects.json` to the job directory (`[xoch-root]/work/jobs/[job-id]/`) with one primary project and one or more participants. The primary project owns canonical shared job artifacts; participant job folders are synchronized mirrors.
 
 Prompts must:
 
@@ -257,7 +263,7 @@ Machine-local paths belong in `~/.xoch/workspace-map.json`, maintained by `xoch 
 
 ## Prompt Style
 
-Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
+Prefer concise imperative instructions. Keep command prompts focused on what the agent must do now. Keep rationale only where it changes a decision the agent makes, and never restate a partial's content in a prompt that includes it. Put long templates, lifecycle explanations, and recovery details in `prompts/core/`; wrappers should point there only when the current agent lacks context.
 
 Prefer installed helpers for deterministic mechanics. Use `xoch` for repeatable job, arc, pointer, snapshot, and phase-state actions instead of restating shell/YAML steps in prompts. Keep subjective work in prompts.
 
