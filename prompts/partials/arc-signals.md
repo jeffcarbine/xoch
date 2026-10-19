@@ -1,0 +1,7 @@
+- multiple independent outcomes or workstreams
+- several features, packages, services, or repositories with different validation paths
+- substantial sequencing where one piece should be planned or reviewed separately from another
+- several documentation targets with different owners or audiences
+- acceptance criteria that naturally cluster into multiple jobs
+- uncertainty high enough that a shared arc spec would help before job-level specs
+- work already framed as "phase 1 of several projects" or similar
