@@ -5,40 +5,23 @@ description: Step routing for xoch-do on a standard (non-QA) job
 
 # Xoch - Standard Job Core
 
-This is `xoch-do`'s step routing for a standard job (`job_type: standard`, or a job with no `job_type`). It is rendered to `~/.xoch/prompts/core/standard-job-core.md` and is not installed as a command; `xoch-do` reads it after routing on `job_type`.
+`xoch-do`'s step routing for a standard job (`job_type: standard`, or no `job_type`). Route on `current_step` from the router's `job current --json` result. If you already know the step's flow from this conversation, continue from context; otherwise read its core:
 
-`xoch-do` replaces `xoch-build` (and, before it, `xoch-make`, the old phase-advancing `xoch-next`, and `xoch-review`). It does whatever the current step calls for -- building, reviewing, advancing -- carrying a job through implementation phase by phase and, once every phase is done, through the final quality-gate review -- all as one command. Position is tracked by `current_step` in job state, not by which command was last typed.
+- `implement` -- brief the phase, get the ownership choice, and implement it: `~/.xoch/prompts/core/implement-core.md`
+- `advance` -- review the phase and get the advance choice: `~/.xoch/prompts/core/advance-core.md`
+- `final_review` -- run the job-level quality gate: `~/.xoch/prompts/core/review-core.md`
+- missing, `null`, or any other value -- do not guess. Report the job's actual state and ask how to proceed.
 
-The `xoch-do` router already ran `job current --json`. Read its `current_step` and act accordingly:
-
-- `implement` -- brief the phase and get the ownership choice, then implement it. If you already know this flow from this conversation, continue from context; otherwise read:
-  ```text
-  ~/.xoch/prompts/core/implement-core.md
-  ```
-- `advance` -- review the phase and get the advance choice. If you already know this flow, continue from context; otherwise read:
-  ```text
-  ~/.xoch/prompts/core/advance-core.md
-  ```
-- `final_review` -- run the job-level quality gate. If you already know this flow, continue from context; otherwise read:
-  ```text
-  ~/.xoch/prompts/core/review-core.md
-  ```
-- missing, `null`, or any other value -- do not guess. Report the job's actual state to the engineer and ask how to proceed.
-
-Do not read a core file for a step you are not currently on.
+Do not read a core for a step you are not on.
 
 {{xoch-partial:phase-boundary.md}}
 
-## Moving between steps
+## Moving Between Steps
 
-Every transition is decided by a deterministic helper, never guessed or written directly by the agent:
+Transitions are made by helpers or by review's recorded outcome, never guessed or written by hand:
 
-- Right when phase implementation is accepted as complete -- before asking the advance question -- run `xoch job step-advance --job "[job-id]"` to move `implement` -> `advance`, then continue straight into the advance flow (`advance-core.md`'s own Step 1 onward) in this same response. Do not ask the engineer to invoke `xoch-do` again for this transition; that defeats the point of bundling these two together.
-- Crossing a phase boundary -- entering phase 1, moving `advance` -> `implement` for the next phase, or falling through `advance` -> `final_review` once every phase is done -- is `phase advance`'s job, exactly as `advance-core.md` documents; it also sets `current_step`. This still ends the response and asks for a fresh `xoch-do` invocation, per the phase boundary above -- entering review is a new step, not a continuation of the phase that just finished.
-- Leaving `final_review` is judgment-dependent, not mechanical: a passing review routes to `xoch-doc`, a failing one routes back into implementation. `review-core.md`'s own job state update sets `current_step` directly as part of recording that outcome, rather than asking a generic helper to guess it.
+- `implement` -> `advance`: `xoch job step-advance --job "[job-id]"`, then continue into `advance` in the same response. Never ask for a fresh invocation here.
+- Crossing a phase boundary (the next phase's `implement`, or `final_review` after the last phase): `xoch phase advance --job "[job-id]" --phase "[N]"`, then stop for a fresh `xoch-do` invocation.
+- Leaving `final_review`: `review-core.md` sets `current_step` directly from the review outcome.
 
-`implement-core.md`, `advance-core.md`, and `review-core.md` already document their own endings in these terms -- follow each one's own Output section as written.
-
-## Output
-
-Each step ends with that step's own adventure-style choice: `[E]/[A]/[C]` for `implement`, `[Y]/[N]` then the git commit/push choice for `advance`, and `final_review`'s own accept/findings choice. The response only truly stops -- printing `Ready for next step: \`xoch-do\`` or `` `xoch-doc` `` and waiting for a fresh invocation -- at an actual phase boundary or when review's outcome is decided; the `implement` -> `advance` transition within one phase never stops early.
+Each core's Output section gives the exact commands; follow it as written.

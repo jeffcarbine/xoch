@@ -64,6 +64,7 @@ Use the active job evidence to produce exactly one title and one Markdown descri
   - Prefer recorded commands and results when they exist.
   - Otherwise derive reviewer steps from implemented behavior and acceptance criteria without claiming they have already been run.
   - If evidence cannot support actionable steps, ask the engineer rather than producing generic or invented instructions.
+- Do not add attribution to the model used or the company that provides it, such as a `Generated with` footer or `Co-Authored-By` lines.
 
 Return the result as two independently copyable `bash` code blocks, without extra commentary after the description. The title block contains only the title; the description block contains the complete Markdown description:
 

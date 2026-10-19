@@ -5,33 +5,7 @@ description: Full reference workflow for xoch-do's implement step
 
 # Xoch - Implement Core
 
-This is the full reference workflow for `xoch-do`'s `implement` step. It is rendered to `~/.xoch/prompts/core/implement-core.md` and is not installed as a command.
-
-Implement, guide, or collaborate on the current phase of the active job.
-
-`implement` is Xoch's implementation step, reached when `xoch-do` finds `current_step: implement`. It replaces the old standalone `xoch-make` command and uses phase language instead of milestone language.
-
-## Purpose
-
-Load the active job, understand the current phase, choose an ownership mode with the engineer, perform the work when appropriate, record useful evidence, and continue into the `advance` step.
-
-Target flow:
-
-```text
-xoch-open -> xoch-do -> xoch-doc -> xoch-close
-```
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Use the `xoch job current --json` result from the command wrapper. Run it now if the result is unavailable.
-
-Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
+The `implement` step of `xoch-do`: brief the current phase, settle ownership with the engineer, do the work when appropriate, record evidence, and continue into `advance`.
 
 {{xoch-partial:project-routing.md}}
 
@@ -45,40 +19,28 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 If there is no active job, ask the engineer to run `xoch-open` or provide the job ID.
 
-{{xoch-partial:state-phase-index.md}}
-
-{{xoch-partial:phase-boundary.md}}
-
-Mark the phase started before any other work. This records the commit the phase begins from -- after the previous phase's changes were committed -- so the phase's snapshot lists only its own changes. It does nothing for a phase already started:
+Mark the phase started before any other work. It records the commit the phase begins from, so its snapshot lists only its own changes, and does nothing for a phase already started:
 
 ```bash
 xoch phase start --job "[job-id]"
 ```
 
-If the current phase's `current_phase_type` (from Step 1's state read) is `checkpoint`, stop here and follow `## Checkpoint Flow` below instead of Steps 2-8.
+If `current_phase_type` is `checkpoint`, follow Checkpoint Flow below instead of Steps 2-8.
 
 ### Step 2: Validate Readiness
 
-Before implementation, confirm:
+Confirm:
 
-- the job has a spec
-- the job has a plan
-- a current phase is identifiable
-- the current phase is not already complete
-- acceptance criteria for the phase are listed or can be inferred
+- the job has a spec and a plan
+- a current phase is identifiable and not already complete
+- the phase's acceptance criteria are listed or can be inferred
 - required documentation targets are known or explicitly marked unknown
 
-If foundational requirements or the plan no longer fit the work, route to:
-
-```text
-xoch-revise
-```
-
-`xoch-revise` works out whether the definition of done (spec), the implementation path or phase breakdown (plan), or both need to change.
+If the requirements or plan no longer fit the work, route to `xoch-revise`, which decides whether the spec, the plan, or both need to change.
 
 ### Step 3: Explain The Current Phase
 
-Before implementation, give the engineer a concise phase briefing. This briefing is required even when the phase looks straightforward.
+Before any edits, always give a concise, specific phase briefing:
 
 - phase title and goal
 - why this phase matters
@@ -90,27 +52,21 @@ Before implementation, give the engineer a concise phase briefing. This briefing
 - risks or constraints
 - likely next command
 
-Keep this practical and specific. The engineer should understand what needs to be done, where the work is expected to happen, and how success will be checked before edits begin.
-
 ### Step 4: Ask How To Proceed
 
-After the briefing, stop and ask:
+Stop and ask:
 
 {{xoch-partial:action-choice.md agent_action="does" engineer_action="does"}}
 
-Do not begin implementation until the engineer chooses one of these paths, unless they already made a clear choice in the same message that invoked `xoch-do`.
+Do not begin implementation until the engineer chooses, unless they already made a clear choice in the message that invoked `xoch-do`. This choice also settles test ownership; there is no separate ask before Step 6.
 
-Interpret the choices as:
-
-- `[A]` Agent does: inspect the needed files, implement the phase, validate, and record evidence. When this phase writes tests, the agent drafts them too (Step 6).
-- `[E]` Engineer does: do not edit; provide a focused implementation checklist, validation checklist, and likely files to inspect. When this phase writes tests, wait for the engineer to provide them before Step 6's fail-confirmation.
-- `[C]` Collaborate: work interactively, making only the changes the engineer confirms. When this phase writes tests, decide who writes which test as part of that same collaboration rather than fixing it in advance.
-
-This single choice also settles test ownership for the phase — there is no separate ask before Step 6.
+- `[A]` Agent does: inspect the needed files, implement, validate, and record evidence. The agent drafts any tests.
+- `[E]` Engineer does: do not edit. Provide a focused implementation checklist, validation checklist, and likely files to inspect. Wait for the engineer's tests before Step 6's fail-confirmation.
+- `[C]` Collaborate: work interactively, making only changes the engineer confirms. Decide who writes which test as you go.
 
 Record the chosen path in job state or phase notes when useful.
 
-After the initial ownership choice, treat all follow-up back-and-forth in the same phase conversation as part of phase implementation evidence. If the agent or engineer makes additional edits, runs manual checks, skips checks, changes validation expectations, or makes decisions after the first build pass, record those details in the final phase summary and in job state, notes, or the current phase file when useful. This lets the `advance` step review the phase without asking a separate catch-up question.
+Treat all follow-up back-and-forth in the phase as implementation evidence. Record additional edits, manual checks, skipped checks, changed validation expectations, and decisions in the final phase summary and in state or notes, so `advance` can review without a catch-up question.
 
 ### Step 5: Prepare Implementation
 
@@ -118,17 +74,15 @@ After the initial ownership choice, treat all follow-up back-and-forth in the sa
 
 For agent-owned or collaborative work:
 
-1. Inspect only the files needed for the current phase, from their owning project roots.
+1. Inspect only the files the phase needs, from their owning project roots.
 2. Prefer existing project patterns over new abstractions.
-3. Identify focused tests/checks before editing. When commands are not already known, inspect advisory candidates with:
+3. Identify focused tests/checks before editing. When commands are not known, detect advisory candidates (from each touched project root, for multi-project phases):
 
    ```bash
    xoch project-commands detect --json
    ```
 
-   For multi-project phases, run command detection separately from each touched project root.
-
-4. Note any risky operations that need engineer approval.
+4. Note risky operations that need engineer approval.
 
 {{xoch-partial:budget-check.md skill="do"}}
 
@@ -138,33 +92,32 @@ For agent-owned or collaborative work:
 
 When this phase adds or changes testable code behavior:
 
-1. Write the test(s) for that behavior before editing implementation code, per the ownership chosen in Step 4: `[A]` the agent drafts them, `[E]` wait for the engineer to provide them, `[C]` decide together as you go.
-2. Run them and confirm they fail for the right reason — the behavior doesn't exist yet, not a broken test or a syntax error.
+1. Write the tests before editing implementation code, per Step 4's ownership: `[A]` the agent drafts them, `[E]` the engineer provides them, `[C]` decide together.
+2. Run them and confirm they fail for the right reason.
 3. Record the failure as evidence.
-4. Stop and ask: {{xoch-partial:accept-or-modify.md artifact="tests"}}. This gate is mandatory and applies no matter who wrote the tests — even engineer-authored tests need an explicit `[A]` before continuing. Do not begin Step 7 until the engineer chooses `[A]`. On `[M]`, revise the tests per the engineer's modifications and re-confirm they still fail for the right reason before asking again.
+4. Stop and ask: {{xoch-partial:accept-or-modify.md artifact="tests"}}. This gate is mandatory no matter who wrote the tests. Do not begin Step 7 before `[A]`. On `[M]`, revise the tests, re-confirm they still fail for the right reason, and ask again.
 
-When this phase backfills coverage for pre-existing, already-correct code (per the plan's coverage-gate work), write and run those tests too. They are expected to pass immediately, not fail — that's expected, and different from the write-first flow above. The accept/modify gate above still applies before continuing to Step 7.
+Coverage-backfill tests for existing code (per the plan) are written and run too; they are expected to pass immediately. The accept/modify gate still applies before Step 7.
 
-When this phase doesn't add or change testable code behavior — pure documentation, configuration, or research — skip this step and continue to Step 7.
+Skip this step when the phase adds or changes no testable code behavior.
 
 ### Step 7: Implement
 
 When editing:
 
-- keep changes scoped to the current phase
-- do not edit files solely for a later phase
+- keep changes scoped to the current phase; do not edit files solely for a later phase
 - avoid unrelated refactors
 - preserve user changes already present in the worktree
 - use deterministic helpers when available
-- update docs only when this phase's work changes documented behavior
+- update docs only when this phase changes documented behavior
 - avoid adding QA or PR process ceremony
 - never move or copy implementation source between participating repositories
 - add proper inline documentation on new code -- JSDoc for JavaScript/TypeScript, docstrings for Python, or the equivalent convention for the language being written
-- implement until this phase's behavior tests pass (green), then continue to Step 8
+- implement until this phase's behavior tests pass, then continue to Step 8
 
-{{xoch-config:documentation.commentMode always="Apply the inline-documentation bullet above unconditionally." follow-convention="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention." default="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention."}}
+{{xoch-config:documentation.commentMode always="Apply the inline-documentation bullet above unconditionally." default="Match whatever the target project's file or module already does for inline documentation instead of applying the bullet above unconditionally -- including adding no comments, when that's the established convention."}}
 
-If the job is target-model, append useful implementation notes with:
+Append useful implementation notes:
 
 ```bash
 xoch file write --job "[job-id]" --path "notes/do-[date].md" --append <<'XOCHEOF'
@@ -172,37 +125,34 @@ xoch file write --job "[job-id]" --path "notes/do-[date].md" --append <<'XOCHEOF
 XOCHEOF
 ```
 
-For legacy migration jobs, add notes to the existing legacy job folder when useful.
-
 ### Step 8: Validate
 
-Run focused validation that matches the phase. Examples:
+Run focused validation that matches the phase, for example:
 
 - syntax checks for touched shell scripts
 - installer smoke tests when install behavior changes
 - prompt inventory scans when command files change
 - targeted documentation scans when terminology changes
 - project test suites when code behavior changes
-- this phase's behavior tests now pass (green), and any coverage-backfill tests still pass
+- this phase's behavior tests now pass, and coverage-backfill tests still pass
 - coverage on any file this phase modified with executable code, when the project has coverage tooling
 
 If validation cannot be run, record why.
 
 ### Step 9: Record Evidence
 
-Before ending, summarize:
+Summarize:
 
 - files changed, grouped by project for multi-project jobs
 - acceptance criteria touched
-- tests/checks run
-- tests/checks not run
-- red→green status for each behavior test written this phase
+- tests/checks run and not run
+- red -> green status for each behavior test written this phase
 - coverage status for any file this phase modified with executable code
 - additional changes, manual checks, skipped checks, or decisions from follow-up back-and-forth
 - risks or follow-up notes
 - whether docs were updated or intentionally deferred
 
-For target-model jobs, update job state:
+Update job state, keeping `last_validation` compact (detailed history belongs in snapshots or notes):
 
 ```bash
 xoch state update --job "[job-id]" <<'XOCHEOF'
@@ -210,25 +160,19 @@ xoch state update --job "[job-id]" <<'XOCHEOF'
 XOCHEOF
 ```
 
-The `current_phase*` fields are maintained by `phase advance` from the phases document; do not rewrite them here.
+Do not touch the `current_phase*` fields or `next_command`; `phase advance` owns them, and `next_command` stays `xoch-do` within a phase.
 
-`next_command` is left untouched here -- it stays `xoch-do` throughout the `implement`/`advance` cycle within a phase; only crossing a phase boundary changes it, and that's `phase advance`'s job.
-
-Keep `last_validation` compact; detailed validation history belongs in phase snapshots or notes.
-
-For legacy migration jobs, record the same information in the legacy job notes or tracker when appropriate.
-
-For a multi-project job, write notes and state through the primary job and sync participant context after the final evidence update. A participant sync failure leaves phase work incomplete for handoff purposes even when source edits succeeded.
+For a multi-project job, write notes and state through the primary job and sync participant context after the final evidence update. A participant sync failure leaves the phase incomplete for handoff even when source edits succeeded.
 
 ## Checkpoint Flow
 
-Follow this instead of Steps 2-8 when the current phase's `current_phase_type` is `checkpoint`.
+Follow this instead of Steps 2-8 when `current_phase_type` is `checkpoint`.
 
-1. Summarize what the phases since the last checkpoint (or since the start of the job) actually built — their goals and the acceptance criteria they cover. Pull this from the phases document (`xoch phase show --job "[job-id]"`) and prior snapshots, not from memory alone.
-2. Ask the engineer to exercise that work live — in the running app, CLI, or however this job's output is actually used — and report what they find.
-3. Collaborate directly on any corrections the engineer surfaces, making the edits in the same conversation as they come up. This is expected workflow, not an out-of-band change: do not invoke `xoch-revise` for it, and do not reopen or amend the snapshots of phases already completed.
-4. Once the engineer confirms things look right — with or without corrections along the way — write `checkpoint-[N].md` under `snapshots_dir`, recording what was tested, what was found, and what was corrected.
-5. Continue into the `advance` step per the Output section below; a checkpoint phase advances the same way an implementation phase does.
+1. Summarize what the phases since the last checkpoint (or the start of the job) built: their goals and the acceptance criteria they cover. Use the phases document (`xoch phase show --job "[job-id]"`) and prior snapshots, not memory alone.
+2. Ask the engineer to exercise that work live, however this job's output is actually used, and report what they find.
+3. Make the corrections the engineer surfaces directly in this conversation. Do not invoke `xoch-revise`, and do not reopen or amend completed phases' snapshots.
+4. Once the engineer confirms things look right, write `checkpoint-[N].md` under `snapshots_dir`: what was tested, what was found, and what was corrected.
+5. Continue into `advance` per Output below.
 
 ## Output
 
@@ -240,7 +184,7 @@ Job: [job-id]
 Current phase: [N] - [title]
 ```
 
-Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue directly into the `advance` step (`advance-core.md`'s own Step 1 onward) in this same response. Do not stop here, and do not print a `Ready for next step` line for this transition -- there is no new command for the engineer to invoke; `xoch-do` owns both steps.
+Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `implement` to `advance`, and continue into the `advance` step (`advance-core.md`'s Step 1 onward) in this same response. Do not stop or print a `Ready for next step` line for this transition.
 
 ## Rules
 
@@ -250,10 +194,4 @@ Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `i
 
 {{xoch-partial:xoch-file-helper-rule.md}}
 
-- Do not start implementation without enough phase context.
-- Do not start or complete the next *phase* during the current `xoch-do` run. Moving from the `implement` step to the `advance` step within the same phase is expected and required, not a new phase.
 - Do not silently change spec scope or reshape remaining phases; use `xoch-revise`.
-- Keep phase work focused.
-- In multi-project jobs, edit and validate each file from its declared owning project.
-- Record validation evidence, including skipped checks.
-- Do not move active legacy job folders during the migration.

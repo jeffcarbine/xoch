@@ -5,33 +5,7 @@ description: Full reference workflow for xoch-do's advance step
 
 # Xoch - Advance Core
 
-This is the full reference workflow for `xoch-do`'s `advance` step. It is rendered to `~/.xoch/prompts/core/advance-core.md` and is not installed as a command.
-
-Review the current phase, capture a snapshot, and advance when the engineer confirms the phase is complete.
-
-`advance` is Xoch's phase-review-and-advance step, reached when `xoch-do` finds `current_step: advance` -- normally right after its own `implement` step, in the same response. It replaces the old standalone `xoch-next` command and uses phase language instead of milestone language.
-
-## Purpose
-
-Compare the current phase plan against the working tree, gather implementation and validation evidence, identify gaps, and either keep the phase open or advance job state to the next phase.
-
-Target flow:
-
-```text
-xoch-open -> xoch-do -> xoch-doc -> xoch-close
-```
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Use the `xoch job current --json` result from the command wrapper. Run it now if the result is unavailable.
-
-Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move their files automatically.
+The `advance` step of `xoch-do`, normally reached right after `implement` in the same response: review the current phase against the working tree, capture a snapshot, and advance when the engineer confirms.
 
 {{xoch-partial:project-routing.md}}
 
@@ -43,13 +17,7 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 {{xoch-partial:current-phase-context.md}}
 
-Also check notes or evidence from the recent `implement`-step work, under `notes_dir`.
-
-If the current phase is unclear, ask the engineer which phase should be reviewed.
-
-{{xoch-partial:state-phase-index.md}}
-
-{{xoch-partial:phase-boundary.md}}
+Also check recent `implement`-step notes and evidence under `notes_dir`. If the current phase is unclear, ask the engineer which phase to review.
 
 ### Step 2: Inspect Changes
 
@@ -63,70 +31,55 @@ git diff
 git diff --staged
 ```
 
-For a multi-project phase, run these checks in every project touched by the phase and group the review by project. Do not infer one repository's git state from another.
+For a multi-project phase, run these in every touched project and group the review by project. Never infer one repository's git state from another.
 
-Review the diff against the current phase only. Note unrelated changes as out of scope and avoid reverting them.
-
-If the diff contains next-phase work, call it out separately. Do not expand the current review into implementing or validating that next phase.
+Review the diff against the current phase only. Note unrelated changes as out of scope and do not revert them. Call out next-phase work separately; do not implement or validate it.
 
 **QA jobs only (`job_type: qa`).** A QA job changes source only to apply patches the engineer accepted during triage. Compare every changed, staged, or untracked path outside `.xoch/` with the Files listed under Patches in `notes/qa-phase-[N].md`. Any path not tied to a recorded patch is a violation, whoever made it: report each path, do not advance, and ask the engineer to revert it, record it as a patch, or move it into a separate job. Review each recorded patch's diff for scope -- it fixes its failure and nothing else.
 
 ### Step 3: Check Phase Requirements
 
-For the current phase, assess:
+Assess:
 
 - planned files touched
 - acceptance criteria covered
-- implementation jobs completed
-- tests/checks run, including red→green evidence for any behavior tests this phase wrote — not just that something ran
-- coverage status for any file this phase modified with executable code (see `coverage-gate.md` for the closing requirement)
+- planned work completed
+- tests/checks run, including red -> green evidence for behavior tests written this phase, not just that something ran
+- coverage status for any file this phase modified with executable code
 - documentation targets updated or deferred
 - risks, regressions, or missing evidence
 
-If requirements changed, recommend `xoch-revise` instead of advancing blindly.
+If requirements changed, recommend `xoch-revise` instead of advancing.
 
-For a completed checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the standard files/tests/coverage checklist above: what the engineer exercised live, what was found, and what was corrected.
+For a checkpoint phase (`current_phase_type` is `checkpoint`), assess its `checkpoint-[N].md` snapshot instead of the checklist above: what the engineer exercised live, what was found, and what was corrected.
 
 **QA jobs only (`job_type: qa`).** Replace the files/tests/coverage checklist above with the phase's `notes/qa-phase-[N].md`: every planned case has a status (`pass`, `fail`, `blocked`, `skipped`), every `fail` has reproduction values, expected vs. actual, and a proposed severity, and every `blocked`/`skipped` case has a reason. Every `fail` also has a resolution: `patched` with a passing re-test recorded under Patches, or `deferred` with a reason under Deferred. A deferred failure does not block advancing -- deferred failures are the QA job's output, not a defect in the phase. A case with no recorded result, a failure with no resolution, or a `patched` failure with no passing re-test does. The snapshot's Files Changed section lists `.xoch/` artifacts plus each patch's files, and its Validation section summarizes case status counts and patched/deferred counts.
 
 ### Step 4: Provide Phase Review
 
-Report:
+Report files changed, phase requirements met, gaps or risks, testing status, documentation status, and a recommendation. Be direct; the engineer has final say.
 
-- files changed
-- phase requirements met
-- gaps or risks
-- testing status
-- documentation status
-- recommendation
-
-Keep the review firm but not theatrical. The engineer has final say.
-
-If the engineer has already mentioned manual testing, generated files, configuration changes, external setup, documentation decisions, or known skipped checks, include that context in the review and later snapshot.
-
-Do not ask a separate catch-up question for manual, external, or skipped-check details. The `implement` step is responsible for recording follow-up phase evidence during the implementation conversation. If evidence is missing or contradictory, mention the gap in the review and let the `[Y]`/`[N]` advancement choice handle it.
+Include any manual testing, generated files, configuration changes, external setup, documentation decisions, or skipped checks the engineer already mentioned, in the review and later in the snapshot. Do not ask a separate catch-up question for them; if evidence is missing or contradictory, state the gap and let the `[Y]`/`[N]` choice handle it.
 
 ### Step 5: Confirm Advancement
 
-After the phase review, ask exactly this:
+Ask exactly:
 
 ```text
 Ready to move to the next phase? [Y]es / [N]o
 ```
 
-If there are no more phases, use:
+If no phases remain, ask:
 
 ```text
 Ready to move to review? [Y]es / [N]o
 ```
 
-Do not update phase state until the engineer answers yes. If the engineer answers no, keep the phase open and ask what still needs to be added, checked, or discussed before advancing.
+Do not update phase state before a yes. On no, keep the phase open and ask what still needs to be added, checked, or discussed.
 
 ### Step 6: Check Git Commit And Push State
 
-After the engineer confirms advancement, check whether the phase changes are committed and pushed.
-
-Prefer the read-only helper, then inspect focused details as needed:
+After a yes, check whether the phase changes are committed and pushed:
 
 ```bash
 xoch git-state inspect --json
@@ -135,104 +88,38 @@ git status --branch --short
 git log --oneline @{u}..HEAD
 ```
 
-If there are uncommitted changes, staged changes, or local commits that have not been pushed:
+If there are uncommitted changes, staged changes, or unpushed local commits:
 
 {{xoch-config:git.behavior
-ask="Ask the engineer:
-
-```text
-Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?
-```
-
-Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
-
-```text
-Add rate limiting to the webhook ingestion endpoint
-
-Bursts of retried webhooks from upstream were occasionally
-overwhelming the queue consumer. Cap accepted requests per source
-IP over a rolling window and return 429 past that limit.
-```
-
-- `[G]` -- print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
-- `[C]` -- stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
-- `[P]` -- as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
-- `[N]` -- do not commit or push.
-
-For a multi-project phase, report git state per touched project but ask once; for `[C]` or `[P]`, commit (and push, for `[P]`) separately in each repository that has phase changes, never claiming one push covers another."
-generate="Do not ask the engineer what to do with git. Draft a commit message for this phase's changes, print it, and stop there: do not run `git add`, `git commit`, or `git push` -- the engineer commits manually.
-
-Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
-
-```text
-Add rate limiting to the webhook ingestion endpoint
-
-Bursts of retried webhooks from upstream were occasionally
-overwhelming the queue consumer. Cap accepted requests per source
-IP over a rolling window and return 429 past that limit.
-```
-
-For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories."
-commit="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, and report the commit. Do not push.
-
-Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
-
-```text
-Add rate limiting to the webhook ingestion endpoint
-
-Bursts of retried webhooks from upstream were occasionally
-overwhelming the queue consumer. Cap accepted requests per source
-IP over a rolling window and return 429 past that limit.
-```
-
-For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories."
-push="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, push the current branch to its configured upstream, and report the commit and pushed branch.
-
-Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
-
-```text
-Add rate limiting to the webhook ingestion endpoint
-
-Bursts of retried webhooks from upstream were occasionally
-overwhelming the queue consumer. Cap accepted requests per source
-IP over a rolling window and return 429 past that limit.
-```
-
-For a multi-project phase, commit separately in each repository that has phase changes; never combine repository histories. Push each repository separately; never claim one push covers another."
+generate="Do not ask the engineer what to do with git. Draft a commit message, print it, and stop there: do not run `git add`, `git commit`, or `git push`; the engineer commits manually."
+commit="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, and report the commit. Do not push."
+push="Do not ask the engineer what to do with git. Stage this phase's changes, commit them with a drafted message, push the current branch to its configured upstream, and report the commit and pushed branch."
 none="Do not ask the engineer what to do with git, and do not commit or push: leave the changes for the engineer."
-default="Ask the engineer:
+default="Ask the engineer once, after reporting git state per touched project for a multi-project phase:
 
 ```text
 Git changes detected. What would you like me to do? [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing?
 ```
 
-Draft the commit message from the phase's own Xoch docs -- the accepted spec/plan text, the phase's description in the phases document, and the acceptance criteria and evidence this phase covers -- not from Xoch's workflow identifiers. Do not include the job ID, phase number, or arc name anywhere in it; a reader with no knowledge of this job or Xoch should understand the change from the message alone. Shape: an imperative, present-tense summary line, then an optional body explaining what changed and why (distilled from spec/plan/phase text, not a diff recap). For example:
-
-```text
-Add rate limiting to the webhook ingestion endpoint
-
-Bursts of retried webhooks from upstream were occasionally
-overwhelming the queue consumer. Cap accepted requests per source
-IP over a rolling window and return 429 past that limit.
-```
-
 - `[G]` -- print the drafted message and stop there. Do not run `git add`, `git commit`, or `git push`; the engineer commits manually.
 - `[C]` -- stage this phase's changes, commit them with the drafted message, and report the commit. Do not push.
 - `[P]` -- as `[C]`, then push the current branch to its configured upstream and report the pushed branch.
-- `[N]` -- do not commit or push.
-
-For a multi-project phase, report git state per touched project but ask once; for `[C]` or `[P]`, commit (and push, for `[P]`) separately in each repository that has phase changes, never claiming one push covers another."
+- `[N]` -- do not commit or push."
 }}
 
-Then continue with snapshot and advancement, recording what was done with git (including any commit or push) in the snapshot's Additional Notes.
+When drafting a commit message:
 
-If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how they want to proceed.
+{{xoch-partial:commit-message.md}}
+
+For a multi-project phase, draft, commit, and push separately in each repository that has phase changes. Never combine repository histories or claim one push covers another.
+
+Record what was done with git in the snapshot's Additional Notes, then continue to Step 7.
+
+If the branch has no upstream, the push fails, or git state is ambiguous, stop the commit/push path, explain what blocked it, and ask the engineer how to proceed.
 
 ### Step 7: Snapshot And Advance
 
-When confirmed, write a phase snapshot.
-
-For target-model jobs, write the snapshot with one call, piping in only the sections that need judgment. The helper fills in everything mechanical itself: the title and date, the next phase (or "Final review"), every file changed since the phase started -- committed, uncommitted, and new, taken from git -- and an entry for each of the phase's acceptance criteria you did not report on ("not recorded"):
+Write the phase snapshot with one call, piping in only the sections that need judgment. The helper fills in the title, date, next phase (or "Final review"), every file changed since the phase started (committed, uncommitted, and new), and "not recorded" for any phase acceptance criterion you omit:
 
 ```bash
 xoch snapshot create --job "[job-id]" --phase "[N]" <<'XOCHEOF'
@@ -254,7 +141,7 @@ xoch snapshot create --job "[job-id]" --phase "[N]" <<'XOCHEOF'
 XOCHEOF
 ```
 
-A section left out is written as "TBD". Pass `--title` or `--next` only to override what the phases document supplies. Read the written snapshot back with `xoch file read` and correct it with `xoch file edit` if the generated parts need a note.
+A section left out is written as "TBD". Pass `--title` or `--next` only to override the phases document. Read the snapshot back with `xoch file read` and fix it with `xoch file edit` if the generated parts need a note.
 
 Then advance:
 
@@ -262,33 +149,9 @@ Then advance:
 xoch phase advance --job "[job-id]" --phase "[N]"
 ```
 
-`phase advance` marks phase N complete in the phases document and makes phase N+1 current, taking its title, goal, type, files, acceptance criteria, and validation from the phases document, and recording the commit phase N+1 starts from so its own snapshot can list what it changed. When phase N is the last phase, it routes state to `final_review` instead.
+`phase advance` marks phase N complete and makes phase N+1 current (`status: phase_ready`, `current_step: implement`), copying its fields from the phases document and recording its start commit. After the last phase it sets `status: implementation_complete`, clears the `current_phase*` fields, and sets `current_step: final_review`. Never edit the phases document or job state by hand to advance.
 
-Do not edit the phases document or job state by hand to advance. If another phase exists, `phase advance` leaves job state at:
-
-```json
-{
-  "status": "phase_ready",
-  "current_phase": 2,
-  "current_phase_title": "[next phase title]",
-  "current_phase_goal": "[next phase goal]",
-  "current_phase_type": "implementation | checkpoint",
-  "current_phase_files": ["[path]"],
-  "current_phase_acceptance_criteria": ["AC-001"],
-  "current_phase_validation": ["[expected check]"],
-  "phase_index": ["[every phase, with phase N now complete]"],
-  "next_command": "xoch-do",
-  "current_step": "implement"
-}
-```
-
-If no phases remain, it leaves job state at `status: implementation_complete`, every `current_phase*` field cleared (`null` or `[]`), `next_command: xoch-do`, and `current_step: final_review`.
-
-Both outcomes above are what `phase advance` writes when run per Step 7 -- this documents its effect, it is not a separate hand-edit.
-
-For legacy migration jobs, write a comparable `milestone-[N].md` or phase snapshot in the legacy job folder and update the legacy tracker in place.
-
-For a multi-project job, include commit, push, validation, and changed-file evidence by project in the canonical snapshot, then sync the snapshot and advanced state to participants. Do not advance when sync fails.
+For a multi-project job, record commit, push, validation, and changed-file evidence by project in the canonical snapshot, then sync the snapshot and advanced state to participants. Do not advance when sync fails.
 
 ## Output
 
@@ -300,8 +163,6 @@ Next phase: [N+1] - [title]
 {{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
-Stop here. Do not begin the next phase's `implement` step in this response -- a fresh `xoch-do` invocation is required, per the phase boundary.
-
 If implementation is complete:
 
 ```text
@@ -309,7 +170,7 @@ All phases complete.
 {{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
-Stop here too -- entering `final_review` is a new step, not a continuation of the phase that just finished, so it also waits for a fresh `xoch-do` invocation.
+Either way, stop. The next phase's `implement` step and `final_review` each need a fresh `xoch-do` invocation.
 
 ## Rules
 
@@ -317,8 +178,6 @@ Stop here too -- entering `final_review` is a new step, not a continuation of th
 
 - Engineer confirmation is required before advancing.
 - Review only the current phase unless the engineer asks for broader review.
-- Advancing to the next phase does not authorize starting that phase.
 - Preserve unrelated worktree changes.
-- Multi-project git, validation, and snapshot evidence must remain project-specific.
+- Keep multi-project git, validation, and snapshot evidence project-specific.
 - Record skipped checks as skipped, not passed.
-- Do not move active legacy job folders during the migration.
