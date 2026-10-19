@@ -25,14 +25,12 @@ Resolve available job artifacts before reading them:
 xoch job evidence --job "[job-id]" --json
 ```
 
-Read the active job's state with `xoch state get --job "[job-id]" --json`. Use the smallest sufficient evidence set for the requested draft, preferring:
+Read the active job's state with `xoch state get --job "[job-id]" --json`. Use the smallest sufficient evidence set, preferring targeted sections and existing evidence over broad repository inspection:
 
 1. completed phase snapshots and recorded validation evidence;
 2. accepted `spec.md` and `plan.md` for scope and acceptance criteria;
 3. `review.md` or `closure.md` when present;
 4. explicit engineer-provided change and testing details.
-
-Before each full read beyond active pointer/state files, run the estimator. Prefer targeted sections, snapshots, and existing evidence over broad repository inspection.
 
 ### 2. Establish evidence sufficiency
 
@@ -95,9 +93,8 @@ Ready for next step: `xoch-close`
 ## Rules
 
 - The active Xoch job is the canonical context source.
-- Preserve the standard pending-workflow boundary; never replace another workflow implicitly.
 - Ask for missing facts instead of manufacturing certainty.
 - Keep the generated content provider-neutral and copyable.
 - Do not call Git hosting or other external services.
 - Do not modify source code, Git state, job artifacts, or workflow state while generating the draft.
-- After the PR draft, the next step is always `xoch-close` — this command does not chain into it automatically.
+- After the PR draft, the next step is always `xoch-close`; do not chain into it.

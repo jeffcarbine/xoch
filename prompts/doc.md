@@ -9,45 +9,46 @@ description: Create, refresh, repair, or validate Xoch project and feature docum
 
 {{xoch-partial:managed-workflow.md command="xoch-doc" pending="continue_documentation"}}
 
-Use this token-light wrapper for normal `xoch-doc` work.
+`xoch-doc` is a required stop after `xoch-do`'s `final_review` passes, as well as an on-demand command.
 
-`xoch-doc` is a required stop after `xoch-do`'s `final_review` step passes, not only an on-demand command.
+## Drift Check First
 
-### Drift Check First
+If the engineer states a specific documentation goal (create, refresh, repair, or similar), skip this check and go to the core process.
 
-If the engineer's message states a specific documentation goal (create, refresh, repair, or similar), skip this check and go straight to the core process below.
-
-Otherwise — a bare invocation, typically the mandatory post-review gate — check drift before doing anything else:
+Otherwise (a bare invocation, typically the post-review gate), check drift first:
 
 ```bash
 xoch docs-drift check --json
 ```
 
-- No baseline exists yet (`Drift baseline not found`), or drift signals are present: continue to the core process below.
-- A baseline exists and shows zero drift signals, and the active job's spec records no Version Impact (or `none`): skip the core process entirely. If the spec records a version bump, continue to the core process so it is applied. When a job is active, record a documentation status of "not impacted" with `xoch state set --job "[job-id]" --field documentation_status --value "not impacted"` (`xoch job close` requires it), and append a one-line note to `notes_dir` via `xoch file write --append` (see the file helper rule below). When no job is active, just report there's no drift and stop. This short path does not need to begin the managed workflow — it completes in one step. Route onward per the engineer's stated goal when they gave one; otherwise end with the same PR-vs-close-job choice a full pass ends with (below).
+- No baseline yet (`Drift baseline not found`), or drift signals present: continue to the core process. A pass that ends with settled documentation writes a fresh baseline.
+- A baseline with zero drift signals, and the active job's spec records a version bump: continue to the core process so the bump is applied.
+- A baseline with zero drift signals, and no Version Impact (or `none`): skip the core process. This short path completes in one step and does not begin the managed workflow.
+  - With an active job, record `xoch state set --job "[job-id]" --field documentation_status --value "not impacted"` (`xoch job close` requires it) and append a one-line note to `notes_dir` with `xoch file write --append`. Then route as in Output.
+  - With no active job, report that there is no drift and stop.
 
 {{xoch-partial:xoch-file-helper-rule.md}}
 
-If you already know the standard `xoch-doc` workflow from this conversation, continue from that context and do not read the core prompt.
+## Core Process
 
-If any required workflow detail, version-impact handling, status vocabulary, or routing behavior is missing, read and follow:
+If you already know the `xoch-doc` workflow from this conversation, continue from context. Otherwise, or when any workflow detail, version-impact handling, status vocabulary, or routing behavior is missing, read and follow:
 
 ```text
 ~/.xoch/prompts/core/doc-check-core.md
 ```
 
-That file decides whether a change needs documentation and where; it loads `doc-write-core.md` itself only once writing is actually needed. This wrapper never references the write core directly.
-
-Do not read the core prompt unless it is needed.
+It decides whether a change needs documentation and where, and loads the write core itself when writing is needed.
 
 {{xoch-partial:estimator-reminder.md}}
 
 For a fresh invocation, identify whether the engineer wants to create, refresh, validate, or repair documentation, load only the context needed, and update or confirm docs against current source and job evidence.
 
-When documentation work is complete, put status, targets, and caveats first. Unless the engineer already stated which they want, make the final line name both valid next commands rather than asserting one:
+## Output
+
+When documentation work is complete, put status, targets, and caveats first. Unless the engineer already stated which they want, make the final line name both valid next commands:
 
 ```text
 {{xoch-partial:next-step-choice.md command_a="xoch-pr" command_b="xoch-close"}}
 ```
 
-This is a routing line, not an in-session action -- either command needs its own fresh invocation. When the engineer's message already states which they want, skip it and route directly with `{{xoch-partial:next-step.md command="..."}}` instead.
+This is a routing line, not an in-session action; either command needs its own fresh invocation. When the engineer already stated which they want, or `doc-check-core.md` routes elsewhere (`xoch-do` or `xoch-map`), end with `{{xoch-partial:next-step.md command="..."}}` instead.
