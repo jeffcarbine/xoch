@@ -5,13 +5,7 @@ description: Full reference workflow for xoch-qa's plan step
 
 # Xoch - QA Plan Core
 
-This is the full reference workflow for `xoch-qa`'s `plan` step. It is rendered to `~/.xoch/prompts/core/qa-plan-core.md` and is not installed as a command.
-
-## Purpose
-
-Turn the accepted QA intake into ordered QA phases in which every test case is spelled out: what is exercised, the exact input or steps, the expected result, and why the case exists. Someone who has never seen the application should be able to run any case from the plan alone.
-
-Expected artifacts after this step: `plan.md` in the job directory, plus the phases document and updated job state, both written through helpers.
+The `plan` step of `xoch-qa`: turn the accepted intake into ordered QA phases in which every case is spelled out (what is exercised, the exact input or steps, the expected result, and why it exists), so someone who has never seen the application can run any case from the plan alone. Produces `plan.md`, the phases document, and updated job state, written through helpers.
 
 {{xoch-partial:context-economy.md}}
 
@@ -150,5 +144,3 @@ Entering phase 1 is `xoch-do`'s job; stop here.
 
 - Never send test input during planning.
 - Never edit source files.
-- Every case carries literal values, an observable expected result, and a rationale.
-- A phase needing a capability the agent lacks is `[E]`/`[C]` only and carries full engineer instructions.

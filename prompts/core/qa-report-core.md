@@ -5,13 +5,7 @@ description: Full reference workflow for xoch-do's final_review step on a QA job
 
 # Xoch - QA Report Core
 
-This is the full reference workflow for `xoch-do`'s `final_review` step on a QA job. It is rendered to `~/.xoch/prompts/core/qa-report-core.md` and is not installed as a command.
-
-## Purpose
-
-Turn every phase's recorded results into one QA report the engineer can act on, then ask what happens next for the failures that were deferred: patch, open a job, or nothing. Failures already patched and re-tested during their phase are reported but need no follow-up.
-
-Expected artifacts after this step: `qa-report.md` in the job directory, plus job state fields `qa_decision` and `review_status: qa_reported`, set through `xoch state set`.
+The `final_review` step of `xoch-do` on a QA job: turn every phase's recorded results into one actionable QA report, then ask what happens next for deferred failures (patch, open a job, or nothing). Failures patched and re-tested during their phase are reported but need no follow-up. Produces `qa-report.md` and the state fields `qa_decision` and `review_status: qa_reported`.
 
 {{xoch-partial:context-economy.md}}
 

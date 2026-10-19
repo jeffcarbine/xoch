@@ -5,13 +5,7 @@ description: Full reference workflow for xoch-qa's intake step
 
 # Xoch - QA Intake Core
 
-This is the full reference workflow for `xoch-qa`'s `intake` step. It is rendered to `~/.xoch/prompts/core/qa-intake-core.md` and is not installed as a command.
-
-## Purpose
-
-Establish, before any test input is sent, three things the QA plan depends on: exactly what is being QA'd, that the target is a confirmed dev or staging environment, and what the agent can actually exercise itself.
-
-Expected artifacts after this step: `intake.md` in the job directory, plus job state fields `qa_environment`, `qa_target`, `qa_environment_confirmed`, and `qa_capabilities`, set through the `xoch qa` helpers.
+The `intake` step of `xoch-qa`. Before any test input is sent, establish what is being QA'd, that the target is a confirmed dev or staging environment, and what the agent can exercise itself. Produces `intake.md` and the state fields `qa_environment`, `qa_target`, `qa_environment_confirmed`, and `qa_capabilities` (set through the `xoch qa` helpers).
 
 {{xoch-partial:context-economy.md}}
 

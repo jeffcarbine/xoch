@@ -5,11 +5,7 @@ description: Full reference workflow for xoch-do's implement step on a QA job
 
 # Xoch - QA Execute Core
 
-This is the full reference workflow for `xoch-do`'s `implement` step on a QA job. It is rendered to `~/.xoch/prompts/core/qa-execute-core.md` and is not installed as a command.
-
-## Purpose
-
-Run -- or hand to the engineer -- every case in the current QA phase exactly as planned, against the confirmed target only, and record what actually happened. Then triage the phase's failures with the engineer: patch and re-test the small, well-understood ones now, and defer the rest to a follow-up job. By the end of the QA job, only deferred failures should survive into the report.
+The `implement` step of `xoch-do` on a QA job: run, or hand to the engineer, every case in the current QA phase exactly as planned, against the confirmed target only, and record what happened. Then triage failures with the engineer: patch and re-test the small, well-understood ones now, and defer the rest. Only deferred failures should survive into the report.
 
 {{xoch-partial:context-economy.md}}
 
@@ -20,8 +16,6 @@ Run -- or hand to the engineer -- every case in the current QA phase exactly as 
 Use `xoch job evidence --job "[job-id]" --json` to resolve paths. Read job state with `xoch state get --job "[job-id]" --json` (for `qa_environment`, `qa_target`, `qa_environment_confirmed`, `qa_capabilities`) and the current phase with `xoch phase get --job "[job-id]" --phase [N] --json` -- its required capability, allowed owners, cases, and engineer instructions.
 
 If `qa_environment_confirmed` is not `true`, stop: do not send any input. Report the gap and route back to `xoch-qa` for intake.
-
-{{xoch-partial:phase-boundary.md}}
 
 ### Step 2: Brief The Phase
 
@@ -179,6 +173,5 @@ Then run `xoch job step-advance --job "[job-id]"` to move `implement` -> `advanc
 {{xoch-partial:engineer-git-rule.md}}
 
 - Change source only in Step 6, only to patch a failure the engineer accepted as patch-now, and only as much as that failure needs.
-- Never edit source, configuration, or data to make a case pass while it is being run.
 - Never change a planned case's input while running it. Blocked is an honest result.
 - Never send input to anything other than the confirmed target.
