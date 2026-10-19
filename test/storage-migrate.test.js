@@ -55,7 +55,7 @@ test('repos are also found from centralized roots that record where they came fr
   }
 });
 
-test('moving to centralized plans every .xoch entry except legacy context, and counts git-tracked files', () => {
+test('moving to centralized plans every .xoch entry, including context/, and counts git-tracked files', () => {
   const ctx = scratch();
   try {
     const repo = repoWithXoch(ctx, 'alpha', { 'context/current.md': 'legacy', 'handoffs/h.json': '{}' });
@@ -64,26 +64,27 @@ test('moving to centralized plans every .xoch entry except legacy context, and c
     const plan = planMigration({ to: 'centralized', home: ctx.home, repos: [repo] });
     assert.deepStrictEqual(plan.refusals, []);
     assert.deepStrictEqual(plan.moves, [{
-      repo, from: path.join(repo, '.xoch'), to: centralDir(ctx, 'alpha'), entries: ['docs', 'handoffs', 'work'], tracked: 1,
+      repo, from: path.join(repo, '.xoch'), to: centralDir(ctx, 'alpha'), entries: ['context', 'docs', 'handoffs', 'work'], tracked: 1,
     }]);
     const text = describePlan(plan, 'centralized').join('\n');
-    assert.match(text, /alpha: docs, handoffs, work -> .*projects\/alpha/);
+    assert.match(text, /alpha: context, docs, handoffs, work -> .*projects\/alpha/);
     assert.match(text, /1 git-tracked file in 1 repo will show as deleted; commit that removal/);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a repo with nothing to move, or only legacy context, is skipped', () => {
+test('a repo with nothing to move is skipped, but one holding only context/ is moved like any other', () => {
   const ctx = scratch();
   try {
     const empty = path.join(ctx.home, 'dev', 'empty');
     fs.mkdirSync(empty, { recursive: true });
-    const legacy = path.join(ctx.home, 'dev', 'legacy');
-    write(path.join(legacy, '.xoch', 'context', 'current.md'), 'x');
-    const plan = planMigration({ to: 'centralized', home: ctx.home, repos: [empty, legacy] });
-    assert.deepStrictEqual(plan, { moves: [], refusals: [] });
-    assert.deepStrictEqual(describePlan(plan, 'centralized'), ['Nothing to move.']);
+    assert.deepStrictEqual(planMigration({ to: 'centralized', home: ctx.home, repos: [empty] }), { moves: [], refusals: [] });
+    assert.deepStrictEqual(describePlan({ moves: [], refusals: [] }, 'centralized'), ['Nothing to move.']);
+    const contextOnly = path.join(ctx.home, 'dev', 'context-only');
+    write(path.join(contextOnly, '.xoch', 'context', 'current.md'), 'x');
+    const plan = planMigration({ to: 'centralized', home: ctx.home, repos: [contextOnly] });
+    assert.deepStrictEqual(plan.moves.map((m) => m.entries), [['context']]);
   } finally {
     cleanup(ctx);
   }
@@ -118,7 +119,7 @@ test('a centralized root that already belongs to the same repo, holding only rep
   }
 });
 
-test('executing a move to centralized moves the entries, records the repo, and leaves legacy context behind', () => {
+test('executing a move to centralized moves every entry, including context/, and records the repo', () => {
   const ctx = scratch();
   try {
     const repo = repoWithXoch(ctx, 'alpha', { 'context/current.md': 'legacy' });
@@ -128,7 +129,8 @@ test('executing a move to centralized moves the entries, records the repo, and l
     assert.ok(fs.existsSync(path.join(central, 'work', 'jobs', 'j1', 'state.json')));
     assert.ok(fs.existsSync(path.join(central, 'docs', 'drift-baseline.json')));
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(central, 'repo.json'), 'utf8')), { path: repo });
-    assert.deepStrictEqual(fs.readdirSync(path.join(repo, '.xoch')), ['context']);
+    assert.ok(fs.existsSync(path.join(central, 'context', 'current.md')));
+    assert.ok(!fs.existsSync(path.join(repo, '.xoch')));
   } finally {
     cleanup(ctx);
   }

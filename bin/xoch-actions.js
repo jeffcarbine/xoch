@@ -64,26 +64,6 @@ function ensureRoot() {
   }
 }
 
-// Parses a legacy markdown pointer's "**Key**: value" lines into
-// snake_case fields (e.g. "**Job ID**:" -> job_id). Used only for the
-// read-only .xoch/context/current.md legacy fallback.
-function markdownFields(filePath) {
-  const fields = {};
-  for (const line of fs.readFileSync(filePath, 'utf8').split('\n')) {
-    const m = line.match(/^\*\*(.+?)\*\*:\s*(.*)$/);
-    if (m) {
-      const key = m[1].toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-      fields[key] = m[2].trim();
-    }
-  }
-  return fields;
-}
-
-// Shown when a job or arc still has the markdown files Xoch used before its
-// state moved to JSON. Those formats are detected so the error is clear,
-// but no longer read or converted.
-const OLD_FORMAT = 'which this version of Xoch no longer reads';
-
 function jobDir(jobId) {
   return path.join(xochRoot(), 'work', 'jobs', jobId);
 }
@@ -93,18 +73,15 @@ function arcDir(arcId) {
 }
 
 /**
- * Loads a job's state, dying with a clear message when the job is missing,
- * still on markdown state, or its state.json is invalid.
+ * Loads a job's state, dying with a clear message when the job is missing
+ * or its state.json is invalid.
  * @param {string} jobId
  * @param {string} [missing] - Message used when the job doesn't exist.
  * @returns {{dir: string, state: JobState}}
  */
 function loadJob(jobId, missing) {
   const dir = jobDir(jobId);
-  if (!JobState.exists(dir)) {
-    if (fs.existsSync(path.join(dir, 'state.md'))) die(`job ${jobId} uses the old markdown state format (state.md), ${OLD_FORMAT}`);
-    die(missing || `state not found: ${JobState.pathIn(dir)}`);
-  }
+  if (!JobState.exists(dir)) die(missing || `state not found: ${JobState.pathIn(dir)}`);
   try {
     return { dir, state: JobState.load(dir) };
   } catch (e) {
@@ -118,10 +95,7 @@ function loadJob(jobId, missing) {
  * @returns {Phases|null}
  */
 function loadPhases(dir) {
-  if (!Phases.exists(dir)) {
-    if (fs.existsSync(path.join(dir, 'phases.md'))) die(`job ${path.basename(dir)} uses the old markdown phases format (phases.md), ${OLD_FORMAT}`);
-    return null;
-  }
+  if (!Phases.exists(dir)) return null;
   try {
     return Phases.load(dir);
   } catch (e) {
@@ -143,16 +117,13 @@ function requirePhases(jobId, dir) {
 
 /**
  * Loads an arc's state and membership (membership empty when the arc has
- * no jobs.json yet), dying when the arc is missing or still on markdown.
+ * no jobs.json yet), dying when the arc is missing.
  * @param {string} arcId
  * @returns {{dir: string, state: ArcState, jobs: ArcJobs}}
  */
 function loadArc(arcId) {
   const dir = arcDir(arcId);
-  if (!ArcState.exists(dir)) {
-    if (fs.existsSync(path.join(dir, 'state.md'))) die(`arc ${arcId} uses the old markdown state format (state.md), ${OLD_FORMAT}`);
-    die(`arc not found: ${arcId}`);
-  }
+  if (!ArcState.exists(dir)) die(`arc not found: ${arcId}`);
   try {
     return { dir, state: ArcState.load(dir), jobs: ArcJobs.exists(dir) ? ArcJobs.load(dir) : ArcJobs.create() };
   } catch (e) {
@@ -296,13 +267,10 @@ function resolveJobFile(jobId, relPath, { write = false } = {}) {
 
 // Resolves the active job pointer: current.json (kept in sync with its
 // job's state on every read, writing back only when the projection
-// changed), or else the legacy .xoch/context/current.md pointer, read-only.
-// An old markdown work/current.md pointer is refused rather than migrated.
+// changed). Without a current.json there is no active job.
 function resolveCurrentPointer() {
   const root = xochRoot();
   const jsonPath = path.join(root, 'work', 'current.json');
-  const markdownPath = path.join(root, 'work', 'current.md');
-  const legacyPath = '.xoch/context/current.md';
 
   let data = null;
   let pointer = null;
@@ -314,7 +282,7 @@ function resolveCurrentPointer() {
       abortRuby(`Invalid JSON in ${jsonPath}: ${e.message}`);
     }
     validatePointer(data, jsonPath, root);
-    if (JobState.exists(data.job.directory) || fs.existsSync(path.join(data.job.directory, 'state.md'))) {
+    if (JobState.exists(data.job.directory)) {
       const state = loadJob(String(data.job.id)).state.toJSON();
       const projectedWorkflow = workflowFromState(state, data.workflow);
       const projectedNextCommand = nullable(state.next_command);
@@ -334,23 +302,6 @@ function resolveCurrentPointer() {
       }
     }
     pointer = jsonPath;
-  } else if (fs.existsSync(markdownPath)) {
-    die(`${markdownPath} uses the old markdown pointer format, ${OLD_FORMAT}`);
-  } else if (fs.existsSync(legacyPath)) {
-    const fields = markdownFields(legacyPath);
-    data = {
-      version: 1,
-      legacy: true,
-      job_type: 'standard',
-      job: {
-        id: fields.job_id || fields.task_id,
-        title: fields.title,
-        directory: fields.job_directory || fields.task_directory,
-      },
-      workflow: null,
-      updated_at: null,
-    };
-    pointer = legacyPath;
   }
 
   return { data, pointer };
@@ -575,14 +526,6 @@ function pointerClear(argv) {
       console.log(`Cleared pointer: ${jsonPath}`);
     }
   }
-  const legacyPath = '.xoch/context/current.md';
-  if (fs.existsSync(legacyPath)) {
-    const text = fs.readFileSync(legacyPath, 'utf8');
-    if (text.includes(`**Job ID**: ${jobId}`) || text.includes(`**Task ID**: ${jobId}`)) {
-      fs.unlinkSync(legacyPath);
-      console.log(`Cleared pointer: ${legacyPath}`);
-    }
-  }
 }
 
 function arcOpen(argv) {
@@ -609,7 +552,7 @@ function arcOpen(argv) {
   let active;
   if (flags['adopt-active']) {
     const { data } = resolveCurrentPointer();
-    const currentJob = data && !data.legacy && data.job && data.job.id;
+    const currentJob = data && data.job && data.job.id;
     if (currentJob) {
       active = { id: currentJob, title: data.job.title || null };
       if (JobState.exists(jobDir(currentJob))) {
@@ -1220,7 +1163,7 @@ function phaseShow(argv) {
 // table, since a fixed lookup would get them wrong:
 //   - Crossing a phase boundary (entering phase 1, moving to the next phase,
 //     or falling through to final_review once every phase is done) needs
-//     phase-content flags and phases.md/phase_index bookkeeping that only
+//     phase-content flags and phases.json/phase_index bookkeeping that only
 //     phaseAdvance has; it sets current_step too.
 //   - Leaving final_review is outcome-dependent, not mechanical: a passing
 //     review routes to xoch-doc, a failing one routes back into
@@ -1836,7 +1779,6 @@ export {
   xochRoot,
   parseFlags,
   ensureRoot,
-  markdownFields,
   nullable,
   workflowFromState,
   validatePointer,

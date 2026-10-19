@@ -6,9 +6,8 @@
 // `config set storage.mode` plans the move, shows it, and only then
 // executes it; a failure partway through undoes every move already made.
 //
-// Everything in a repo's .xoch/ moves except context/, the legacy job
-// model, which always stays in the repo. A centralized root records the
-// repo it came from in repo.json so it can be moved back.
+// Everything in a repo's .xoch/ moves. A centralized root records the repo
+// it came from in repo.json so it can be moved back.
 
 import fs from 'fs';
 import path from 'path';
@@ -16,7 +15,6 @@ import { readJson } from './lib/json-store.js';
 import { git } from './lib/git.js';
 import { cleanId } from './generate-job-id.js';
 
-const STAYS_IN_REPO = ['context'];
 const REPO_RECORD = 'repo.json';
 
 function projectsDir(home) {
@@ -80,7 +78,7 @@ function planToCentralized(home, repos) {
   const refusals = [];
   for (const repo of repos) {
     const from = path.join(repo, '.xoch');
-    const entries = listDir(from).filter((name) => !STAYS_IN_REPO.includes(name));
+    const entries = listDir(from);
     if (!entries.length) continue;
     const to = path.join(projectsDir(home), cleanId(path.basename(repo)));
     const existing = listDir(to).filter((name) => name !== REPO_RECORD);

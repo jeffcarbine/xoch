@@ -176,14 +176,13 @@ test('archive: proceeds when current.json points to a different job', () => {
   }
 });
 
-test('archive: refuses to archive the active job via the legacy current.md fallback', () => {
+test('archive: a leftover markdown work/current.md naming the job does not block archiving', () => {
   const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     setMarkdownPointer(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd], ctx);
-    assert.strictEqual(result.status, 1);
-    assert.match(result.stderr, /Clear or pause the active job before archiving/);
+    assert.strictEqual(result.status, 0, result.stderr);
   } finally {
     cleanup(ctx);
   }

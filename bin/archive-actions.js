@@ -28,19 +28,14 @@ function validId(id) {
   }
 }
 
-// Matches archive-actions.sh: checks current.json first, then falls back
-// to the legacy current.md pointer format ("**Job ID**: <id>") when
-// current.json is absent. A malformed current.json is not caught -- the
-// bash original's Ruby JSON.parse also raises uncaught in that case, so
-// both crash rather than silently treating it as "not pointing to job".
+// True when current.json points at this job. A malformed current.json is
+// not caught, so it crashes rather than silently treating the job as not
+// active.
 function pointsToJob(root, id) {
   const jsonPointer = path.join(storageRoot(root), 'work', 'current.json');
-  if (fs.existsSync(jsonPointer)) {
-    const data = JSON.parse(fs.readFileSync(jsonPointer, 'utf8'));
-    return Boolean(data.job && data.job.id === id);
-  }
-  const markdownPointer = path.join(storageRoot(root), 'work', 'current.md');
-  return fs.existsSync(markdownPointer) && fs.readFileSync(markdownPointer, 'utf8').includes(`**Job ID**: ${id}`);
+  if (!fs.existsSync(jsonPointer)) return false;
+  const data = JSON.parse(fs.readFileSync(jsonPointer, 'utf8'));
+  return Boolean(data.job && data.job.id === id);
 }
 
 function run(argv) {

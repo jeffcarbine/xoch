@@ -727,7 +727,7 @@ test('job current does not rewrite the pointer when the projected workflow, next
   }
 });
 
-test('job current falls back to a legacy .xoch/context/current.md pointer, read-only', () => {
+test('job current ignores a leftover .xoch/context/current.md and reports no active job', () => {
   const ctx = scratch();
   try {
     const legacyDir = path.join(ctx.cwd, '.xoch', 'context');
@@ -738,26 +738,7 @@ test('job current falls back to a legacy .xoch/context/current.md pointer, read-
     );
     const result = run(['job', 'current', '--json'], ctx);
     assert.strictEqual(result.status, 0);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.legacy, true);
-    assert.strictEqual(data.job.id, 'legacy-job');
-    assert.strictEqual(data.pointer, '.xoch/context/current.md');
-    assert.ok(!fs.existsSync(pointerPath(ctx)));
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a legacy pointer using **Task ID**/**Task Directory** is also read', () => {
-  const ctx = scratch();
-  try {
-    const legacyDir = path.join(ctx.cwd, '.xoch', 'context');
-    fs.mkdirSync(legacyDir, { recursive: true });
-    fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Task ID**: legacy-job\n**Title**: Legacy Job\n**Task Directory**: /some/dir\n');
-    const result = run(['job', 'current', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.job.id, 'legacy-job');
-    assert.strictEqual(data.job.directory, '/some/dir');
+    assert.deepStrictEqual(JSON.parse(result.stdout), {});
   } finally {
     cleanup(ctx);
   }
@@ -980,21 +961,16 @@ test('pointer clear removes current.json only when its job id matches', () => {
   }
 });
 
-test('pointer clear removes a matching legacy pointer and leaves a non-matching one alone', () => {
+test('pointer clear leaves a leftover .xoch/context/current.md untouched, even one naming the job', () => {
   const ctx = scratch();
   try {
     const legacyDir = path.join(ctx.cwd, '.xoch', 'context');
     fs.mkdirSync(legacyDir, { recursive: true });
-    fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Task ID**: other\n');
-
-    const other = run(['pointer', 'clear', '--job', 'j1'], ctx);
-    assert.strictEqual(other.status, 0);
-    assert.ok(fs.existsSync(path.join(legacyDir, 'current.md')));
-
     fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Job ID**: j1\n');
-    const matching = run(['pointer', 'clear', '--job', 'j1'], ctx);
-    assert.match(matching.stdout, /Cleared pointer: .*context\/current\.md/);
-    assert.ok(!fs.existsSync(path.join(legacyDir, 'current.md')));
+    const result = run(['pointer', 'clear', '--job', 'j1'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.doesNotMatch(result.stdout, /context\/current\.md/);
+    assert.ok(fs.existsSync(path.join(legacyDir, 'current.md')));
   } finally {
     cleanup(ctx);
   }
@@ -1062,20 +1038,6 @@ test('arc open --adopt-active with no current job leaves the active section as N
   try {
     const result = run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
     assert.strictEqual(result.status, 0);
-    const jobs = readJsonFile(path.join(arcDirOf(ctx, 't'), 'jobs.json'));
-    assert.deepStrictEqual(jobs.active, []);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('arc open --adopt-active with only a legacy pointer still shows None (legacy is not promoted)', () => {
-  const ctx = scratch();
-  try {
-    const legacyDir = path.join(ctx.cwd, '.xoch', 'context');
-    fs.mkdirSync(legacyDir, { recursive: true });
-    fs.writeFileSync(path.join(legacyDir, 'current.md'), '**Job ID**: legacy-job\n');
-    run(['arc', 'open', '--title', 'T', '--adopt-active'], ctx);
     const jobs = readJsonFile(path.join(arcDirOf(ctx, 't'), 'jobs.json'));
     assert.deepStrictEqual(jobs.active, []);
   } finally {
@@ -2856,7 +2818,7 @@ test('arc update merges a JSON object into arc state, refusing bad input without
 // markdown-only jobs and arcs, and helper-owned files
 // ---------------------------------------------------------------------
 
-test('a job or arc that still has only markdown state is refused as an old format this version no longer reads', () => {
+test('a job or arc with only a leftover state.md is treated as missing', () => {
   const ctx = scratch();
   try {
     const job = jobDirOf(ctx, 'old');
@@ -2868,22 +2830,37 @@ test('a job or arc that still has only markdown state is refused as an old forma
     for (const args of [['state', 'get', '--job', 'old'], ['job', 'set-current', '--job', 'old'], ['job', 'evidence', '--job', 'old'], ['arc', 'get', '--arc', 'old-arc']]) {
       const r = run(args, ctx);
       assert.strictEqual(r.status, 1, args.join(' '));
-      assert.match(r.stderr, /old markdown state format.*no longer reads/, args.join(' '));
-      assert.doesNotMatch(r.stderr, /md-to-json/, args.join(' '));
+      assert.match(r.stderr, /(state|job|arc) not found/, args.join(' '));
+      assert.doesNotMatch(r.stderr, /old markdown/, args.join(' '));
     }
   } finally {
     cleanup(ctx);
   }
 });
 
-test('job current refuses an old markdown current.md pointer as a format this version no longer reads', () => {
+test('job current ignores a leftover markdown work/current.md and reports no active job', () => {
   const ctx = scratch();
   try {
     fs.mkdirSync(path.join(xochRootDir(ctx), 'work'), { recursive: true });
     fs.writeFileSync(path.join(xochRootDir(ctx), 'work', 'current.md'), '**Job ID**: j1\n');
     const r = run(['job', 'current', '--json'], ctx);
-    assert.strictEqual(r.status, 1);
-    assert.match(r.stderr, /current\.md.*old markdown pointer format.*no longer reads/);
+    assert.strictEqual(r.status, 0);
+    assert.deepStrictEqual(JSON.parse(r.stdout), {});
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('job current reports a pointer to a job with only a leftover state.md without reading that file', () => {
+  const ctx = scratch();
+  try {
+    const dir = jobDirOf(ctx, 'old');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'state.md'), 'job_id: old\n');
+    seedPointer(ctx, { id: 'old' });
+    const r = run(['job', 'current', '--json'], ctx);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(JSON.parse(r.stdout).job.id, 'old');
   } finally {
     cleanup(ctx);
   }
@@ -2925,14 +2902,14 @@ test('a corrupt state.json, phases.json, or arc state is refused with the file n
   }
 });
 
-test('a job whose phases are still markdown is refused as an old format this version no longer reads', () => {
+test('a job with only a leftover phases.md is treated as having no phases yet', () => {
   const ctx = scratch();
   try {
     const dir = seedJob(ctx, 'j1');
     fs.writeFileSync(path.join(dir, 'phases.md'), '## Phase 1: Old\n');
     const r = run(['phase', 'show', '--job', 'j1'], ctx);
     assert.strictEqual(r.status, 1);
-    assert.match(r.stderr, /old markdown phases format.*no longer reads/);
+    assert.match(r.stderr, /has no phases yet/);
   } finally {
     cleanup(ctx);
   }
