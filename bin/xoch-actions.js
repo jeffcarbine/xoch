@@ -349,6 +349,7 @@ function jobEvidence(argv) {
     phases: existingPath(Phases.pathIn(dir)),
     review: existingPath(path.join(dir, 'review.md')),
     closure: existingPath(path.join(dir, 'closure.md')),
+    conventions_check: existingPath(path.join(dir, 'conventions-check.md')),
     current_phase: currentPhase === null ? null : String(currentPhase),
     current_phase_snapshot: currentPhase ? existingPath(path.join(dir, 'snapshots', `phase-${currentPhase}.md`)) : null,
     notes_dir: path.join(dir, 'notes'),

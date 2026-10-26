@@ -784,6 +784,8 @@ test('job evidence reports missing optional files as not found, in text and json
     assert.strictEqual(data.spec, null);
     assert.strictEqual(data.current_phase, null);
     assert.strictEqual(data.current_phase_snapshot, null);
+    assert.strictEqual(data.conventions_check, null);
+    assert.match(text.stdout, /conventions_check: \(not found\)/);
   } finally {
     cleanup(ctx);
   }
@@ -797,6 +799,7 @@ test('job evidence reports existing files and the current phase snapshot', () =>
     fs.writeFileSync(path.join(dir, 'phases.json'), '{}');
     fs.mkdirSync(path.join(dir, 'snapshots'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'snapshots', 'phase-3.md'), 'snap');
+    fs.writeFileSync(path.join(dir, 'conventions-check.md'), 'findings');
 
     const json = run(['job', 'evidence', '--job', 'j1', '--json'], ctx);
     const data = JSON.parse(json.stdout);
@@ -806,6 +809,7 @@ test('job evidence reports existing files and the current phase snapshot', () =>
     assert.strictEqual(data.current_phase_snapshot, path.join(relDir, 'snapshots', 'phase-3.md'));
     assert.strictEqual(data.state, path.join(relDir, 'state.json'));
     assert.strictEqual(data.phases, path.join(relDir, 'phases.json'));
+    assert.strictEqual(data.conventions_check, path.join(relDir, 'conventions-check.md'));
     assert.ok(!('current_phase_body' in data));
   } finally {
     cleanup(ctx);

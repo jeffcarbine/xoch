@@ -177,6 +177,67 @@ test('show includes the resolved coverage.strictness', () => {
   }
 });
 
+test('get conventions.strictness prints recommended when unset', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['get', 'conventions.strictness'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.stdout.trim(), 'recommended');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set rejects an invalid conventions.strictness value and writes nothing', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['set', 'conventions.strictness', 'strict'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /invalid conventions\.strictness value 'strict'\. Expected one of: required recommended/);
+    assert.ok(!fs.existsSync(configPath(ctx)));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('set conventions.strictness accepts required and recommended, and each round-trips on read', () => {
+  const ctx = scratch();
+  try {
+    for (const value of ['required', 'recommended']) {
+      const result = runScript(SCRIPT, ['set', 'conventions.strictness', value], ctx);
+      assert.strictEqual(result.status, 0);
+      assert.match(result.stdout, new RegExp(`conventions\\.strictness set to ${value}`));
+      const data = JSON.parse(fs.readFileSync(configPath(ctx), 'utf8'));
+      assert.strictEqual(data.conventions.strictness, value);
+      assert.strictEqual(runScript(SCRIPT, ['get', 'conventions.strictness'], ctx).stdout.trim(), value);
+    }
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('show includes conventions.strictness, defaulting to recommended and falling back from an invalid stored value', () => {
+  const ctx = scratch();
+  try {
+    assert.strictEqual(JSON.parse(runScript(SCRIPT, ['show'], ctx).stdout).conventions.strictness, 'recommended');
+    fs.mkdirSync(path.dirname(configPath(ctx)), { recursive: true });
+    fs.writeFileSync(configPath(ctx), JSON.stringify({ conventions: { strictness: 'bogus' } }));
+    assert.strictEqual(JSON.parse(runScript(SCRIPT, ['show'], ctx).stdout).conventions.strictness, 'recommended');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('usage documents conventions.strictness', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(SCRIPT, ['--help'], ctx);
+    assert.match(result.stdout, /set conventions\.strictness VALUE Set conventions\.strictness \(required\|recommended\)/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('set documentation.commentMode also re-renders and reinstalls the prompts', () => {
   const ctx = scratch();
   try {

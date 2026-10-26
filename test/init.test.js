@@ -759,6 +759,22 @@ test('a config reference substitutes the text matching the resolved config value
   }
 });
 
+test('conventions.strictness config references resolve to the configured value, and to the default when unset', () => {
+  const marker = '{{xoch-config:conventions.strictness required="Blocks." default="Reports."}}\n';
+  const ctx = scratch();
+  try {
+    const fixture = buildFixture(ctx, { withCore: false });
+    fs.writeFileSync(path.join(fixture.promptsDir, 'meow.md'), marker);
+    assert.strictEqual(runInit(fixture, ctx).status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8').trim(), 'Reports.');
+    writeConfig(ctx, { conventions: { strictness: 'required' } });
+    assert.strictEqual(runInit(fixture, ctx).status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'meow.md'), 'utf8').trim(), 'Blocks.');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('a multi-line config reference with the key on its own line substitutes correctly', () => {
   const ctx = scratch();
   try {

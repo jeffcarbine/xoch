@@ -423,6 +423,37 @@ test('bin/init.js run directly (not through the dispatcher) still completes a re
   }
 });
 
+test('a real xoch init installs xoch-conventions for every target, renders its two cores, and installs neither the cores nor the partial as commands', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    for (const target of INSTALL_TARGETS) {
+      const dir = targetDir(target, ctx.home);
+      assert.ok(fs.existsSync(path.join(dir, installedName(target, 'conventions'))), target.label);
+      for (const name of ['conventions-generate-core', 'conventions-validate-core', 'conventions-check']) {
+        assert.ok(!fs.existsSync(path.join(dir, installedName(target, name))), `${target.label}: ${name}`);
+      }
+    }
+    const core = (name) => fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'core', `${name}.md`), 'utf8');
+    const validate = core('conventions-validate-core');
+    const generate = core('conventions-generate-core');
+    const router = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'conventions.md'), 'utf8');
+    assert.match(router, /^name: xoch-conventions$/m);
+    assert.match(router, /conventions-generate-core\.md/);
+    assert.match(router, /conventions-validate-core\.md/);
+    // The shared partial is rendered into the validate core in check mode.
+    assert.match(validate, /xoch conventions rules --json --files/);
+    assert.match(validate, /Mode: `check`/);
+    assert.match(validate, /conventions-check\.md/);
+    assert.match(generate, /xoch conventions scan --json/);
+    assert.match(generate, /status: inferred/);
+    for (const text of [router, validate, generate]) assert.ok(!/\{\{/.test(text));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('a real xoch init seeds config.json fresh, preserves an existing override, and recovers from a corrupt existing file', () => {
   const fresh = scratch();
   try {

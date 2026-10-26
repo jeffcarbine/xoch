@@ -20,6 +20,7 @@ const CONFIG_PATH = path.join(os.homedir(), '.xoch', 'config.json');
 const VALID_STORAGE_MODES = ['in-repo', 'centralized'];
 const VALID_COMMENT_MODES = ['always', 'follow-convention'];
 const VALID_COVERAGE_STRICTNESS = ['required', 'recommended'];
+const VALID_CONVENTIONS_STRICTNESS = ['required', 'recommended'];
 const VALID_GIT_BEHAVIORS = ['ask', 'generate', 'commit', 'push', 'none'];
 
 // Kept in sync by hand with bin/token-estimator.js's (and install.js's)
@@ -42,6 +43,10 @@ function isValidCommentMode(value) {
 
 function isValidCoverageStrictness(value) {
   return VALID_COVERAGE_STRICTNESS.includes(value);
+}
+
+function isValidConventionsStrictness(value) {
+  return VALID_CONVENTIONS_STRICTNESS.includes(value);
 }
 
 function isValidGitBehavior(value) {
@@ -90,6 +95,17 @@ function readCoverageStrictness() {
 }
 
 /**
+ * Whether conventions findings block final_review (required) or are
+ * reported for the engineer to fix or accept (recommended, the default).
+ * @returns {string}
+ */
+function readConventionsStrictness() {
+  const data = readJson(CONFIG_PATH);
+  const strictness = data.conventions && data.conventions.strictness;
+  return isValidConventionsStrictness(strictness) ? strictness : 'recommended';
+}
+
+/**
  * What the advance step does with git changes: ask each time (default),
  * generate a commit message, commit, commit and push, or nothing.
  * @returns {string}
@@ -111,6 +127,8 @@ function printConfig() {
   data.documentation.commentMode = readCommentMode();
   data.coverage = data.coverage || {};
   data.coverage.strictness = readCoverageStrictness();
+  data.conventions = data.conventions || {};
+  data.conventions.strictness = readConventionsStrictness();
   data.git = data.git || {};
   data.git.behavior = readGitBehavior();
   console.log(JSON.stringify(data, null, 2));
@@ -139,6 +157,15 @@ function writeCoverageStrictness(value) {
     data.version = data.version || 1;
     data.coverage = data.coverage || {};
     data.coverage.strictness = value;
+    return data;
+  });
+}
+
+function writeConventionsStrictness(value) {
+  updateJson(CONFIG_PATH, (data) => {
+    data.version = data.version || 1;
+    data.conventions = data.conventions || {};
+    data.conventions.strictness = value;
     return data;
   });
 }
@@ -232,6 +259,10 @@ function cmdGet(key) {
     console.log(readCoverageStrictness());
     return;
   }
+  if (key === 'conventions.strictness') {
+    console.log(readConventionsStrictness());
+    return;
+  }
   if (key === 'git.behavior') {
     console.log(readGitBehavior());
     return;
@@ -270,6 +301,16 @@ function cmdSet(key, value, options = []) {
     }
     writeCoverageStrictness(value);
     console.log(`${GREEN}✓${NC} coverage.strictness set to ${value}`);
+    reinstall();
+    return;
+  }
+  if (key === 'conventions.strictness') {
+    if (!isValidConventionsStrictness(value)) {
+      process.stderr.write(`${RED}Error: invalid conventions.strictness value '${value}'. Expected one of: ${VALID_CONVENTIONS_STRICTNESS.join(' ')}${NC}\n`);
+      process.exit(1);
+    }
+    writeConventionsStrictness(value);
+    console.log(`${GREEN}✓${NC} conventions.strictness set to ${value}`);
     reinstall();
     return;
   }
@@ -551,6 +592,8 @@ function usage() {
   node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
   node config.js get coverage.strictness       Print coverage.strictness
   node config.js set coverage.strictness VALUE Set coverage.strictness (required|recommended)
+  node config.js get conventions.strictness       Print conventions.strictness
+  node config.js set conventions.strictness VALUE Set conventions.strictness (required|recommended)
   node config.js get git.behavior              Print git.behavior
   node config.js set git.behavior VALUE        Set git.behavior (ask|generate|commit|push|none)
   node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
@@ -610,17 +653,20 @@ export {
   VALID_STORAGE_MODES,
   VALID_COMMENT_MODES,
   VALID_COVERAGE_STRICTNESS,
+  VALID_CONVENTIONS_STRICTNESS,
   VALID_GIT_BEHAVIORS,
   DEFAULT_SKILL_BUDGETS,
   FALLBACK_SKILL_BUDGET,
   isValidStorageMode,
   isValidCommentMode,
   isValidCoverageStrictness,
+  isValidConventionsStrictness,
   isValidGitBehavior,
   isValidBudgetValue,
   readStorageMode,
   readCommentMode,
   readCoverageStrictness,
+  readConventionsStrictness,
   readGitBehavior,
   readTokenBudgets,
   resolvedBudget,
@@ -629,6 +675,7 @@ export {
   writeStorageMode,
   writeCommentMode,
   writeCoverageStrictness,
+  writeConventionsStrictness,
   writeGitBehavior,
   applyStorageMode,
   storageOptions,
