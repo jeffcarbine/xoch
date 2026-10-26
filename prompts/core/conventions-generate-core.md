@@ -113,7 +113,7 @@ A non-zero exit names the offending line. Fix it and re-run until it passes.
 Summarize rules added, changed, retired, and kept, by status, and where the file lives (inside the repository when storage is in-repo, so it is committed; under `~/.xoch/projects/` when centralized). Complete the managed workflow, then end with the job's return command when a job is active, or otherwise:
 
 ```text
-Ready for next step: `xoch-conventions`
+{{xoch-partial:next-step.md command="xoch-conventions"}}
 ```
 
 {{xoch-partial:response-ending.md}}

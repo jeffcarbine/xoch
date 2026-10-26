@@ -41,7 +41,7 @@ With no active job, print the same content instead of writing it.
 Complete the managed workflow before the final line, then end with the routed command:
 
 ```text
-Ready for next step: `[routed command]`
+{{xoch-partial:next-step.md command="[routed command]"}}
 ```
 
 {{xoch-partial:response-ending.md}}

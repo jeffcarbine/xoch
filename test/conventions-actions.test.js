@@ -225,7 +225,9 @@ test('without --json, a missing conventions file is reported plainly', () => {
 // folder holding only `git` (and, per test, a fake `gh` shell script), so
 // the machine's own gh never leaks in.
 
-const REAL_GIT = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
+const REAL_GIT = process.env.PATH.split(path.delimiter)
+  .map((dir) => path.join(dir, 'git'))
+  .find((candidate) => fs.existsSync(candidate));
 
 function fakeBin(ctx, ghScript) {
   const dir = path.join(ctx.home, 'fakebin');
