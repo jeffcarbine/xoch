@@ -166,6 +166,18 @@ test('an xoch-actions.js group with a missing action produces the same error as 
   }
 });
 
+test('xoch conventions --help produces the same output as invoking conventions-actions.js directly', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['conventions', '--help'], ctx);
+    const direct = runScript(path.join(__dirname, '..', 'bin', 'conventions-actions.js'), ['--help'], ctx);
+    assert.strictEqual(viaDispatcher.status, 0);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
 test('xoch config root produces the same output as xoch-actions.js config:root', () => {
   const ctx = scratch();
   try {
@@ -290,7 +302,7 @@ test('every xoch-actions.js group namespace reaches xoch-actions.js without a di
 test('every standalone-script namespace reaches its module without a dispatcher wiring error', () => {
   const namespaces = [
     'init', 'remove', 'verify', 'archive', 'generate-id', 'docs-drift', 'docs-target', 'git-state', 'gitignore',
-    'coverage', 'context-sync', 'dependency', 'project-scope',
+    'coverage', 'context-sync', 'dependency', 'project-scope', 'conventions',
     'project-commands', 'token-estimator', 'help', 'workspace',
   ];
   for (const namespace of namespaces) {

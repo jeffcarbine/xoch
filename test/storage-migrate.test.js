@@ -122,12 +122,13 @@ test('a centralized root that already belongs to the same repo, holding only rep
 test('executing a move to centralized moves every entry, including context/, and records the repo', () => {
   const ctx = scratch();
   try {
-    const repo = repoWithXoch(ctx, 'alpha', { 'context/current.md': 'legacy' });
+    const repo = repoWithXoch(ctx, 'alpha', { 'context/current.md': 'legacy', 'docs/conventions.md': '# Conventions\n' });
     const plan = planMigration({ to: 'centralized', home: ctx.home, repos: [repo] });
     executeMigration(plan);
     const central = centralDir(ctx, 'alpha');
     assert.ok(fs.existsSync(path.join(central, 'work', 'jobs', 'j1', 'state.json')));
     assert.ok(fs.existsSync(path.join(central, 'docs', 'drift-baseline.json')));
+    assert.ok(fs.existsSync(path.join(central, 'docs', 'conventions.md')));
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(central, 'repo.json'), 'utf8')), { path: repo });
     assert.ok(fs.existsSync(path.join(central, 'context', 'current.md')));
     assert.ok(!fs.existsSync(path.join(repo, '.xoch')));
@@ -150,7 +151,7 @@ test('executing a move removes a repo\'s .xoch folder once nothing is left in it
 test('moving back to in-repo returns each centralized root to the repo it records, and removes the root', () => {
   const ctx = scratch();
   try {
-    const repo = repoWithXoch(ctx, 'alpha');
+    const repo = repoWithXoch(ctx, 'alpha', { 'docs/conventions.md': '# Conventions\n' });
     executeMigration(planMigration({ to: 'centralized', home: ctx.home, repos: [repo] }));
     const plan = planMigration({ to: 'in-repo', home: ctx.home, repos: findRepos({ home: ctx.home }) });
     assert.deepStrictEqual(plan.refusals, []);
@@ -158,6 +159,7 @@ test('moving back to in-repo returns each centralized root to the repo it record
     assert.match(describePlan(plan, 'in-repo').join('\n'), /alpha: docs, work -> .*dev\/alpha\/\.xoch/);
     executeMigration(plan);
     assert.ok(fs.existsSync(path.join(repo, '.xoch', 'work', 'jobs', 'j1', 'state.json')));
+    assert.ok(fs.existsSync(path.join(repo, '.xoch', 'docs', 'conventions.md')));
     assert.ok(!fs.existsSync(centralDir(ctx, 'alpha')));
   } finally {
     cleanup(ctx);

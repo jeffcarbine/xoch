@@ -33,9 +33,9 @@
 
 # Xoch
 
-**Open-source, prompt-first development workflow**
+**Open-source, AI-assisted development workflow**
 
-Xoch is a lightweight workflow system for AI-assisted software work[^1]. It keeps durable project knowledge in readable documentation, tracks focused job work in local state files, and guides engineers through a clear lifecycle from opening a job to closing it.
+Xoch is a lightweight workflow system for AI-assisted development work[^1]. It keeps durable project knowledge in readable documentation, tracks focused job work in local state files, and guides engineers through a clear lifecycle from opening a job to closing it.
 
 ---
 
@@ -48,16 +48,16 @@ npm i -g @jeffcarbine/xoch
 xoch config #optional
 xoch init
 ```
-`npm i =g @jeffcarbine/xoch` will install the package globally, but you need to run `xoch init` in order to copy the skills into your AI tool's directory. Optionally, `xoch config` will let you modify the configuration values from the defaults.
+`npm i -g @jeffcarbine/xoch` will install the package globally, but you need to run `xoch init` in order to copy the skills into your AI tool's directory. Optionally, `xoch config` will let you modify the configuration values from the defaults.
 
 **Uninstalling:**
 
 ```bash
-npm uninstall -g @jeffcarbine/xoch
 xoch remove
+npm uninstall -g @jeffcarbine/xoch
 ```
 
-`npm uninstall -g @jeffcarbine/xoch` alone won't clean up the skill files `xoch init` copied into each AI tool's directory or `~/.xoch`'s runtime state -- run `xoch remove` first (or after, in either order) to remove those too.
+`npm uninstall -g @jeffcarbine/xoch` alone won't clean up the skill files `xoch init` copied into each AI tool's directory or `~/.xoch`'s runtime state -- run `xoch remove` first to remove those too.
 
 ---
 
