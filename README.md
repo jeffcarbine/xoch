@@ -109,6 +109,7 @@ xoch-qa -> xoch-do (once per QA phase, then the QA report) -> xoch-close
 | `xoch-discovery` | Resolve material unknowns before specification or implementation. |
 | `xoch-trace` | Investigate root cause for bugs or unclear symptoms before changing code. |
 | `xoch-patch` | Use a focused path for small or urgent fixes. |
+| `xoch-conventions` | Generate or update the project's documented coding conventions, or validate files against them. |
 | `xoch-pause` | Pause the active job. |
 | `xoch-sidebar` | Explore a related question without advancing job state. |
 | `xoch-help` | List every Xoch command with its description. |
@@ -132,6 +133,7 @@ Xoch keeps workflow state and project knowledge in its storage root, `[xoch-root
         plan.md
         review.md
         closure.md
+        conventions-check.md # latest conventions findings for this job
         snapshots/
         notes/
     arcs/
@@ -141,11 +143,7 @@ Xoch keeps workflow state and project knowledge in its storage root, `[xoch-root
         notes.md
   docs/
     dependencies.json        # optional project-name contracts
-    OVERVIEW.md
-    ARCHITECTURE.md
-    SETUP.md
-    TESTING.md
-    CONVENTIONS.md
+    conventions.md           # optional: coding conventions, maintained by xoch-conventions
 ```
 
 Prompt source files can also use reusable partials:
@@ -306,6 +304,17 @@ Versioning is decided at open: the spec records a Version Impact (`none`, `patch
 `xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
 
 `xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open` or revise the active job.
+
+### Conventions
+
+`xoch-conventions` records how a project writes code -- the conventions reviewers enforce but linters don't -- and keeps code-writing steps aware of them. It is optional: a project without a conventions document behaves exactly as before.
+
+- **Generate** (`xoch-conventions generate`, or a bare invocation when no document exists) runs `xoch conventions scan`, which mines small review follow-up commits, single-token substitutions repeated across PRs, and merged-PR review comments (when `gh` is installed and authenticated), and lists linter configs so their rules are left out. The agent proposes rules from those signals and the engineer accepts, modifies, or drops each one. When history offers little signal, it offers to infer rules from a bounded sample of the most-changed existing files; those rules are always `inferred` with low or medium confidence and "observed in N of M sampled files" evidence, and become `confirmed` only when later review signals support them and the engineer agrees.
+- **Validate** (`xoch-conventions validate [files...]`, or a bare invocation when the document exists) checks the named files, or the branch's changes, rule by rule. With an active job, findings go to the job's `conventions-check.md` with a severity: all-`minor` findings route to `xoch-patch`, any `substantive` finding to `xoch-revise` (or `xoch-open` without a job).
+
+The document is `[xoch-root]/docs/conventions.md`, so it follows `storage.mode`: committed with the repository in-repo, kept under `~/.xoch/projects/` when centralized. Each rule has a stable `CV-nnn` ID, an imperative statement, optional `scope` globs (`*`, `**`, `?`, and `!` exclusions; no scope means every file), a `confirmed` or `inferred` status, a confidence, and counts-only evidence -- never reviewer names. Retired IDs are never reused.
+
+Once the document exists, planning, plan revision, implementation, and patches load the rules whose scope matches the files they touch (`xoch conventions rules --files ...`), and `xoch-do`'s `final_review` step checks every file the job changed. By default findings are reported for the engineer to fix or accept; `xoch config set conventions.strictness required` makes unresolved findings against `confirmed` rules block a passing review. `inferred` rules never block.
 
 ---
 

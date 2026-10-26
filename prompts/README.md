@@ -87,6 +87,7 @@ Arcs reference job IDs. They do not contain nested job folders. `xoch arc job-mo
 | `discovery` | Resolve material product, domain, API, design, or implementation unknowns. |
 | `trace` | Investigate defects or unclear symptoms before changing code. |
 | `patch` | Handle focused small or urgent fixes. |
+| `conventions` | Generate or update the project's documented coding conventions, or validate files against them. Routes to its generate or validate core by request and by whether the document exists. |
 | `pause` | Pause the active job. Resume it later with `open`. |
 | `sidebar` | Explore a related question without advancing job state. |
 | `help` | List every Xoch command with its description. |
@@ -102,6 +103,7 @@ Expected top-level prompt files:
 
 ```text
 close.md
+conventions.md
 discovery.md
 do.md
 doc.md
@@ -132,6 +134,8 @@ partials/behavior-tests.md
 partials/budget-check.md
 partials/commit-message.md
 partials/context-economy.md
+partials/conventions-check.md
+partials/conventions-findings.md
 partials/coverage-gate.md
 partials/current-phase-context.md
 partials/engineer-git-rule.md
@@ -153,6 +157,8 @@ Expected core reference files, named for the step they implement rather than the
 
 ```text
 core/advance-core.md          do: advance step
+core/conventions-generate-core.md   conventions: generate mode
+core/conventions-validate-core.md   conventions: validate mode
 core/discovery-core.md
 core/doc-check-core.md
 core/doc-write-core.md
@@ -242,6 +248,8 @@ Use `behavior-tests.md` in `implement-core.md`/`plan-core.md`. It sets the write
 
 Use `xoch-file-helper-rule.md` in every prompt that writes job-scoped prose artifacts: `doc.md` and the spec, plan, revise-spec, revise-plan, implement, trace, and QA cores. It routes writes/edits of job-scoped `.xoch` artifacts through `xoch file write`/`file edit` instead of the Write/Edit tools, so repeated writes to new `.xoch` paths reuse one already-approved Bash command pattern instead of re-triggering per-path permission prompts.
 
+Use `conventions-check.md` wherever a prompt plans or writes code, or checks code against the project's conventions: `mode="apply"` in `plan-core.md`, `revise-plan-core.md`, `implement-core.md`, and `patch.md`; `mode="check"` in `review-core.md` and `conventions-validate-core.md`. It loads only the rules whose scope matches the files in play through `xoch conventions rules`, and does nothing when the project has no conventions document. It contains no `"`, so it can sit inside a `{{xoch-config:...}}` value. Use `conventions-findings.md` (`source="..."`) wherever a prompt records conventions findings, so the job's `conventions-check.md` has one shape whether validate or `final_review` wrote it.
+
 Use `arc-signals.md` wherever a prompt decides whether work is one job or an arc (`open-core.md`, `spec-core.md`), so both apply the same signals.
 
 Use `commit-message.md` wherever a prompt drafts a commit message (`advance-core.md`, once, outside its `git.behavior` marker). It sets the message source, shape, and the no-identifiers, no-attribution, no-mid-sentence-line-break rules. A partial nested inside a `{{xoch-config:...}}` value must contain no `"` or `}}`.
@@ -297,6 +305,7 @@ A QA job (`job_type: qa`) tests a running feature against planned cases instead 
 | hotfix | patch |
 | replan / respec | revise |
 | epic | arc |
+| house style / style guide | conventions |
 
 ---
 

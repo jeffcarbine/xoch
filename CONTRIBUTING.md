@@ -113,6 +113,8 @@ The canonical helper inventory and purpose of each command live in the root `REA
 
 Once installed via npm, `bin/xoch.js` (the package's `bin` entry) requires its sibling `bin/*.js` modules in-process and forwards `xoch <namespace> <command> ...` to each one's own exported `main(argv)`/`run(argv)` -- no scripts are copied anywhere. Prompt files should call helpers through the installed `xoch` CLI, such as `xoch token-estimator`, so agents do not look for Xoch helpers inside the project currently being worked on. Helper filenames must use kebab-case.
 
+Prompts that plan or write code include `partials/conventions-check.md` in `apply` mode, and prompts that judge finished code include it in `check` mode; never have a prompt read `[xoch-root]/docs/conventions.md` whole. See [Partials](prompts/README.md#partials).
+
 Treat `[xoch-root]/work/current.json` as helper-owned runtime state. Prompt changes must query it through `xoch job current --json` and use workflow helper actions rather than instructing agents to edit the pointer directly.
 
 ---

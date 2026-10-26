@@ -232,6 +232,8 @@ xoch config get documentation.commentMode       Print documentation.commentMode
 xoch config set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
 xoch config get coverage.strictness       Print coverage.strictness
 xoch config set coverage.strictness VALUE Set coverage.strictness (required|recommended)
+xoch config get conventions.strictness       Print conventions.strictness
+xoch config set conventions.strictness VALUE Set conventions.strictness (required|recommended)
 xoch config get git.behavior              Print git.behavior
 xoch config set git.behavior VALUE        Set git.behavior (ask|generate|commit|push|none)
 xoch config get tokenBudgets.SKILL       Print SKILL's resolved read budget
@@ -253,6 +255,10 @@ Keys:
 - **`coverage.strictness`** (`required` | `recommended` default) -- whether the 100%-coverage gate
   (`bin/init.js#coverage-gate`) is unwaivable before a job can close, or instead reports a gap and
   asks the engineer live whether to close it now or accept it and proceed.
+- **`conventions.strictness`** (`required` | `recommended` default) -- whether unresolved findings
+  against `confirmed` conventions block a passing `final_review` (`required`), or are reported for
+  the engineer to fix or accept (`recommended`). Findings against `inferred` rules never block. Not
+  part of the interactive walkthrough; set it with `xoch config set`.
 - **`git.behavior`** (`ask` default | `generate` | `commit` | `push` | `none`) -- what `xoch-do`'s
   `advance` step does with git changes: ask each time (`[G]enerate a commit message, [C]ommit,
   commit and [P]ush, or [N]othing?`), or always draft a message for the engineer to commit, commit,
@@ -260,7 +266,7 @@ Keys:
 - **`tokenBudgets.<skill>`** -- per-skill read-budget override in tokens (built-in defaults: spec
   5,000, plan 7,000; 5,000 for anything unlisted).
 
-All five are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
+All six are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
 available:
 
 ```json
@@ -269,6 +275,7 @@ available:
   "storage": { "mode": "centralized" },
   "documentation": { "commentMode": "follow-convention" },
   "coverage": { "strictness": "recommended" },
+  "conventions": { "strictness": "recommended" },
   "git": { "behavior": "ask" },
   "tokenBudgets": { "spec": 6000 }
 }
@@ -431,6 +438,35 @@ xoch dependency resolve [--dependencies PATH] [--map PATH] [--scope PATH]
 ```
 
 Defaults: `dependencies` is `.xoch/docs/dependencies.json`; `map` is `~/.xoch/workspace-map.json`.
+
+### `conventions-actions.js`
+
+Deterministic side of `xoch-conventions`: where the conventions document lives
+(`[xoch-root]/docs/conventions.md`, following `storage.mode`), which of its rules apply to given
+files, and what convention signals history offers. Rule parsing lives in `lib/conventions-doc.js`,
+scope matching in `lib/glob.js` (built in: `*`, `**`, `?`, leading `!`), and the pure signal
+helpers in `lib/conventions-scan.js`.
+
+```text
+xoch conventions rules [--json] --files <path> [<path> ...]
+xoch conventions scan [--json] [--base BRANCH] [--limit N] [--min-occurrences N] [--min-prs N]
+                      [--max-prs N] [--include-bots]
+```
+
+`rules` returns the document path, `exists`, the repo-relative `files`, any `unmatched` paths
+outside the repository, and only the rules whose scope matches at least one file, each with its
+`matched` list. A rule with no scope matches every file; a scope of only exclusions means
+everything except those files. A missing document exits 0 with `exists: false`; a malformed one
+exits 1 with the offending `line`.
+
+`scan` reports the base branch (`--base`, else `origin/HEAD`, `main`, `master`, `HEAD`), commits
+scanned, small review follow-up commits (subjects like nits, lint, rename, typo, fixup, addressing
+review; at most 10 changed lines; no binary changes), single-token substitutions meeting
+`--min-occurrences` (default 3) across `--min-prs` (default 2) PRs or commits, review comments from
+up to `--max-prs` (default 50) merged PRs when `gh` is available and authenticated, and linter or
+formatter configs at the repo root. Bots are excluded unless `--include-bots`. A missing,
+unauthenticated, or failing `gh` is reported in `gh_reason`, never as an error. Author and reviewer
+names never appear in the output. Usage errors exit 2; running outside a git repository exits 1.
 
 ### `workspace-actions.js`
 
