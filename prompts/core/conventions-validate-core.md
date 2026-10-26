@@ -28,24 +28,9 @@ Skip deleted files. If nothing remains, say so and stop.
 
 With an active job, write the findings, replacing any earlier run:
 
-```bash
-xoch file write --job "[job-id]" --path conventions-check.md <<'XOCHEOF'
-# Conventions Check - [job-id]
+{{xoch-partial:conventions-findings.md source="xoch-conventions validate"}}
 
-**Run**: [timestamp]
-**Source**: xoch-conventions validate
-**Files checked**: [paths]
-**Rules applied**: [rule IDs]
-
-## Findings
-
-| Rule | Status | Severity | Location | Finding | Fix | Resolution |
-|---|---|---|---|---|---|---|
-| CV-004 | confirmed | minor | src/a.js:12 | [what differs] | [fix] | open |
-XOCHEOF
-```
-
-Write `No findings.` in place of the table when there are none. Every resolution starts `open`; later work sets `fixed`, or `accepted` when the engineer keeps the code as it is. With no active job, print the same content instead of writing it.
+With no active job, print the same content instead of writing it.
 
 ## Routing
 

@@ -454,6 +454,53 @@ test('a real xoch init installs xoch-conventions for every target, renders its t
   }
 });
 
+test('a real xoch init renders the conventions partial into the code-touching cores, and final review blocks on conventions only under required strictness', () => {
+  const render = (config) => {
+    const ctx = scratch();
+    try {
+      if (config) {
+        fs.mkdirSync(xochDir(ctx), { recursive: true });
+        fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify(config));
+      }
+      const result = run(['init'], ctx);
+      assert.strictEqual(result.status, 0, result.stderr);
+      const read = (rel) => fs.readFileSync(path.join(xochDir(ctx), 'prompts', rel), 'utf8');
+      return {
+        plan: read('core/plan-core.md'),
+        revisePlan: read('core/revise-plan-core.md'),
+        implement: read('core/implement-core.md'),
+        patch: read('patch.md'),
+        review: read('core/review-core.md'),
+        validate: read('core/conventions-validate-core.md'),
+        spec: read('core/spec-core.md'),
+        open: read('core/open-core.md'),
+        close: read('close.md'),
+      };
+    } finally {
+      cleanup(ctx);
+    }
+  };
+
+  const defaults = render(null);
+  for (const name of ['plan', 'revisePlan', 'implement', 'patch']) {
+    assert.match(defaults[name], /Mode: `apply`/, name);
+    assert.match(defaults[name], /xoch conventions rules --json --files/, name);
+  }
+  assert.match(defaults.review, /Mode: `check`/);
+  for (const name of ['spec', 'open', 'close']) {
+    assert.ok(!/xoch conventions rules/.test(defaults[name]), `${name} must not load conventions`);
+  }
+  // One shared findings template, labeled by where the check ran.
+  assert.match(defaults.review, /\*\*Source\*\*: final_review/);
+  assert.match(defaults.validate, /\*\*Source\*\*: xoch-conventions validate/);
+  assert.match(defaults.review, /Conventions findings do not block/);
+  assert.ok(!/unresolved finding against a `confirmed` rule blocks/.test(defaults.review));
+
+  const required = render({ conventions: { strictness: 'required' } }).review;
+  assert.match(required, /unresolved finding against a `confirmed` rule blocks/);
+  assert.ok(!/Conventions findings do not block/.test(required));
+});
+
 test('a real xoch init seeds config.json fresh, preserves an existing override, and recovers from a corrupt existing file', () => {
   const fresh = scratch();
   try {

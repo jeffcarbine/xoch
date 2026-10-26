@@ -60,6 +60,10 @@ When validation commands are not established by project context, detect advisory
 xoch project-commands detect --json
 ```
 
+Load the conventions for the files the plan expects to create or modify, and list each phase's applicable rule IDs in that phase's `notes`:
+
+{{xoch-partial:conventions-check.md mode="apply"}}
+
 ### Step 5: Analyze Approach
 
 Give a concise analysis: proposed approach, strengths, concerns, suggestions, and integration points. Revise until the approach is clear enough to plan.

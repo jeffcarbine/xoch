@@ -86,6 +86,10 @@ For agent-owned or collaborative work:
 
 {{xoch-partial:budget-check.md skill="do"}}
 
+Before editing, load the conventions for the files this phase will touch, starting from any rule IDs in the phase's `notes`:
+
+{{xoch-partial:conventions-check.md mode="apply"}}
+
 ### Step 6: Write Behavior Tests First
 
 {{xoch-partial:behavior-tests.md}}

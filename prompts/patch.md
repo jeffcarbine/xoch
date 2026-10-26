@@ -35,6 +35,10 @@ Use the patch flow only when the boundary is small and stable. If scope grows, s
 
 Read only the files needed for the patch. Prefer existing project patterns and the smallest responsible change.
 
+Load the conventions for the files the patch touches. They are advisory in a patch: follow them where practical and note any skipped. When the patch fixes findings recorded in the active job's `conventions_check` file (from `xoch job evidence`), set those findings' resolution to `fixed` with `xoch file edit`.
+
+{{xoch-partial:conventions-check.md mode="apply"}}
+
 ### Step 4: Implement
 
 Make the patch with tight scope:

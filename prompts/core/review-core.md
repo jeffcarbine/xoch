@@ -79,22 +79,34 @@ Re-run the full test suite (command from Step 4 or already known) and record whe
 
 {{xoch-config:coverage.strictness required="Separately, confirm 100% coverage (line, branch, and function, when reported separately) on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. This is not waivable here by engineer preference or urgency -- if coverage is incomplete, review status cannot be `pass` or `pass_with_waivers` regardless of any other waiver in this review, unless every remaining gap qualifies as a documented exception per the Coverage Gate (verified investigation, not an assertion, plus the required source/test comment pair). Route back to `xoch-do`'s `implement` step to close any gap that doesn't qualify." default="Separately, confirm coverage on every file this job modified with executable code, using the coverage command detected in Step 4 when one exists. If coverage is incomplete, report the specific gap to the engineer and ask whether to close it now (route back to `xoch-do`'s `implement` step) or accept it and proceed -- record the engineer's answer in the review. A gap the engineer accepts does not block `pass` or `pass_with_waivers`; a documented exception per the Coverage Gate still applies the same way it does under `required`."}}
 
-### Step 6: Documentation Freshness
+### Step 6: Conventions Check
+
+Check the files this job changed -- `git diff --name-only [start_ref]` from phase 1's `start_ref` (`xoch phase get --job "[job-id]" --phase 1 --json`), plus uncommitted and untracked files, minus deleted ones:
+
+{{xoch-partial:conventions-check.md mode="check"}}
+
+When conventions apply, record the findings, replacing any earlier run:
+
+{{xoch-partial:conventions-findings.md source="final_review"}}
+
+{{xoch-config:conventions.strictness required="An unresolved finding against a `confirmed` rule blocks `pass` and `pass_with_waivers`: fix it now (route back to `xoch-do`'s `implement` step), or, when the rule itself is wrong, change it with `xoch-conventions`. Findings against `inferred` rules never block; ask the engineer to fix or accept each one and record the answer as its resolution." default="Conventions findings do not block. Ask the engineer to fix or accept each finding, and record the answer as its resolution in `conventions-check.md`."}}
+
+### Step 7: Documentation Freshness
 
 Use `xoch docs-drift check --json` when a baseline exists, and route reported paths with `xoch docs-target resolve --path "[path]" --json`. Drift is a review signal, not an automatic failure.
 
 Mark each documentation target `Current`, `Updated`, `Not impacted`, `Stale`, `Waived`, or `Unknown`. This is informational: a passing review always routes to `xoch-doc`, where staleness is addressed or waived, regardless of what this step finds.
 
-### Step 7: Decide Review Status
+### Step 8: Decide Review Status
 
-- `pass` - acceptance is covered, the full suite passes (or its failures are explicitly waived as unrelated to this job), {{xoch-config:coverage.strictness required="coverage is complete on every job-touched file (100%, or fully-recorded documented exceptions per the Coverage Gate)" default="coverage is complete on every job-touched file, or any reported gap was explicitly accepted by the engineer (100%, a fully-recorded documented exception, or an accepted gap per the Coverage Gate)"}}, and no blocking risks remain
+- `pass` - acceptance is covered, the full suite passes (or its failures are explicitly waived as unrelated to this job), {{xoch-config:coverage.strictness required="coverage is complete on every job-touched file (100%, or fully-recorded documented exceptions per the Coverage Gate)" default="coverage is complete on every job-touched file, or any reported gap was explicitly accepted by the engineer (100%, a fully-recorded documented exception, or an accepted gap per the Coverage Gate)"}}, {{xoch-config:conventions.strictness required="no unresolved finding remains against a `confirmed` convention, " default=""}}and no blocking risks remain
 - `pass_with_waivers` - remaining gaps other than code coverage (which {{xoch-config:coverage.strictness required="cannot be waived here, only handled via a documented exception" default="is instead handled by the engineer's live accept/fix decision or a documented exception"}}) are explicitly waived by the engineer
 - `needs_work` - issues should be fixed before `xoch-close`
 - `blocked` - review cannot complete without missing information or environment access
 
 On `pass` or `pass_with_waivers`, the next command is always `xoch-doc`, never `xoch-close` or `xoch-pr` directly. `xoch-close` asks before proceeding if review is missing or not passing.
 
-### Step 8: Write Review Result
+### Step 9: Write Review Result
 
 Write `review.md` under the `job_directory` returned by `job evidence`:
 
@@ -122,6 +134,10 @@ Write `review.md` under the `job_directory` returned by `job evidence`:
 
 - Full suite: [pass | fail, waived as unrelated: reason | fail, blocking]
 - Coverage: `[file]` - {{xoch-config:coverage.strictness required="[percentage/status; must be 100% for every job-touched file with code, or a documented exception per the Coverage Gate with the file/branch, investigation findings, and source/test comment locations]" default="[percentage/status; 100%, a documented exception per the Coverage Gate, or a gap the engineer explicitly accepted -- record which]"}}
+
+## Conventions
+
+- `[rule ID]` `[location]` - [fixed | accepted | open], or "No findings", or "No documented conventions"
 
 ## Documentation Freshness
 

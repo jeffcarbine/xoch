@@ -126,6 +126,10 @@ Keep, in the revised document:
 
 Set the document's `current_phase` to the phase work should resume at. `phase write` refuses a document whose `current_phase` is not a listed phase.
 
+Load the conventions for files that revised or added phases will touch, and list each such phase's applicable rule IDs in its `notes`:
+
+{{xoch-partial:conventions-check.md mode="apply"}}
+
 ### Step 8: Update State
 
 `phase write` already refreshed the phase fields in job state (`phase_count`, `phase_index`, and every `current_phase*` field) from the revised document. Update the remaining fields:
