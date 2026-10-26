@@ -48,7 +48,7 @@ Add rules inferred from code samples? [Y]es / [N]o
 
 On `[Y]`:
 
-1. Rank files by change count from `git log [base] -n [commits_scanned] --name-only --format=`, group them by top-level directory, and take the most-changed code files per area -- about 10 in total. Skip lockfiles, generated files, docs, and fixtures.
+1. Rank files by change count from `git log [base] -n [commits_scanned] --name-only --format=`, keep only files that still exist, group them by top-level directory, and take the most-changed code files per area -- about 10 new reads in total. Skip lockfiles, generated files, docs, and fixtures. Files already read in this conversation count toward the sample without being read again.
 2. {{xoch-partial:budget-check.md skill="conventions"}}
 3. Propose only patterns that hold in most sampled files of an area: naming, module shape, error handling, test structure, comment density. Skip anything a linter enforces.
 4. Mark every such rule `status: inferred`, `confidence: low` or `medium` (never `high`), with `evidence: observed in [N] of [M] sampled files`.
