@@ -32,5 +32,5 @@ Do you want to [A]ccept the findings, request [M]odifications, or [R]esearch fur
 After accepted findings are recorded, make the final line the appropriate return step, usually:
 
 ```text
-Ready for next step: `xoch-open`
+{{xoch-partial:next-step.md command="xoch-open"}}
 ```

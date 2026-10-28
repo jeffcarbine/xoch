@@ -87,7 +87,7 @@ Description:
 After the title and description blocks, make the final line:
 
 ```text
-Ready for next step: `xoch-close`
+{{xoch-partial:next-step.md command="xoch-close"}}
 ```
 
 ## Rules

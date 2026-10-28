@@ -131,7 +131,7 @@ If `phase advance` refuses because the environment is not confirmed, return to `
 ```text
 QA plan created.
 Current phase: Phase 1 - [title]
-Ready for next step: `xoch-do`
+{{xoch-partial:next-step.md command="xoch-do"}}
 ```
 
 Entering phase 1 is `xoch-do`'s job; stop here.

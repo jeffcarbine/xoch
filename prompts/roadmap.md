@@ -82,7 +82,7 @@ Omit empty sections and adapt naturally when implementation is complete, no phas
 End with the command that genuinely owns the next action. If a managed workflow is active, route back to that workflow; otherwise use job `next_command`:
 
 ```text
-Ready for next step: `[command]`
+{{xoch-partial:next-step.md command="[command]"}}
 ```
 
 ## Rules

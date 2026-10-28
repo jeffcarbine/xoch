@@ -22,5 +22,5 @@ For a fresh invocation, capture the symptom, frame the investigation, inspect on
 When the trace is complete, put evidence, hypotheses, confidence, risks, and recommendations first. Make the final line the next Xoch step, such as:
 
 ```text
-Ready for next step: `xoch-patch`
+{{xoch-partial:next-step.md command="xoch-patch"}}
 ```
