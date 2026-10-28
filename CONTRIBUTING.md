@@ -159,7 +159,7 @@ When installer behavior changes, run a temporary-HOME install smoke test.
 
 ### Tests And Coverage
 
-Every `bin/*.js` script, `bin/lib/*.js` module, and `config.js` has a matching `test/*.test.js` file using the shared harness (`test/lib/runner.js`'s `test()`/`run()`, `test/lib/cli.js`'s `scratch()`/`cleanup()`/`runScript()` for isolated-`$HOME` subprocess spawns). Run the full suite:
+Every `bin/*.js` script, `bin/lib/*.js` module, `scripts/*.js` release tool (not shipped in the package), and `config.js` has a matching `test/*.test.js` file using the shared harness (`test/lib/runner.js`'s `test()`/`run()`, `test/lib/cli.js`'s `scratch()`/`cleanup()`/`runScript()` for isolated-`$HOME` subprocess spawns). Run the full suite:
 
 ```bash
 npm test
@@ -188,6 +188,26 @@ Check rendered prompts after install:
 ```bash
 rg "\\{\\{xoch-partial:" "$HOME/.xoch/prompts"
 ```
+
+---
+
+## Releasing
+
+Releases are published from `main` by `.github/workflows/release.yml`. Pull requests to `main` run `npm test` on Node 20 and the current LTS (`.github/workflows/ci.yml`).
+
+To release:
+
+1. Bump `version` in `package.json`. In a Xoch job, `xoch-doc` applies the spec's Version Impact.
+2. Add a matching `## [x.y.z] - YYYY-MM-DD` entry to `CHANGELOG.md`. Its notes become the GitHub Release notes.
+3. Merge to `main`.
+
+On every push to `main`, the workflow runs the tests, publishes the version to npm if it isn't published yet, and creates the `vX.Y.Z` tag and GitHub Release if the tag is missing. A merge that doesn't bump the version publishes nothing. If the version is unpublished and `CHANGELOG.md` has no entry for it, the workflow fails before publishing.
+
+Every pull request to `main` also runs the Release workflow as a dry run. To exercise it on `main` without releasing, run the Release workflow from the repository's Actions tab with `dry-run` checked (the default). It runs every check and `npm publish --dry-run`, and skips the tag and GitHub Release.
+
+### One-Time npm Setup
+
+The workflow authenticates with npm trusted publishing, so no npm token is stored in the repository. On npmjs.com, add a trusted publisher to `@jeffcarbine/xoch` under the package's settings: GitHub Actions, repository `jeffcarbine/xoch`, workflow `release.yml`.
 
 ---
 

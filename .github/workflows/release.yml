@@ -11,6 +11,10 @@ name: Release
 on:
   push:
     branches: [main]
+  # Always a dry run: exercises the pipeline before merge, since
+  # workflow_dispatch only works once this file is on the default branch.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dry-run:
@@ -30,7 +34,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+      DRY_RUN: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
     steps:
       - uses: actions/checkout@v4
 
