@@ -41,13 +41,14 @@ Xoch is a lightweight workflow system for AI-assisted development work[^1]. It k
 
 ## Quick Start
 
-**Installing**
+**Installing:**
 
 ```bash
 npm i -g @jeffcarbine/xoch
 xoch init
 ```
-`npm i -g @jeffcarbine/xoch` will install the package globally, but you need to run `xoch init` in order to copy the skills into your AI tool's directory.
+
+`npm i -g @jeffcarbine/xoch` installs the package globally; `xoch init` copies the skills into your AI tool's directory. To confirm the install worked, run `/xoch-meow` in your agent.
 
 **Uninstalling:**
 
@@ -56,21 +57,36 @@ xoch remove
 npm uninstall -g @jeffcarbine/xoch
 ```
 
-`npm uninstall -g @jeffcarbine/xoch` alone won't clean up the skill files `xoch init` copied into each AI tool's directory or `~/.xoch`'s runtime state -- run `xoch remove` first to remove those too.
+`npm uninstall` alone won't clean up the skill files `xoch init` copied into each AI tool's directory or `~/.xoch`'s runtime state. Run `xoch remove` first to remove those too.
 
-**Setup**
+**Setup:**
 
-When first installing Xoch, you can update the default configuration values via `xoch config`
 ```bash
 xoch config
 ```
-This allows you to update preferences such as storage location, coverage strictness or git behavior.
 
-Optionally, you will want to open your agent in each directory that contains projects you intend to work in and run `/xoch-map`.
-```bash
+Walks through the default configuration: storage location, coverage strictness, git behavior, and token budgets. See [Configuration](#configuration).
+
+Optionally, open your agent in each directory that contains projects you intend to work in and run:
+
+```text
 /xoch-map
 ```
-This will allow Xoch to create a map of the locations of your various projects so it can resolve any cross-project dependencies and do cross-project work without having to track down projects every single time.
+
+This builds a map of where your projects live, so Xoch can resolve cross-project dependencies and do cross-project work without tracking projects down every time.
+
+---
+
+## Concepts
+
+- A **job** is the primary unit of work: one feature, fix, or QA pass, with its own spec and plan.
+- A **phase** is an implementation slice inside a job. Jobs advance one phase at a time.
+- An **arc** is an optional grouping of related jobs.
+
+Xoch has two interfaces:
+
+- **Skills** (`/xoch-open`, `/xoch-do`, ...) are typed to your AI agent. They drive the workflow.
+- **The CLI** (`xoch config`, `xoch job current`, ...) is typed in your shell. Skills call it to read and write Xoch's files; you mostly need it for install and configuration.
 
 ---
 
@@ -78,299 +94,175 @@ This will allow Xoch to create a map of the locations of your various projects s
 
 ### Standard Jobs
 
-A standard job guides an engineer through the process of building a feature. It is opened by `/xoch-open job <JOB NAME> <DESCRIPTION OF JOB SPEC>`.
+A standard job guides an engineer through building a feature. Open one by describing the work:
 
-```bash
-> /xoch-open job New Button Variation
+```text
+/xoch-open New Button Variation
   We are adding a new variation to our buttons for when a user...
 ```
 
-#### Command Rhythm
+`xoch-open` also reopens a closed job when given its ID plus new work, and a bare `/xoch-open` searches for paused, archived, or otherwise unfinished work to resume.
 
 ```text
-/xoch-open -> xoch-do (once per phase) -> xoch-doc -> xoch-close
+xoch-open -> xoch-do (once per phase) -> xoch-doc -> xoch-close
 ```
 
 | Step | Command | Purpose |
 |---|---|---|
-| 1 | `xoch-open job` | Start or resume a job, define job spec and ACs and generate phase plan |
-| 2 | `xoch-do` | Do whatever the current step calls for: implement, review, and advance each phase; once every phase is done, run the final review. |
-| 3 | `xoch-doc` | Verify or refresh documentation freshness. |
-| 4 | `xoch-close` | Close the job (or an arc) through `xoch job close` / `xoch arc close`, which check every closing gate and refuse with the list of anything unmet. |
+| 1 | `xoch-open` | Start, reopen, or resume a job; define its spec and acceptance criteria and generate the phase plan. |
+| 2 | `xoch-do` | Do whatever the current step calls for: implement and advance each phase, then run the final review. |
+| 3 | `xoch-doc` | Verify or refresh documentation, and apply any version bump the spec calls for. |
+| 4 | `xoch-close` | Close the job. Refuses, with a list of what's unmet, until every closing gate passes. |
 
-#### Do Behavior
+`xoch-pr` can run between `xoch-doc` and `xoch-close` to draft an evidence-backed pull request title and body.
 
-`xoch-do` carries a Standard Job through phase work as three internal steps, tracked by `current_step` in job state rather than by which command was last typed:
+`xoch-do` moves through three steps:
 
-- **`implement`** is where implementation happens. It marks the phase started (`xoch phase start`, recording the commit work begins from), loads the current phase, confirms ownership, performs or guides the work, and records validation evidence.
-- **`advance`** is the phase checkpoint, reached automatically right after `implement` in the same response. It compares the phase plan to the working tree, handles git changes per `git.behavior` (by default asking: [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing), writes a phase snapshot, and advances only after engineer confirmation. Crossing into the next phase's `implement` step still requires a fresh `xoch-do` invocation.
-- **`final_review`**, reached once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation freshness. A passing review always routes to `xoch-doc` next, which routes onward to `xoch-pr` or directly to `xoch-close`. `xoch job close` refuses until every phase is complete, the review status is `pass` or `pass_with_waivers`, and `xoch-doc` has recorded a documentation status; it then writes `closure.md`, clears the pointer, and completes the job in its arc.
+- **`implement`** -- performs or guides the current phase's work and records validation evidence.
+- **`advance`** -- compares the work to the phase plan, handles git per `git.behavior` (by default asking: [G]enerate a commit message, [C]ommit, commit and [P]ush, or [N]othing), writes a phase snapshot, and advances after you confirm. Each new phase starts with a fresh `xoch-do`.
+- **`final_review`** -- once every phase is complete, checks acceptance coverage, quality, risk, test evidence, and documentation, then routes to `xoch-doc`.
 
-### Arc Jobs
+### Arcs
 
-If you have multiple jobs that are related, you may consider opening an Arc to group them together via `/xoch-open arc <ARC NAME> <DESCRIPTION OF ARC>`.
+When several jobs are related, describe them together and `xoch-open` sets up an arc first:
 
-```bash
-> /xoch-open arc Arc Name
+```text
+/xoch-open
   We are going to be working on a number of components related to the user...
 ```
-Once a project has an active Arc, any future jobs opened via `/xoch-open job` will automatically be added to it. Once the last job in an Arc has been completed, the engineer will be prompted to close the Arc.
 
-Xoch may also recommend opening an arc if a proposed job's scope is large or broad enough to warrant one. The engineer may accept or reject the recommendation.
+Xoch may also recommend an arc when a proposed job's scope is large; you can accept or decline. If a standalone job is already active, arc setup can add it to the new arc.
 
-#### Command Rhythm
+While a project has an active arc, jobs opened with `xoch-open` are added to it. Arc jobs follow the standard rhythm, with `xoch-next` to move from one job to the next:
 
 ```text
-xoch-open -> xoch-do (first job) -> xoch-doc -> xoch-next -> xoch-do (next job) -> ... -> xoch-close
+xoch-open -> xoch-do -> xoch-doc -> xoch-next -> xoch-do -> ... -> xoch-close
 ```
-Arc Jobs have the same rhythm as a Standard Job, with the addition of a `xoch-next` command to streamline moving from one job in the art to the next.
 
 | Step | Command | Purpose |
 |---|---|---|
-| 1a | `xoch-open arc` | Start an arc and define it's jobs |
-| 1b | `xoch-open job` | Add an additional job to the arc and start it |
-| 2 | `xoch-do` | Do whatever the current job's step calls for: implement, review, and advance each phase; once every phase is done, run the final review. |
-| 3 | `xoch-doc` | Verify or refresh current job's documentation freshness. |
-| 4 | `xoch-next` | Close the curent job in the arc and open the next one |
-| 5 | `xoch-close` | Close the arc |
+| 1 | `xoch-open` | Set up the arc and its planned jobs, or add another job to it. |
+| 2 | `xoch-do` | Implement, advance, and review the current job, as for a standard job. |
+| 3 | `xoch-doc` | Verify or refresh the current job's documentation. |
+| 4 | `xoch-next` | Close the current job (with every closing gate) and open the arc's next planned job. |
+| 5 | `xoch-close` | Close the last job, then the arc. |
 
-#### Do Behavior
-
-`xoch-do` carries an Arc Job through phase work through the same steps as a Standard Job.
+When no planned jobs remain, `xoch-next` routes to `xoch-close` and notes that the arc can be closed.
 
 ### QA Jobs
 
-A QA job exercises a running feature against a planned set of test cases instead of building one. It is an ordinary job with `job_type: qa`, opened by `/xoch-qa <DESCRIPTION OF QA WORK>`.
+A QA job exercises a running feature against a planned set of test cases instead of building one:
 
-```bash
-> /xoch-qa
+```text
+/xoch-qa
   We added a new button variation that needs to be tested...
 ```
 
-#### Command Rhythm
-
 ```text
-xoch-qa -> xoch-do -> xoch-close
+xoch-qa -> xoch-do (once per QA phase, then the report) -> xoch-close
 ```
 
 | Step | Command | Purpose |
 |---|---|---|
-| 1 | `xoch-qa` | Start a QA job |
-| 2 | `xoch-do` | Advance through the QA work: advance from phase to phase or generate the final report|
-| 4 | `xoch-close` | Close the job once the final report has been generated and optionally prepares to handoff to another command |
+| 1 | `xoch-qa` | Record what's being tested, confirm the environment, and plan phases of test cases. |
+| 2 | `xoch-do` | Run each phase's cases, patch narrow failures on the spot, then write the QA report. |
+| 3 | `xoch-close` | Close the job and hand off deferred failures. |
 
-
-#### Do Behavior
-`xoch-do` carries a QA Job through from phase-to-phase until reaching the end, where it will generate the final report.
-
-- **Test, Patch and Advance** The agent runs or hands off every case exactly as planned and records `pass`, `fail`, `blocked`, or `skipped` with evidence in `notes/qa-phase-[N].md`. It then sorts the failures into **patch now** (narrow, clearly understood fixes) and **defer** (anything larger), and the engineer confirms the grouping. Patch-now failures are fixed and re-tested on the spot by re-running the original case with the same input; the original failure stays on record. `advance` refuses to move on if any source change is not tied to a recorded patch.
-- **Report** The agent writes `qa-report.md`: results from each phase, failures patched during QA, deferred failures with reproduction steps and severity, and coverage gaps. It then asks `[P]atch`, `[O]pen a job`, or `[N]othing needed` for the deferred failures.
+- **Intake.** You must confirm the target is `dev` or `staging` -- production is refused, and phase 1 can't start without the confirmation. Xoch also records which capabilities the agent has (browser, HTTP requests, shell); phases needing one it lacks are run by you or collaboratively, with step-by-step instructions.
+- **Phases.** Each case is recorded as `pass`, `fail`, `blocked`, or `skipped` with evidence. Failures are sorted into **patch now** (narrow, clearly understood) and **defer** (anything larger), and you confirm the grouping. Patched failures are re-tested with the original input; the original failure stays on record.
+- **Report.** `qa-report.md` covers results, patched failures, deferred failures with reproduction steps and severity, and coverage gaps. Xoch then asks `[P]atch`, `[O]pen a job`, or `[N]othing needed` for the deferred failures.
+- **Close.** Skips the review, coverage, and documentation gates. `[P]` hands deferred failures to `xoch-patch`; `[O]` leaves a handoff that the next `xoch-open` offers as its starting requirements.
 
 ---
 
-## Support Workflows
+## Supporting Commands
 
-`xoch-doc` is the unified documentation command. It can create missing docs, refresh stale docs, validate docs before `xoch-do`'s `final_review` step or `xoch-close`, or apply the version bump and changelog entry a job's spec calls for. Repo-wide documentation lives in the root `README.md`; feature-local documentation should usually live in a nested `README.md` beside the relevant code.
+| Command | Purpose |
+|---|---|
+| `xoch-revise` | Revise a job's spec, its plan, both, or an arc, behind an accept/modify gate. |
+| `xoch-doc` | Create, refresh, or validate project and feature documentation; apply version bumps and changelog entries. |
+| `xoch-pr` | Draft an evidence-backed pull request title and body for the active job. |
+| `xoch-discovery` | Resolve unknowns before they become requirements, from engineer knowledge, local resources, and research. |
+| `xoch-trace` | Investigate the root cause of a bug or unclear symptom before changing code. |
+| `xoch-patch` | Make a small, bounded fix without the full spec/plan lifecycle. |
+| `xoch-conventions` | Generate the project's documented coding conventions, or validate files against them. |
+| `xoch-roadmap` | Show progress and remaining phases without changing anything. |
+| `xoch-map` | Maintain the local workspace map and resolve cross-project dependencies. |
+| `xoch-sidebar` | Explore a related question without advancing job state. |
+| `xoch-pause` | Pause the active job; resume it later with `xoch-open`. |
+| `xoch-help` | List every Xoch command with its description. |
 
-Versioning is decided at open: the spec records a Version Impact (`none`, `patch`, `minor`, or `major`, with a reason, and whether the project keeps a changelog). After review passes, `xoch-doc` bumps the version in `package.json` (or the project's equivalent) and adds a changelog entry when the project has a changelog. It never publishes or releases.
+See [prompts/README.md](prompts/README.md) for each command's full behavior.
 
-`xoch-discovery`, `xoch-trace`, and `xoch-qa` leave a **handoff** when their outcome should become a new job: a JSON note under `[xoch-root]/handoffs/` with what should change and why. `xoch-open` lists pending handoffs, offers them as source requirements, and claims the ones it uses, so the same findings are never picked up twice (`xoch handoff write|list|get|claim`).
+**Handoffs.** When `xoch-discovery`, `xoch-trace`, or `xoch-qa` produce findings that should become a new job, they leave a handoff. `xoch-open` offers pending handoffs as source requirements and claims the ones it uses, so the same findings are never picked up twice.
 
-`xoch-map` maintains the machine-local workspace map and resolves repo-owned dependency declarations. `xoch-open` uses confirmed map entries when creating an optional multi-project `projects.json` scope.
+**Versioning.** The spec records a version impact (`none`, `patch`, `minor`, or `major`) when the job opens. After review passes, `xoch-doc` bumps the version and adds a changelog entry if the project keeps one. Xoch never publishes or releases.
 
-`xoch-roadmap` is a read-only progress view. It summarizes the active workflow, current phase, completed phases, upcoming phase goals/files/acceptance, risks, and the actual next command without modifying state.
+**Conventions.** `xoch-conventions` records the coding conventions reviewers enforce but linters don't, mining them from review history (or inferring them from existing code) for you to accept, modify, or drop. Once a project has them, planning, implementation, and patches follow the rules matching the files they touch, and the final review checks every changed file. Findings are advisory by default; `conventions.strictness required` makes unresolved findings against `confirmed` rules block review. Projects without a conventions document are unaffected.
 
-`xoch-discovery` combines engineer knowledge, local resources, external documentation, targeted research, and clearly labeled model background knowledge to resolve unknowns before they become requirements. Accepted findings live in a shared `[xoch-root]/discoveries/` directory, independent of any job, and normally route back to `xoch-open`'s `spec` step or `xoch-revise`'s spec step.
-
-`xoch-trace` investigates unclear symptoms before implementation. It records evidence, hypotheses, confidence, root cause, and the recommended next command.
-
-`xoch-patch` is for small, bounded fixes. If the patch grows beyond a narrow change, switch to `xoch-open` or revise the active job.
-
-### Conventions
-
-`xoch-conventions` records how a project writes code -- the conventions reviewers enforce but linters don't -- and keeps code-writing steps aware of them. It is optional: a project without a conventions document behaves exactly as before.
-
-- **Generate** (`xoch-conventions generate`, or a bare invocation when no document exists) runs `xoch conventions scan`, which mines small review follow-up commits, single-token substitutions repeated across PRs, and merged-PR review comments (when `gh` is installed and authenticated), and lists linter configs so their rules are left out. The agent proposes rules from those signals and the engineer accepts, modifies, or drops each one. When history offers little signal, it offers to infer rules from a bounded sample of the most-changed existing files; those rules are always `inferred` with low or medium confidence and "observed in N of M sampled files" evidence, and become `confirmed` only when later review signals support them and the engineer agrees.
-- **Validate** (`xoch-conventions validate [files...]`, or a bare invocation when the document exists) checks the named files, or the branch's changes, rule by rule. With an active job, findings go to the job's `conventions-check.md` with a severity: all-`minor` findings route to `xoch-patch`, any `substantive` finding to `xoch-revise` (or `xoch-open` without a job).
-
-The document is `[xoch-root]/docs/conventions.md`, so it follows `storage.mode`: committed with the repository in-repo, kept under `~/.xoch/projects/` when centralized. Each rule has a stable `CV-nnn` ID, an imperative statement, optional `scope` globs (`*`, `**`, `?`, and `!` exclusions; no scope means every file), a `confirmed` or `inferred` status, a confidence, and counts-only evidence -- never reviewer names. Retired IDs are never reused.
-
-Once the document exists, planning, plan revision, implementation, and patches load the rules whose scope matches the files they touch (`xoch conventions rules --files ...`), and `xoch-do`'s `final_review` step checks every file the job changed. By default findings are reported for the engineer to fix or accept; `xoch config set conventions.strictness required` makes unresolved findings against `confirmed` rules block a passing review. `inferred` rules never block.
+**Multi-project jobs.** A job may span several repositories mapped with `xoch-map`. One primary project owns the spec, plan, and review; participants receive guarded mirrors of those artifacts. Source code, git history, and validation stay with each repository and are never copied between them.
 
 ---
 
-## Project Structure
+## Configuration
 
-Xoch keeps workflow state and project knowledge in its storage root, `[xoch-root]` -- `~/.xoch/projects/<project-slug>/` by default, or `.xoch/` inside the repository with in-repo storage (see [Storage Location](#storage-location)):
+Settings live in `~/.xoch/config.json` and are edited with `xoch config` (interactive) or `xoch config set KEY VALUE`:
+
+- **`storage.mode`** -- where Xoch keeps its files: `centralized` (default, `~/.xoch/projects/<project-slug>/`) or `in-repo` (`.xoch/` inside each repository). Switching moves every known repo's data, previewing first and changing nothing on a collision.
+- **`coverage.strictness`** -- whether the 100%-coverage gate blocks closing a job (`required`) or reports gaps for you to accept (`recommended`, default).
+- **`conventions.strictness`** -- whether conventions findings block review (`required`) or are advisory (`recommended`, default).
+- **`git.behavior`** -- what `xoch-do`'s `advance` step does with git changes: ask (default), generate a message, commit, push, or nothing.
+- **`tokenBudgets.<skill>`** -- per-skill read budgets that keep the agent from loading more context than a step needs. Reading past a budget requires your explicit waiver. Review them with `xoch config budgets`.
+
+See [bin/README.md](bin/README.md#configjs) for every value and the file's full shape.
+
+---
+
+## Where Files Live
+
+Xoch keeps workflow state and project knowledge in its storage root, `[xoch-root]` (run `xoch config root` to print it):
 
 ```text
-[xoch-root]/                 # ~/.xoch/projects/<project-slug>/ by default; <repo>/.xoch/ in-repo
+[xoch-root]/
   work/
-    current.json
+    current.json             # the active job pointer
     jobs/
-      job-id/
-        state.json           # helper-owned: xoch state get/set/update
-        phases.json          # helper-owned: xoch phase get/show/write/advance
+      [job-id]/
+        state.json
+        phases.json
         projects.json        # multi-project jobs only
         spec.md
         plan.md
         review.md
+        qa-report.md         # QA jobs only
         closure.md
-        conventions-check.md # latest conventions findings for this job
+        conventions-check.md
         snapshots/
         notes/
+        revisions/
     arcs/
-      arc-id/
-        state.json           # helper-owned: xoch arc get/update
-        jobs.json            # helper-owned: xoch arc get/job-move
+      [arc-id]/
+        state.json
+        jobs.json
         notes.md
+        closure.md
+        revisions/
+    patches/
+  handoffs/
+  discoveries/
   docs/
-    dependencies.json        # optional project-name contracts
-    OVERVIEW.md
-    ARCHITECTURE.md
-    SETUP.md
-    TESTING.md
-    conventions.md           # optional: coding conventions, maintained by xoch-conventions
+    dependencies.json        # optional project dependency declarations
+    conventions.md           # optional coding conventions
 ```
 
-Prompt source files can also use reusable partials:
-
-```text
-xoch/
-  prompts/
-    partials/
-      action-choice.md
-      engineer-git-rule.md
-      next-step.md
-      project-routing.md
-      workflow-boundary.md
-      managed-workflow.md
-```
-
-During installation, Xoch renders top-level prompt files into `~/.xoch/prompts/` and installs from that rendered prompt cache. Files under `prompts/partials/` are fragments only; they are not installed as commands.
-
-### Storage Location
-
-By default, Xoch keeps job/arc state outside the repository, under `~/.xoch/projects/<project-slug>/` (the slug is derived from the repository's directory name, and the root records its repo in `repo.json`). Set `storage.mode` to `in-repo` to keep it inside each repository under `.xoch/` instead. See [bin/README.md](bin/README.md#configjs) for the `xoch config` commands that set it, and for `~/.xoch/config.json`'s full shape.
-
-Switching modes with `xoch config set storage.mode` moves every known repo's Xoch data to where the new mode looks for it: repos from the workspace map, from centralized roots' `repo.json`, and from `--scan DIR`. It previews every move, refuses (changing nothing) on any collision, asks before moving unless `--yes`, undoes a move that fails partway, and changes the setting only once every move succeeded.
-
-Resolve the active root directly with `xoch config root`, or read the `directory` field from `job current --json` for a specific job's location. Every `.xoch/work/...` path shown elsewhere in this document is relative to that resolved root, not necessarily the repository.
-
-### Active Pointer And Workflows
-
-`[xoch-root]/work/current.json` is machine-owned runtime state. It identifies the active job and, when present, one managed side workflow with its stage, pending wrap-up action, artifact, and return command. Agents query it through:
-
-```bash
-xoch job current --json
-```
-
-Don't edit the pointer manually. Job state (`state.json`) keeps durable phase and workflow fields; the helper projects active workflow state into `current.json`. Without a `current.json` there is no active job.
-
-Discovery, sidebar, trace, documentation, and map work use managed workflow actions. A new command can't silently replace unfinished wrap-up work. An explicitly chained command may continue only after the pending workflow artifact/state is finalized and `workflow complete` succeeds.
-
-### Multi-Project Jobs
-
-A job may span multiple repositories. `projects.json` is created only for those jobs and records one primary project plus one or more participants. The primary job folder owns canonical specs, plans, phases, snapshots, notes, review, and closure state. Participant repositories receive guarded mirrors of those job artifacts.
-
-Source code, git history, validation, and the active pointer remain project-specific and are never synchronized between repositories. Xoch never copies implementation source between projects. Participant context synchronization refuses to overwrite independently modified mirrors.
-
-Machine-local project paths live in `~/.xoch/workspace-map.json`.
-
-Arc files are intentionally small:
-
-```text
-[xoch-root]/work/arcs/[arc-id]/
-  state.json
-  jobs.json
-  notes.md
-  closure.md
-  revisions/
-```
-
-`jobs.json` is the membership list. It groups job IDs as active, planned, complete, or parked. If a job belongs to an arc, its job state's `arc` field holds the arc ID, but the job folder still stays under `[xoch-root]/work/jobs/`. Opening a job in an arc lists it as Active, closing it moves it to Complete, and `xoch-next` moves the next Planned job to Active, all through `xoch arc job-move`. Read an arc's state and membership with `xoch arc get --arc ID --json`.
-
-`xoch-open`'s `spec` step should call out whether the work looks like one focused job or an arc candidate. If the work appears arc-sized, it recommends setting up an arc before job planning. Arc setup checks for an active standalone job and can add it to the new arc by reference; if that job already has a spec, it asks whether to infer the arc spec from the job spec or use engineer-provided arc metadata.
-
-### Job State
-
-Each job has a `state.json` file that records the active workflow state:
-
-```text
-[xoch-root]/work/jobs/[job-id]/state.json
-```
-
-Structured job and arc files (`state.json`, `phases.json`, and an arc's `state.json`/`jobs.json`) are owned by Xoch's helpers, which validate every change before saving it. Read them with `xoch state get`, `xoch phase get`/`phase show`, and `xoch arc get`; change them with `xoch state set`/`state update`, `xoch phase write`/`phase advance`, `xoch arc update`, and `xoch arc job-move`. Don't edit them by hand. A phase's number is its position in `phases.json`.
-
-Typical state includes the job ID, title, job type (`standard` or `qa`), optional arc, current status, current phase, documentation targets, key decisions, risks, and the recommended next command.
-
-### Revising Foundations
-
-Use `xoch-revise` when foundational work changes. It infers which kind of change this is, confirms it, and runs the matching steps in one invocation:
-
-- **spec** changes what success means: requirements, acceptance criteria, scope, constraints, or documentation targets.
-- **plan** changes how the work will proceed: implementation approach, phase order, validation, or remaining phase scope.
-- **both** runs spec then plan, so the plan is revised against the updated definition of done.
-- **arc** changes the larger grouping: purpose, job membership, arc status, or shared arc notes. It doesn't need an active job.
-
-Each step presents its draft behind its own accept/modify gate before writing, and offers a follow-on step when a change crosses between a job and its arc.
-
-Revision notes live under each job or arc `revisions/` folder and explain why the foundational artifact changed.
-
----
-
-## Xoch Operations and Helpers
-
-To keep Xoch files consistently formatted, a number of helpers are included that read, generate or modify the necessary Xoch files. These helpers are available through the Xoch CLI.
-
-Prompts prefer the `xoch` CLI for static file and state operations such as opening jobs/arcs, reading the current job, setting state fields, clearing pointers, creating snapshots, and advancing phase state. Agents use judgment for specs, plans, reviews, summaries, and scope decisions.
-
-Deterministic workflow actions (job/arc/state/pointer/snapshot/phase/file mechanics) live under the `job`, `state`, `arc`, `pointer`, `workflow`, `snapshot`, `phase`, and `file` namespaces, e.g. `xoch job open ...`, `xoch state set ...`, `xoch snapshot create ...`.
-
-All helper filenames use kebab-case. See [bin/README.md](bin/README.md) for every namespace's full usage, including `xoch config`, which forwards to `config.js` at the repo root.
-
----
-
-## Context & Token Management
-
-Xoch prompts estimate file reads with:
-
-```bash
-xoch token-estimator --batch file1 file2
-```
-
-Engineers may override budgets when doing so is worth the extra context.
-
-Per-skill read budgets live in `~/.xoch/config.json`'s `tokenBudgets` map (default: spec 5,000 tokens, plan 7,000 tokens, 5,000 for anything else unlisted), seeded on install and editable with `xoch config budgets` or `xoch config set tokenBudgets.<skill> <value>`. Xoch should not reread files when this conversation already contains enough current context; it should prefer search, diffs, symbol snippets, and targeted line ranges before full-file reads.
-
-Before full-file reads beyond active Xoch pointer/state files, Xoch should run `token-estimator.js budget check --skill <skill> --files [files...]` against the candidate files and report the estimate. A FAIL result is a hard stop: reading past budget is not a judgment call the agent makes on its own, it requires an explicit waiver from the engineer.
-
-For repeated phase work, job state (`xoch state get`) acts as the compact index: current phase title, goal, likely files, acceptance criteria, validation expectations, and a short phase index. Full `phases.json`, `plan.md`, and `spec.md` remain authoritative, but prompts should read them one phase or section at a time (`xoch phase get --phase N`), or only when state/prior context is insufficient.
-
-Long workflow explanations live in `~/.xoch/prompts/core/`. Command prompts stay short and should only load core references when the current agent lacks Xoch context or exact artifact/rule details.
-
-## Prompt Partials
-
-Xoch prompts can include reusable fragments with:
-
-```text
-{{xoch-partial:engineer-git-rule.md}}
-```
-
-Partials live in `prompts/partials/`. The installer renders them into top-level prompts, validates that all partial markers are resolved, and keeps partial files out of the command inventory.
-
-Workflow prompts use standard next-action language:
-
-```text
-How would you like to proceed? [E]ngineer does, [A]gent does, or [C]ollaborate?
-Ready for next step: `xoch-do`
-```
+These files are read and written through Xoch's helpers, which validate every change. Don't edit the JSON files by hand. Prose files (specs, plans, notes) are plain markdown and safe to read.
 
 ---
 
 ## Documentation
 
-- [prompts/README.md](prompts/README.md) - Command inventory and prompt behavior.
+- [prompts/README.md](prompts/README.md) - Command inventory, prompt behavior, and partials.
+- [bin/README.md](bin/README.md) - CLI helpers and configuration reference.
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidance.
 
 ---
