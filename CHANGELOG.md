@@ -33,5 +33,6 @@ First public release on npm.
 - `xoch` CLI for configuration (`xoch config`) and validated job, arc, and phase state.
 
 [Unreleased]: https://github.com/jeffcarbine/xoch/compare/v1.0.1...HEAD
+[1.0.2]: https://github.com/jeffcarbine/xoch/compare/v1.0.0...v1.0.2
 [1.0.1]: https://github.com/jeffcarbine/xoch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jeffcarbine/xoch/releases/tag/v1.0.0
