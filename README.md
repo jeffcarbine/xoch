@@ -265,6 +265,7 @@ These files are read and written through Xoch's helpers, which validate every ch
 
 - [prompts/README.md](prompts/README.md) - Command inventory, prompt behavior, and partials.
 - [bin/README.md](bin/README.md) - CLI helpers and configuration reference.
+- [CHANGELOG.md](CHANGELOG.md) - Release history.
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidance.
 
 ---

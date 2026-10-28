@@ -207,7 +207,7 @@ Every pull request to `main` also runs the Release workflow as a dry run. To exe
 
 ### One-Time npm Setup
 
-The workflow authenticates with npm trusted publishing, so no npm token is stored in the repository. On npmjs.com, add a trusted publisher to `@jeffcarbine/xoch` under the package's settings: GitHub Actions, repository `jeffcarbine/xoch`, workflow `release.yml`.
+The workflow authenticates with npm trusted publishing, so no npm token is stored in the repository. On npmjs.com, add a trusted publisher to `@jeffcarbine/xoch` under the package's settings: GitHub Actions, repository `jeffcarbine/xoch`, workflow `release.yml`. Allow it to publish directly (`npm publish`), not only staged publishing; a stage-only trusted publisher makes the workflow's publish step fail with `403 ... OIDC permission denied for this action`.
 
 ---
 
