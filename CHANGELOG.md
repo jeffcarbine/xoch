@@ -4,6 +4,13 @@ All notable changes to Xoch are documented here. The format is based on [Keep a 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-28
+
+### Changed
+
+- Replaced the package's npm keywords with ones that describe Xoch and the AI tools it supports, so it can be found on npm.
+- Normalized the `bin` path in `package.json`, which removes a warning npm printed on every publish.
+
 ## [1.0.0] - 2026-10-28
 
 First public release on npm.
@@ -19,5 +26,6 @@ First public release on npm.
 - Multi-project jobs spanning several repositories.
 - `xoch` CLI for configuration (`xoch config`) and validated job, arc, and phase state.
 
-[Unreleased]: https://github.com/jeffcarbine/xoch/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jeffcarbine/xoch/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/jeffcarbine/xoch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jeffcarbine/xoch/releases/tag/v1.0.0
