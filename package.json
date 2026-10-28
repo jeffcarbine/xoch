@@ -1,9 +1,20 @@
 {
   "name": "@jeffcarbine/xoch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight workflow system for AI-assisted development work.",
   "keywords": [
-    "sdd"
+    "ai",
+    "ai-agents",
+    "ai-coding",
+    "agentic-coding",
+    "spec-driven-development",
+    "developer-workflow",
+    "claude-code",
+    "codex",
+    "github-copilot",
+    "kiro",
+    "prompts",
+    "cli"
   ],
   "homepage": "https://github.com/jeffcarbine/xoch#readme",
   "bugs": {
@@ -17,7 +28,7 @@
   "author": "Jeff Carbine",
   "type": "module",
   "bin": {
-    "xoch": "./bin/xoch.js"
+    "xoch": "bin/xoch.js"
   },
   "files": [
     "prompts/",
