@@ -1,0 +1,1 @@
+{{xoch-config:storage.mode in-repo="`[xoch-root]` is this repository's Xoch storage root: `.xoch/` inside the repository." default="`[xoch-root]` is this repository's Xoch storage root: `~/.xoch/projects/[repo-slug]/`, outside the repository. `[repo-slug]` is the repository folder name lowercased, with non-alphanumerics replaced by hyphens (`My App/` -> `my-app`)."}}

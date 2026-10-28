@@ -7,49 +7,17 @@ description: Handle focused small or urgent fixes with Xoch
 
 {{xoch-partial:workflow-boundary.md}}
 
-Use a focused path for small or urgent fixes.
+A focused path for small or urgent fixes that keeps scope tight without skipping notes, validation, or documentation decisions. It is not a shortcut for broad feature work.
 
-## Purpose
+Use `xoch-patch` when the fix is narrow, touches few files, the desired behavior is clear, speed matters, and full spec/plan ceremony would outweigh the change. Use the normal lifecycle when requirements are unclear, several phases are needed, docs or APIs change broadly, multiple systems are involved, or the patch reveals larger design work.
 
-Keep urgent work scoped without skipping necessary notes, validation, or documentation decisions.
-
-Patch is not a shortcut for broad feature work. If scope grows, route to `xoch-open-job`.
-
-## When To Use Patch
-
-Use `xoch-patch` when:
-
-- the fix is narrow
-- the expected files are few
-- the desired behavior is already clear
-- speed matters
-- full spec/plan ceremony would be heavier than the change
-
-Use the normal lifecycle when:
-
-- requirements are unclear
-- several phases are needed
-- docs or APIs change broadly
-- multiple systems are involved
-- the patch reveals larger design work
-
-## Work Model
-
-If a job is active, use the `xoch-actions.js job current --json` result from the workflow boundary.
+With an active job (from the workflow boundary's `job current --json` result):
 
 {{xoch-partial:job-evidence.md}}
 
-Patch notes for target-model jobs may live under its `notes_dir`:
+{{xoch-partial:storage-root.md}}
 
-```text
-[notes-dir]/patch-[date].md
-```
-
-If no job exists, ask whether to:
-
-1. open a normal job with `xoch-open-job`
-2. create a small patch note under `[xoch-root]/work/patches/` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`)
-3. proceed without Xoch state and summarize in chat only
+With no job, ask whether to open a normal job with `xoch-open`, keep a patch note under `[xoch-root]/work/patches/`, or proceed without Xoch state and summarize in chat only.
 
 {{xoch-partial:project-routing.md}}
 
@@ -57,38 +25,19 @@ If no job exists, ask whether to:
 
 ### Step 1: Capture Patch Boundary
 
-Ask or infer:
-
-- issue
-- expected fix
-- files likely touched
-- behavior that must not change
-- validation required
-- documentation impact
-- urgency
-
-If scope is unclear, route to `xoch-trace` before editing.
+Ask or infer the issue, expected fix, files likely touched, behavior that must not change, required validation, documentation impact, and urgency. If scope is unclear, route to `xoch-trace` before editing.
 
 ### Step 2: Decide Patch Or Normal Job
 
-Use patch flow only when the boundary is small and stable.
-
-If scope grows, stop and recommend:
-
-```text
-xoch-open-job
-```
-
-or, for an active job:
-
-```text
-xoch-revise-spec
-xoch-revise-plan
-```
+Use the patch flow only when the boundary is small and stable. If scope grows, stop and recommend `xoch-open`, or `xoch-revise` for an active job.
 
 ### Step 3: Inspect Focused Context
 
-Read only the files needed to make the patch. Prefer existing project patterns and smallest responsible change.
+Read only the files needed for the patch. Prefer existing project patterns and the smallest responsible change.
+
+Load the conventions for the files the patch touches. They are advisory in a patch: follow them where practical and note any skipped. When the patch fixes findings recorded in the active job's `conventions_check` file (from `xoch job evidence`), set those findings' resolution to `fixed` with `xoch file edit`.
+
+{{xoch-partial:conventions-check.md mode="apply"}}
 
 ### Step 4: Implement
 
@@ -102,33 +51,13 @@ Make the patch with tight scope:
 
 ### Step 5: Validate
 
-Run focused checks appropriate to the change:
+Run focused checks: syntax checks, targeted tests, a reproduction command, an installer smoke test when installer behavior changes, or a documentation scan when docs changed. If validation cannot run, record why; never hide skipped validation.
 
-- syntax checks
-- targeted tests
-- reproduction command
-- installer smoke test when installer behavior changes
-- documentation scan when docs changed
-
-If validation cannot run, record why.
-
-If the patch touches code, prefer reaching 100% coverage on the file(s) it touches, same as the normal lifecycle. `xoch-patch` is the one place in Xoch's lifecycle where a coverage waiver is allowed when urgency genuinely outweighs it — record the waiver explicitly in the patch note, including why coverage wasn't reached.
+If the patch touches code, aim for 100% coverage on each touched file, as in the normal lifecycle. `xoch-patch` is the only place a coverage waiver is allowed, when urgency genuinely outweighs it; record the waiver and why coverage was not reached in the patch note.
 
 ### Step 6: Record Patch Note
 
-When useful, write:
-
-```text
-[notes-dir]/patch-[date].md
-```
-
-or:
-
-```text
-[xoch-root]/work/patches/patch-[date]-[slug].md
-```
-
-Use this structure:
+When useful, write the note to `[notes-dir]/patch-[date].md` (active job) or `[xoch-root]/work/patches/patch-[date]-[slug].md` (no job), with this structure:
 
 ```markdown
 # Patch - [summary]
@@ -164,9 +93,9 @@ Use this structure:
 
 Recommend:
 
-- `xoch-review` when patch is part of an active job and ready for review
-- `xoch-close-job` when patch job is complete and reviewed/waived
-- `xoch-open-job` when follow-up work belongs in a normal job
+- `xoch-do` (its `final_review` step) when patch is part of an active job and ready for review
+- `xoch-close` when patch job is complete and reviewed/waived
+- `xoch-open` when follow-up work belongs in a normal job
 - `xoch-doc` when docs need refresh
 - no further Xoch command when the patch is self-contained
 
@@ -182,15 +111,12 @@ Documentation: [status]
 Follow-up: [summary]
 ```
 
+When Step 7 recommends a command, end with `{{xoch-partial:next-step.md command="[recommended command]"}}`.
+
 ## Rules
 
 {{xoch-partial:response-ending.md}}
 
 {{xoch-partial:engineer-git-rule.md}}
 
-- Keep patches small.
-- If scope grows, switch to normal job flow.
-- Do not hide skipped validation.
-- Do not use patch as a substitute for unclear requirements.
-- A coverage waiver is only valid here — record it explicitly, including why.
-- Do not move active legacy job folders during the migration.
+- Keep patches small; never use a patch as a substitute for unclear requirements.

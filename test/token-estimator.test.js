@@ -1,17 +1,20 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'token-estimator.js');
 
 function writeConfig(ctx, data) {
   const configPath = path.join(ctx.home, '.xoch', 'config.json');
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(data));
+  fs.writeFileSync(configPath, JSON.stringify({ storage: { mode: 'in-repo' }, ...data }));
 }
 
 function jobDir(ctx, job) {
@@ -23,7 +26,7 @@ function arcDir(ctx, arc) {
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -37,7 +40,7 @@ test('--help prints usage', () => {
 });
 
 test('no file path prints usage and exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 1);
@@ -48,7 +51,7 @@ test('no file path prints usage and exits 1', () => {
 });
 
 test('a nonexistent file exits 1 with an error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['missing.md'], ctx);
     assert.strictEqual(result.status, 1);
@@ -59,7 +62,7 @@ test('a nonexistent file exits 1 with an error', () => {
 });
 
 test('--batch reports each file and skips missing ones in the totals', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'small.md'), 'x'.repeat(35));
     const result = runScript(SCRIPT, ['--batch', 'small.md', 'missing.md'], ctx);
@@ -74,7 +77,7 @@ test('--batch reports each file and skips missing ones in the totals', () => {
 });
 
 test('a small file passes the check in default report mode with no extra warnings', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'small.txt'), 'x'.repeat(35));
     const result = runScript(SCRIPT, ['small.txt'], ctx);
@@ -89,7 +92,7 @@ test('a small file passes the check in default report mode with no extra warning
 });
 
 test('a small file passes the check in "check" mode', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'small.txt'), 'x'.repeat(35));
     const result = runScript(SCRIPT, ['small.txt', 'check'], ctx);
@@ -101,7 +104,7 @@ test('a small file passes the check in "check" mode', () => {
 });
 
 test('"json" mode prints a hand-spaced JSON line', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'small.txt'), 'x'.repeat(35));
     const result = runScript(SCRIPT, ['small.txt', 'json'], ctx);
@@ -113,7 +116,7 @@ test('"json" mode prints a hand-spaced JSON line', () => {
 });
 
 test('a file in the warn range reports "Approaching limit" and exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'warn.txt'), 'x'.repeat(8410));
     const result = runScript(SCRIPT, ['warn.txt'], ctx);
@@ -126,7 +129,7 @@ test('a file in the warn range reports "Approaching limit" and exits 1', () => {
 });
 
 test('a file in the warn range shows "WARN" in check mode', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'warn.txt'), 'x'.repeat(8410));
     const result = runScript(SCRIPT, ['warn.txt', 'check'], ctx);
@@ -138,7 +141,7 @@ test('a file in the warn range shows "WARN" in check mode', () => {
 });
 
 test('an oversized file reports "Over limit" and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'big.txt'), 'x'.repeat(8990));
     const result = runScript(SCRIPT, ['big.txt'], ctx);
@@ -151,7 +154,7 @@ test('an oversized file reports "Over limit" and exits 2', () => {
 });
 
 test('an oversized file shows "FAIL" in check mode', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'big.txt'), 'x'.repeat(8990));
     const result = runScript(SCRIPT, ['big.txt', 'check'], ctx);
@@ -163,7 +166,7 @@ test('an oversized file shows "FAIL" in check mode', () => {
 });
 
 test('a README.md next to a package.json is typed as an Application README', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'package.json'), '{}');
     fs.writeFileSync(path.join(ctx.cwd, 'README.md'), 'x'.repeat(35));
@@ -176,7 +179,7 @@ test('a README.md next to a package.json is typed as an Application README', () 
 });
 
 test('a README.md with no build file is typed as a Feature README', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'README.md'), 'x'.repeat(35));
     const result = runScript(SCRIPT, ['README.md'], ctx);
@@ -190,7 +193,7 @@ test('a README.md with no build file is typed as a Feature README', () => {
 // --- budget check ---
 
 test('budget check requires --skill', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'check', '--files'], ctx);
     assert.strictEqual(result.status, 2);
@@ -201,7 +204,7 @@ test('budget check requires --skill', () => {
 });
 
 test('budget check reports PASS for a file list under the configured skill budget', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'x'.repeat(145));
@@ -215,7 +218,7 @@ test('budget check reports PASS for a file list under the configured skill budge
 });
 
 test('budget check reports WARN for a file list approaching the configured skill budget', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'x'.repeat(276));
@@ -229,7 +232,7 @@ test('budget check reports WARN for a file list approaching the configured skill
 });
 
 test('budget check reports FAIL for a file list over the configured skill budget', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'x'.repeat(348));
@@ -243,7 +246,7 @@ test('budget check reports FAIL for a file list over the configured skill budget
 });
 
 test('budget check with no --files flag at all treats the file list as empty', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     const result = runScript(SCRIPT, ['budget', 'check', '--skill', 'testskill'], ctx);
@@ -255,7 +258,7 @@ test('budget check with no --files flag at all treats the file list as empty', (
 });
 
 test('budget check falls back to the built-in default budget for a known skill with no config override', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'check', '--skill', 'spec', '--files'], ctx);
     assert.strictEqual(result.status, 0);
@@ -266,7 +269,7 @@ test('budget check falls back to the built-in default budget for a known skill w
 });
 
 test('budget check falls back to the generic default budget for an unrecognized skill', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'check', '--skill', 'some-unknown-skill', '--files'], ctx);
     assert.strictEqual(result.status, 0);
@@ -277,7 +280,7 @@ test('budget check falls back to the generic default budget for an unrecognized 
 });
 
 test('budget check lists missing files without crashing', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'check', '--skill', 'spec', '--files', 'missing.md'], ctx);
     assert.strictEqual(result.status, 0);
@@ -288,7 +291,7 @@ test('budget check lists missing files without crashing', () => {
 });
 
 test('budget check --json prints a machine-readable summary', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'x'.repeat(145));
@@ -308,7 +311,7 @@ test('budget check --json prints a machine-readable summary', () => {
 // --- budget record ---
 
 test('budget record requires --skill', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'record', '--job', 'job-1', '--files'], ctx);
     assert.strictEqual(result.status, 2);
@@ -319,7 +322,7 @@ test('budget record requires --skill', () => {
 });
 
 test('an unrecognized budget subcommand prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -330,7 +333,7 @@ test('an unrecognized budget subcommand prints usage and exits 2', () => {
 });
 
 test('budget record requires --job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'record', '--skill', 'spec', '--files'], ctx);
     assert.strictEqual(result.status, 2);
@@ -341,7 +344,7 @@ test('budget record requires --job', () => {
 });
 
 test('budget record errors when the job folder does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['budget', 'record', '--skill', 'spec', '--job', 'nope', '--files'], ctx);
     assert.strictEqual(result.status, 1);
@@ -352,7 +355,7 @@ test('budget record errors when the job folder does not exist', () => {
 });
 
 test('budget record within budget appends an entry to the job token usage report', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -374,7 +377,7 @@ test('budget record within budget appends an entry to the job token usage report
 });
 
 test('budget record accumulates totalTokens and entries across repeated calls', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -390,7 +393,7 @@ test('budget record accumulates totalTokens and entries across repeated calls', 
 });
 
 test('budget record also writes to the arc token usage report when --arc is given', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -406,7 +409,7 @@ test('budget record also writes to the arc token usage report when --arc is give
 });
 
 test('budget record over budget without --waiver refuses to write and exits non-zero', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -421,7 +424,7 @@ test('budget record over budget without --waiver refuses to write and exits non-
 });
 
 test('budget record over budget without --waiver, in --json mode, reports the refusal as JSON', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -438,7 +441,7 @@ test('budget record over budget without --waiver, in --json mode, reports the re
 });
 
 test('budget record --json prints the recorded entry as JSON', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -455,7 +458,7 @@ test('budget record --json prints the recorded entry as JSON', () => {
 });
 
 test('budget record over budget with --waiver succeeds and records the reason', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     writeConfig(ctx, { tokenBudgets: { testskill: 100 } });
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
@@ -466,6 +469,22 @@ test('budget record over budget with --waiver succeeds and records the reason', 
     assert.strictEqual(report.entries.length, 1);
     assert.strictEqual(report.entries[0].status, 'fail');
     assert.strictEqual(report.entries[0].waiver, 'engineer approved, one-off large read');
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, budget record writes the job\'s and arc\'s usage in the centralized root', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'job-1'), { recursive: true });
+    fs.mkdirSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'arcs', 'arc-1'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.cwd, 'small.md'), 'tiny\n');
+    const result = runScript(SCRIPT, ['budget', 'record', '--skill', 'spec', '--job', 'job-1', '--arc', 'arc-1', '--files', 'small.md'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.ok(fs.existsSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'job-1', 'token-usage.json')));
+    assert.ok(fs.existsSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'arcs', 'arc-1', 'token-usage.json')));
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
   } finally {
     cleanup(ctx);
   }

@@ -1,11 +1,14 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { execFileSync, spawnSync } = require('child_process');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { execFileSync, spawnSync } from 'child_process';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'docs-drift.js');
 
@@ -17,7 +20,7 @@ function initRepo(cwd) {
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -28,7 +31,7 @@ test('--help prints usage', () => {
 });
 
 test('an unknown subcommand prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -38,7 +41,7 @@ test('an unknown subcommand prints usage and exits 2', () => {
 });
 
 test('baseline errors when --root does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['baseline', '--root', path.join(ctx.cwd, 'missing')], ctx);
     assert.strictEqual(result.status, 1);
@@ -49,7 +52,7 @@ test('baseline errors when --root does not exist', () => {
 });
 
 test('baseline in a non-git directory falls back to walk(), filtering by extension/special-file/excluded-prefix', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'top.js'), 'a');
     fs.writeFileSync(path.join(ctx.cwd, 'package.json'), '{}');
@@ -76,7 +79,7 @@ test('baseline in a non-git directory falls back to walk(), filtering by extensi
 });
 
 test('baseline in a git repo uses git ls-files (tracked + untracked, excluding ignored)', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     fs.writeFileSync(path.join(ctx.cwd, '.gitignore'), 'ignored.js\n');
@@ -99,7 +102,7 @@ test('baseline in a git repo uses git ls-files (tracked + untracked, excluding i
 });
 
 test('check with no baseline present reports an error and exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['check', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -110,7 +113,7 @@ test('check with no baseline present reports an error and exits 1', () => {
 });
 
 test('check with an unchanged baseline reports no drift, using the default root', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'top.js'), 'a');
     runScript(SCRIPT, ['baseline'], ctx);
@@ -123,7 +126,7 @@ test('check with an unchanged baseline reports no drift, using the default root'
 });
 
 test('check detects a changed file, an added file, and a removed file, in text mode', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'changed.js'), 'a');
     fs.writeFileSync(path.join(ctx.cwd, 'removed.js'), 'a');
@@ -145,7 +148,7 @@ test('check detects a changed file, an added file, and a removed file, in text m
 });
 
 test('check reports drift signals as JSON', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'top.js'), 'a');
     runScript(SCRIPT, ['baseline', '--root', ctx.cwd], ctx);
@@ -162,7 +165,7 @@ test('check reports drift signals as JSON', () => {
 });
 
 test('check --since compares against a git ref instead of the baseline file', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     fs.writeFileSync(path.join(ctx.cwd, 'a.js'), 'a');
@@ -185,7 +188,7 @@ test('check --since compares against a git ref instead of the baseline file', ()
 });
 
 test('check --since with an invalid ref reports an error and exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     fs.writeFileSync(path.join(ctx.cwd, 'a.js'), 'a');
@@ -201,7 +204,7 @@ test('check --since with an invalid ref reports an error and exits 1', () => {
 });
 
 test('baseline in an empty git repo with no tracked files handles empty git ls-files output', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     const result = runScript(SCRIPT, ['baseline', '--root', ctx.cwd], ctx);
@@ -215,7 +218,7 @@ test('baseline in an empty git repo with no tracked files handles empty git ls-f
 });
 
 test('baseline hashes a git-tracked (cached) file that was deleted from disk without git rm as null', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     fs.writeFileSync(path.join(ctx.cwd, 'gone.js'), 'a');
@@ -234,7 +237,7 @@ test('baseline hashes a git-tracked (cached) file that was deleted from disk wit
 });
 
 test('check --since with no diff between refs handles empty git diff output', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     initRepo(ctx.cwd);
     fs.writeFileSync(path.join(ctx.cwd, 'a.js'), 'a');
@@ -252,7 +255,7 @@ test('check --since with no diff between refs handles empty git diff output', ()
 });
 
 test('check falls back to an empty files object when the baseline JSON has no "files" key', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(path.join(ctx.cwd, '.xoch', 'docs'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, '.xoch', 'docs', 'drift-baseline.json'), '{}');
@@ -268,7 +271,7 @@ test('check falls back to an empty files object when the baseline JSON has no "f
 });
 
 test('localTimestamp renders both positive and negative UTC offset signs depending on the timezone', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     for (const [tz, expectedSign] of [['Pacific/Kiritimati', '+'], ['America/New_York', '-']]) {
       const result = spawnSync(process.execPath, [SCRIPT, 'baseline', '--root', ctx.cwd], {
@@ -282,6 +285,22 @@ test('localTimestamp renders both positive and negative UTC offset signs dependi
       assert.match(data.generated_at, new RegExp(`\\${expectedSign}\\d{4}$`));
       fs.rmSync(baselinePath);
     }
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, the default baseline lives in the project\'s centralized root', () => {
+  const ctx = scratch();
+  try {
+    fs.writeFileSync(path.join(ctx.cwd, 'a.js'), 'x\n');
+    const baseline = runScript(SCRIPT, ['baseline'], ctx);
+    assert.strictEqual(baseline.status, 0, baseline.stderr);
+    assert.ok(fs.existsSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'docs', 'drift-baseline.json')));
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
+    const check = runScript(SCRIPT, ['check', '--json'], ctx);
+    assert.strictEqual(check.status, 0, check.stderr);
+    assert.strictEqual(JSON.parse(check.stdout).baseline, path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'docs', 'drift-baseline.json'));
   } finally {
     cleanup(ctx);
   }

@@ -1,8 +1,18 @@
 'use strict';
 
-const assert = require('assert');
-const { test, run } = require('./lib/runner.js');
-const { scopeErrors } = require('../bin/lib/project-scope-validator.js');
+import assert from 'assert';
+import { test, run } from './lib/runner.js';
+import { scopeErrors } from '../bin/lib/project-scope-validator.js';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
+// The validator resolves each project's expected job path from the storage
+// config, so pin a scratch HOME to in-repo storage for these in-process tests.
+const pinnedHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-validator-home-'));
+fs.mkdirSync(path.join(pinnedHome, '.xoch'), { recursive: true });
+fs.writeFileSync(path.join(pinnedHome, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+process.env.HOME = pinnedHome;
 
 // A message table that just echoes which check fired, so assertions can
 // check for a specific error by name without depending on wording.

@@ -10,5 +10,5 @@ This is read-only and does not touch job or workflow state.
 Run the helper and print its output verbatim -- no summarization, no reformatting:
 
 ```bash
-~/.xoch/bin/help-actions.js list
+xoch help list
 ```

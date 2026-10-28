@@ -7,11 +7,7 @@ description: Pause the active Xoch job
 
 {{xoch-partial:workflow-boundary.md}}
 
-Pause the active job so another job can become current without losing progress.
-
-## Purpose
-
-Summarize the active job, preserve its job folder, update job state, and clear `.xoch/work/current.json`.
+Pause the active job so another job can become current without losing progress: summarize it, preserve its job folder, update its state, and clear its current pointer.
 
 {{xoch-partial:project-routing.md}}
 
@@ -19,54 +15,35 @@ Summarize the active job, preserve its job folder, update job state, and clear `
 
 ### Step 1: Find Active Job
 
-Use the `xoch-actions.js job current --json` result from the workflow boundary. It reports target-model or legacy active work.
-
-If no active job exists, say there is nothing to pause and stop.
+Use the `xoch job current --json` result from the workflow boundary. If no job is active, say there is nothing to pause and stop.
 
 ### Step 2: Load Job State
-
-For target-model jobs:
 
 {{xoch-partial:job-evidence.md}}
 
 Read:
 
-- `state`
-- `spec` when returned (not `null`)
-- `phases` when returned (not `null`)
-
-For legacy jobs, read the corresponding `.xoch/context/[job-id]/` files without moving them.
+- job state, via `xoch state get --job "[job-id]" --json`
+- `spec`, when returned
+- phases, via `xoch phase get --job "[job-id]" --json`, when the job has a plan
 
 ### Step 3: Summarize
 
-Show:
-
-- job ID and title
-- optional arc
-- status
-- current phase
-- next command
-- job directory
-- brief goal
-- phase progress
+Show the job ID and title, arc (if any), status, current phase, next command, job directory, brief goal, and phase progress.
 
 ### Step 4: Confirm Pause
 
-Ask the engineer to confirm.
+Ask the engineer to confirm. If confirmed, run:
 
-If confirmed:
+```bash
+xoch state set --job "[job-id]" --field status --value paused
+xoch state set --job "[job-id]" --field next_command --value xoch-open
+xoch pointer clear --job "[job-id]"
+```
 
-1. Prefer deterministic helpers:
+If a helper refuses, report the refusal; do not edit job state or `current.json` by hand.
 
-   ```bash
-   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field status --value paused
-   ~/.xoch/bin/xoch-actions.js state set --job "[job-id]" --field next_command --value xoch-resume
-   ~/.xoch/bin/xoch-actions.js pointer clear --job "[job-id]"
-   ```
-
-2. If helpers are unavailable, update `state.md` and remove `[xoch-root]/work/current.json` (resolve `[xoch-root]` with `~/.xoch/bin/xoch-actions.js config root`) only if it points to this job. For legacy jobs, remove `.xoch/context/current.md` only if it points to this job.
-
-For a multi-project job, write paused state through the primary job and sync it first. Then clear only the pointer in the repository where `xoch-pause` was invoked unless the engineer explicitly asks to pause the job in every participant repository.
+For a multi-project job, write paused state through the primary job and sync it first. Then clear only the invoking repository's pointer, unless the engineer explicitly asks to pause the job in every participant repository.
 
 ### Step 5: Output
 
@@ -74,7 +51,7 @@ End with:
 
 ```text
 Job paused.
-{{xoch-partial:next-step.md command="xoch-resume [job-id]"}}
+{{xoch-partial:next-step.md command="xoch-open [job-id]"}}
 ```
 
 ## Rules
@@ -84,5 +61,3 @@ Job paused.
 - Do not delete job files.
 - Do not archive the job.
 - Do not modify phase completion status.
-- Preserve legacy job location when pausing a migration-era job.
-- Multi-project shared state is canonical in the primary; active pointers remain local.

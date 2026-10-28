@@ -1,16 +1,19 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'context-sync.js');
 
 // Builds a primary + participant project tree with a real canonical
 // projects.json under primary/.xoch/work/jobs/[jobId]/, plus a seeded
-// state.md (file) and notes/ (directory) so the shared-item sync logic
+// state.json (file) and notes/ (directory) so the shared-item sync logic
 // has real file and directory cases to exercise.
 function buildFixture(ctx, jobId = 'demo') {
   const primaryDir = path.join(ctx.cwd, 'primary');
@@ -20,7 +23,7 @@ function buildFixture(ctx, jobId = 'demo') {
   const jobPath = path.join('.xoch', 'work', 'jobs', jobId);
   const canonicalRoot = path.join(primaryDir, jobPath);
   fs.mkdirSync(canonicalRoot, { recursive: true });
-  fs.writeFileSync(path.join(canonicalRoot, 'state.md'), 'canonical state\n');
+  fs.writeFileSync(path.join(canonicalRoot, 'state.json'), 'canonical state\n');
   fs.mkdirSync(path.join(canonicalRoot, 'notes'), { recursive: true });
   fs.writeFileSync(path.join(canonicalRoot, 'notes', 'a.md'), 'note a\n');
   const scopeData = {
@@ -51,7 +54,7 @@ function destinationRoot(fixture) {
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -62,7 +65,7 @@ test('--help prints usage', () => {
 });
 
 test('no command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 2);
@@ -72,7 +75,7 @@ test('no command prints usage and exits 2', () => {
 });
 
 test('an unknown command exits 2 with an error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -83,7 +86,7 @@ test('an unknown command exits 2 with an error', () => {
 });
 
 test('--scope is required', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['sync'], ctx);
     assert.strictEqual(result.status, 2);
@@ -94,7 +97,7 @@ test('--scope is required', () => {
 });
 
 test('a requested scope file that does not exist is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['sync', '--scope', path.join(ctx.cwd, 'missing.json')], ctx);
     assert.strictEqual(result.status, 1);
@@ -105,7 +108,7 @@ test('a requested scope file that does not exist is rejected', () => {
 });
 
 test('invalid requested scope JSON is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const scopePath = path.join(ctx.cwd, 'scope.json');
     fs.writeFileSync(scopePath, '{ not json');
@@ -118,7 +121,7 @@ test('invalid requested scope JSON is rejected', () => {
 });
 
 test('a structurally invalid requested scope reports only the first error, using context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const requested = { ...fixture.scopeData, version: 2, job_id: '' };
@@ -165,7 +168,7 @@ function runRequest(ctx, data, suffix) {
 }
 
 test('too few projects uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'toofew');
     data.projects = [data.projects[0]];
@@ -178,7 +181,7 @@ test('too few projects uses context-sync wording', () => {
 });
 
 test('a non-object project entry uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'notobject');
     data.projects[1] = 'not an object';
@@ -191,7 +194,7 @@ test('a non-object project entry uses context-sync wording', () => {
 });
 
 test('a missing project name uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'noname');
     delete data.projects[1].name;
@@ -204,7 +207,7 @@ test('a missing project name uses context-sync wording', () => {
 });
 
 test('a duplicate project name uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'dupname');
     data.projects[1].name = 'primary';
@@ -218,7 +221,7 @@ test('a duplicate project name uses context-sync wording', () => {
 });
 
 test('an invalid role uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'badrole');
     data.projects[1].role = 'owner';
@@ -231,7 +234,7 @@ test('an invalid role uses context-sync wording', () => {
 });
 
 test('a non-absolute path uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'relpath');
     data.projects[1].path = 'relative/path';
@@ -244,7 +247,7 @@ test('a non-absolute path uses context-sync wording', () => {
 });
 
 test('a duplicate project path uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'duppath');
     data.projects[1].path = data.projects[0].path;
@@ -257,7 +260,7 @@ test('a duplicate project path uses context-sync wording', () => {
 });
 
 test('zero primary projects uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'noprimary');
     data.projects[0].role = 'participant';
@@ -270,7 +273,7 @@ test('zero primary projects uses context-sync wording', () => {
 });
 
 test('a primary field that does not match the primary-role project uses context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = baseRequestScope(ctx, 'mismatch');
     data.primary = 'participant';
@@ -283,7 +286,7 @@ test('a primary field that does not match the primary-role project uses context-
 });
 
 test('a canonical scope file that does not exist is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     fs.rmSync(fixture.canonicalScopePath);
@@ -296,7 +299,7 @@ test('a canonical scope file that does not exist is rejected', () => {
 });
 
 test('an invalid canonical scope is rejected using context-sync wording', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     writeJson(fixture.canonicalScopePath, { ...fixture.scopeData, mode: 'single' });
@@ -309,7 +312,7 @@ test('an invalid canonical scope is rejected using context-sync wording', () => 
 });
 
 test('a requested job_id that does not match the canonical scope is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     // The canonical file's own declared identity (job_id/job_path) can drift
@@ -334,7 +337,7 @@ test('a requested job_id that does not match the canonical scope is rejected', (
 });
 
 test('a requested primary that does not match the canonical primary is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const requested = JSON.parse(JSON.stringify(fixture.scopeData));
@@ -351,7 +354,7 @@ test('a requested primary that does not match the canonical primary is rejected'
 });
 
 test('a participant path that does not exist is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const canonical = JSON.parse(JSON.stringify(fixture.scopeData));
@@ -366,7 +369,7 @@ test('a participant path that does not exist is rejected', () => {
 });
 
 test('a non-integer canonical revision is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     writeJson(fixture.canonicalScopePath, { ...fixture.scopeData, revision: -1 });
@@ -379,7 +382,7 @@ test('a non-integer canonical revision is rejected', () => {
 });
 
 test('a participant job directory with unrelated content and no scope file is refused as unmanaged', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const destRoot = destinationRoot(fixture);
@@ -395,7 +398,7 @@ test('a participant job directory with unrelated content and no scope file is re
 });
 
 test('a participant scoped to a different job_id is refused as a different job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const destRoot = destinationRoot(fixture);
@@ -409,7 +412,7 @@ test('a participant scoped to a different job_id is refused as a different job',
 });
 
 test('a participant with a higher recorded revision is refused as newer', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const destRoot = destinationRoot(fixture);
@@ -423,12 +426,12 @@ test('a participant with a higher recorded revision is refused as newer', () => 
 });
 
 test('a participant with a stale recorded content_digest is refused as independently modified', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const destRoot = destinationRoot(fixture);
     fs.mkdirSync(destRoot, { recursive: true });
-    fs.writeFileSync(path.join(destRoot, 'state.md'), 'independently edited\n');
+    fs.writeFileSync(path.join(destRoot, 'state.json'), 'independently edited\n');
     writeJson(path.join(destRoot, 'projects.json'), { ...fixture.scopeData, content_digest: 'deadbeef' });
     const result = runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
     assert.strictEqual(result.status, 1);
@@ -439,7 +442,7 @@ test('a participant with a stale recorded content_digest is refused as independe
 });
 
 test('check reports out-of-sync for an unsynced participant without writing anything', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const result = runScript(SCRIPT, ['check', '--scope', fixture.canonicalScopePath], ctx);
@@ -447,7 +450,7 @@ test('check reports out-of-sync for an unsynced participant without writing anyt
     const summary = JSON.parse(result.stdout);
     assert.strictEqual(summary.mode, 'check');
     assert.strictEqual(summary.participants[0].status, 'out-of-sync');
-    assert.ok(summary.participants[0].changed.includes('state.md'));
+    assert.ok(summary.participants[0].changed.includes('state.json'));
     assert.ok(summary.participants[0].changed.includes('notes'));
     assert.ok(!fs.existsSync(destinationRoot(fixture)));
   } finally {
@@ -456,32 +459,32 @@ test('check reports out-of-sync for an unsynced participant without writing anyt
 });
 
 test('check treats a source item whose type changed (file to directory) as changed, without tripping the modified-participant guard', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     // Establish a real, in-sync participant first so the destination's own
     // recorded content_digest matches its disk state (no unrelated drift).
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
 
-    // Canonical's "state.md" changes from a file into a directory. The
+    // Canonical's "state.json" changes from a file into a directory. The
     // participant's copy is untouched, so samePath's isFile/isDirectory
     // type-mismatch branch is what flags it, not a byte-content diff.
-    fs.rmSync(path.join(fixture.canonicalRoot, 'state.md'));
-    fs.mkdirSync(path.join(fixture.canonicalRoot, 'state.md'));
-    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.md', 'inner.txt'), 'now a directory');
+    fs.rmSync(path.join(fixture.canonicalRoot, 'state.json'));
+    fs.mkdirSync(path.join(fixture.canonicalRoot, 'state.json'));
+    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.json', 'inner.txt'), 'now a directory');
 
     const result = runScript(SCRIPT, ['check', '--scope', fixture.canonicalScopePath], ctx);
     assert.strictEqual(result.status, 1);
     const summary = JSON.parse(result.stdout);
     assert.strictEqual(summary.participants[0].status, 'out-of-sync');
-    assert.ok(summary.participants[0].changed.includes('state.md'));
+    assert.ok(summary.participants[0].changed.includes('state.json'));
   } finally {
     cleanup(ctx);
   }
 });
 
 test('--dry-run reports the plan without writing any files or bumping the revision', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const result = runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath, '--dry-run'], ctx);
@@ -498,7 +501,7 @@ test('--dry-run reports the plan without writing any files or bumping the revisi
 });
 
 test('sync copies shared items to a fresh participant and bumps the canonical revision', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     const result = runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
@@ -508,7 +511,7 @@ test('sync copies shared items to a fresh participant and bumps the canonical re
     assert.strictEqual(summary.participants[0].status, 'ready');
 
     const destRoot = destinationRoot(fixture);
-    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.md'), 'utf8'), 'canonical state\n');
+    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.json'), 'utf8'), 'canonical state\n');
     assert.strictEqual(fs.readFileSync(path.join(destRoot, 'notes', 'a.md'), 'utf8'), 'note a\n');
     const participantScope = JSON.parse(fs.readFileSync(path.join(destRoot, 'projects.json'), 'utf8'));
     assert.strictEqual(participantScope.revision, 1);
@@ -523,7 +526,7 @@ test('sync copies shared items to a fresh participant and bumps the canonical re
 });
 
 test('check reports clean (exit 0) once the participant matches the canonical state', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
@@ -537,14 +540,14 @@ test('check reports clean (exit 0) once the participant matches the canonical st
 });
 
 test('a second sync updates changed content and removes items no longer present in canonical', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);
 
-    // Canonical drops its "notes" directory and changes state.md's content.
+    // Canonical drops its "notes" directory and changes state.json's content.
     fs.rmSync(path.join(fixture.canonicalRoot, 'notes'), { recursive: true, force: true });
-    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.md'), 'updated state\n');
+    fs.writeFileSync(path.join(fixture.canonicalRoot, 'state.json'), 'updated state\n');
     const canonical = JSON.parse(fs.readFileSync(fixture.canonicalScopePath, 'utf8'));
     writeJson(fixture.canonicalScopePath, canonical);
 
@@ -554,7 +557,7 @@ test('a second sync updates changed content and removes items no longer present 
     assert.strictEqual(summary.revision, 2);
 
     const destRoot = destinationRoot(fixture);
-    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.md'), 'utf8'), 'updated state\n');
+    assert.strictEqual(fs.readFileSync(path.join(destRoot, 'state.json'), 'utf8'), 'updated state\n');
     assert.ok(!fs.existsSync(path.join(destRoot, 'notes')));
   } finally {
     cleanup(ctx);
@@ -562,7 +565,7 @@ test('a second sync updates changed content and removes items no longer present 
 });
 
 test('check flags a directory as changed when its child count differs, without a type change or removal', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const fixture = buildFixture(ctx);
     runScript(SCRIPT, ['sync', '--scope', fixture.canonicalScopePath], ctx);

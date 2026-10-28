@@ -3,10 +3,11 @@
 
 // Detect likely project validation commands without executing them.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { prettyGenerate } from './lib/ruby-json.js';
 
 function usage() {
   console.log('Usage:');
@@ -120,8 +121,8 @@ function main(argv) {
   detect(rest);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { detect, main };
+export { detect, main };

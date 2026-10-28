@@ -1,6 +1,6 @@
 'use strict';
 
-const { spawnSync } = require('child_process');
+import { spawnSync } from 'child_process';
 
 // Runs `git -C <root> <args>` via spawnSync with an argv array (no shell,
 // no string interpolation) -- unlike bash originals that build the command
@@ -13,4 +13,4 @@ function git(root, args) {
   return (result.stdout || '').trim();
 }
 
-module.exports = { git };
+export { git };

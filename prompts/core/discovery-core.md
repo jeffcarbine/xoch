@@ -5,29 +5,13 @@ description: Full reference workflow for xoch-discovery
 
 # Xoch - Discovery Core
 
-This is the full reference workflow for `xoch-discovery`. It is rendered to `~/.xoch/prompts/core/discovery-core.md` and is not installed as a command.
+Resolve an important unknown (product, domain, design, API, dependency, workflow, compatibility, or implementation) whose answer materially affects a spec, without confusing prior knowledge, evidence, assumptions, and decisions. For an observed defect or failure, use `xoch-trace` instead.
 
-Resolve an important unknown before specification, planning, or implementation continues.
+{{xoch-partial:storage-root.md}}
 
-## Purpose
-
-Guide the engineer and agent through focused research that combines their complementary knowledge without confusing prior knowledge, evidence, assumptions, and decisions.
-
-Use `xoch-discovery` for product, domain, design, API, dependency, workflow, compatibility, or implementation questions whose answers materially affect a spec. Use `xoch-trace` instead for an observed defect or failure that needs root-cause investigation.
-
-## Work Model
-
-When a job is active:
+Discovery notes live at `[xoch-root]/discoveries/[date]-[topic]-discovery.md`, independent of any job, so a later unrelated job can reuse them and discovery can run before any job exists. When a job is active:
 
 {{xoch-partial:job-evidence.md}}
-
-Target-model discovery notes live under its `notes_dir`:
-
-```text
-[notes-dir]/discovery-[topic]-[date].md
-```
-
-If no job exists, discovery may continue in chat. Ask before writing an ad hoc note or opening a job.
 
 {{xoch-partial:project-routing.md}}
 
@@ -58,12 +42,6 @@ Ask or establish:
 - time, access, privacy, or source constraints
 
 Turn a broad uncertainty into a short list of answerable discovery questions.
-
-When a target-model job is active and `xoch-discovery` is not already the active workflow, begin it before further research. Preserve the command that should resume afterward:
-
-```bash
-~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-discovery --stage investigating --pending continue_discovery --return "[xoch-spec | xoch-revise-spec | prior next command]"
-```
 
 ### Step 2: Inventory Available Sources
 
@@ -135,10 +113,18 @@ Present a concise draft containing:
 - spec impact
 - recommended next step
 
-Before asking for acceptance, write these findings to the planned discovery note with `Status: Draft`. This preserves the pending result across agents and conversations. Then update the workflow boundary:
+Before asking for acceptance, write these findings to a new discovery note (using Step 8's structure) with `Status: Draft`:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "notes/discovery-[topic]-[date].md" --return "[return command]"
+xoch discovery write --topic "[topic]" <<'XOCHEOF'
+[draft discovery note content]
+XOCHEOF
+```
+
+This preserves the pending result across agents and conversations. Record the path it prints -- this exact file gets updated in place through `[M]`/`[R]` revisions and Step 8's acceptance, never re-created. Then update the workflow boundary, when a job is active:
+
+```bash
+xoch workflow update --job "[job-id]" --name xoch-discovery --stage awaiting_acceptance --pending finalize_discovery --artifact "[path printed above]" --return "[return command]"
 ```
 
 Then ask:
@@ -147,13 +133,11 @@ Then ask:
 Do you want to [A]ccept the findings, request [M]odifications, or [R]esearch further?
 ```
 
-If `[M]`, ask what should change, revise the draft note, and ask again. If `[R]`, set the workflow back to `stage: investigating` with `pending_action: continue_discovery`, then agree on the next focused question or source. Do not mark findings accepted until the engineer chooses `[A]`.
+On `[M]`, ask what should change, revise the draft note, and ask again. On `[R]`, set the workflow back to `stage: in_progress` with `pending_action: continue_discovery`, then agree on the next focused question or source. Do not mark findings accepted before `[A]`.
 
 ### Step 8: Record Accepted Discovery
 
-When a job exists, write to `[notes-dir]/discovery-[topic]-[date].md` (`notes_dir` from the Work Model's `job evidence` call).
-
-Normalize the topic portion when needed with `~/.xoch/bin/generate-job-id.js --id "[topic]"`. If that note path already exists, add a short numeric suffix rather than overwriting prior discovery.
+Edit the discovery note Step 7 wrote, in place. Do not run `xoch discovery write` again; it always creates a new file.
 
 Use this structure:
 
@@ -192,38 +176,45 @@ Use this structure:
 
 ## Next Step
 
-[xoch-spec | xoch-revise-spec | more discovery | blocked]
+[xoch-open | xoch-revise | more discovery | blocked]
 ```
 
-For legacy jobs, write the note in the legacy job folder. For multi-project jobs, write through the primary job and synchronize accepted findings.
+For multi-project jobs, write through the primary project's root and sync accepted findings to participants.
 
-Update `state.md` only when discovery affects active workflow routing. Keep it compact:
+Update job state only when discovery affects active workflow routing. Keep it compact:
 
-```yaml
-discovery_status: [status]
-last_discovery: notes/discovery-[topic]-[date].md
-unresolved_questions:
-  - [question]
-next_command: [xoch-spec | xoch-revise-spec | xoch-discovery]
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"discovery_status": "[status]", "last_discovery": "[path printed by the discovery write in Step 7]", "unresolved_questions": ["[question]"], "next_command": "[xoch-open | xoch-revise | xoch-discovery]", "last_updated": "[today]"}
+XOCHEOF
 ```
 
 After the accepted note and state update exist, complete the workflow before executing any explicitly chained command:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-discovery --next "[recommended or explicitly invoked command]"
+xoch workflow complete --job "[job-id]" --name xoch-discovery --next "[recommended or explicitly invoked command]"
 ```
 
 ### Step 9: Route
 
 Recommend:
 
-- `xoch-spec` when discovery supplies missing pre-spec information
-- `xoch-revise-spec` when an accepted spec must change
+- `xoch-open` when discovery supplies missing pre-spec information
+- `xoch-revise` when an accepted spec must change
 - another `xoch-discovery` pass when a narrower unknown remains
 - `xoch-map` when local project or dependency resolution is the remaining need
 - `xoch-doc` when accepted findings belong in durable project documentation
 - stop as blocked when required access or authority is unavailable
+
+When the route is `xoch-open`, leave a handoff so the next `xoch-open` picks these findings up as source requirements (and claims them, so they are never picked up twice):
+
+```bash
+xoch handoff write --source discovery --topic "[topic]" <<'XOCHEOF'
+[what a new job should do, the accepted findings it rests on, unresolved questions, and the discovery note path]
+XOCHEOF
+```
+
+Report the handoff ID it prints.
 
 ## Output
 

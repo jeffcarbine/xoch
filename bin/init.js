@@ -1,0 +1,456 @@
+#!/usr/bin/env node
+'use strict';
+
+// Xoch Init
+// Renders Xoch prompts and installs them for each tool in INSTALL_TARGETS
+// (bin/lib/install-targets.js). Adapted from the old install.js: the
+// package-relative helper script copy (installHelpers(), ~/.xoch/bin) is
+// gone now that bin/xoch.js is an in-process dispatcher engineers reach via
+// the npm-installed `xoch` binary instead of copied standalone scripts.
+
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+import {
+  INSTALL_TARGETS, targetDir, isDirNoFollow, injectFrontmatterLine,
+} from './lib/install-targets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// This file lives in bin/, one level below the package root that
+// install.js used to call home, so package-relative paths climb one
+// extra directory to land back on prompts/.
+const SCRIPT_DIR = path.join(__dirname, '..');
+const PROMPTS_SOURCE_DIR = path.join(SCRIPT_DIR, 'prompts');
+const CORE_PROMPTS_SOURCE_DIR = path.join(PROMPTS_SOURCE_DIR, 'core');
+const XOCH_RUNTIME_DIR = path.join(os.homedir(), '.xoch');
+const PROMPTS_DIR = path.join(XOCH_RUNTIME_DIR, 'prompts');
+const CORE_PROMPTS_DIR = path.join(PROMPTS_DIR, 'core');
+const CONFIG_PATH = path.join(XOCH_RUNTIME_DIR, 'config.json');
+
+// Kept in sync by hand with bin/token-estimator.js's DEFAULT_SKILL_BUDGETS --
+// the installed runtime can't require this root-level file, so the table is
+// duplicated rather than shared across the install boundary.
+const DEFAULT_SKILL_BUDGETS = { spec: 5000, plan: 7000 };
+
+const GREEN = '\x1b[0;32m';
+const YELLOW = '\x1b[1;33m';
+const RED = '\x1b[0;31m';
+const NC = '\x1b[0m';
+
+// DOCUMENTED COVERAGE EXCEPTION (npm-setup, 2026-09-18; extended
+// misc-9-21-26): failRender() and every call site that reaches it
+// (parsePartial's and parseConfigMarker's malformed-reference branches,
+// renderPromptFile's own no-matching-config-variant branch and
+// read/write-failure branches) are unreachable when this file runs from
+// its real, installed location -- they only fire against malformed or
+// broken prompt content, and this repo's actual prompts/ directory is
+// well-formed by construction (CI and `npm test` would already be
+// failing otherwise). The multi-line marker-body branch shared by
+// parsePartial and parseConfigMarker is reachable with well-formed
+// content too, but no real prompt happens to write a marker across
+// multiple lines, so it falls in the same boat. The only way to
+// exercise any of this is to relocate this script's __dirname so a
+// synthetic fixture prompts/ directory can be substituted for the real
+// one -- exactly what test/init.test.js's scratch-copied bin/init.js
+// does, reaching 100% coverage on that copy.
+// Node's coverage instrumentation tracks the scratch copy and this real
+// file as separate entries by absolute path, so that 100% doesn't roll
+// up here; the code itself is still fully behavior-tested. See
+// test/init.test.js and test/xoch-dispatch.test.js's "real
+// (non-scratch) coverage" tests, which close every other real-file gap
+// that doesn't require malformed input (happy-path install/cleanup for
+// every install target, idempotent re-run, orphan cleanup, config
+// seed/preserve/corrupt-recovery, and direct non-dispatcher
+// invocation).
+function failRender(message) {
+  process.stderr.write(`${message}\n`);
+  process.exit(1);
+}
+
+// Parses the body of a {{xoch-partial:...}} reference: a partial path
+// (first line, or first whitespace-delimited token if single-line),
+// followed by zero or more `key="value"` assignments (multi-line if the
+// body spans multiple lines). Matches render_prompt_file's ruby
+// StringScanner-based parser exactly, including escaped-quote handling.
+function parsePartial(rawBody, sourceFile) {
+  const body = rawBody.trim();
+  if (!body) failRender(`Error: malformed prompt partial in ${sourceFile}`);
+
+  let partialPath;
+  let assignments;
+  if (body.includes('\n')) {
+    const lines = body.split('\n').map((line) => line.replace(/\r$/, ''));
+    const [firstLine, ...rest] = lines;
+    partialPath = firstLine.trim();
+    assignments = rest.join('\n');
+  } else {
+    // body is non-empty, trimmed, and single-line, so \S+ always matches.
+    const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(body);
+    partialPath = match[1];
+    assignments = match[2] || '';
+  }
+
+  partialPath = partialPath.trim().replace(/^\.\//, '');
+  if (!partialPath) failRender(`Error: missing prompt partial path in ${sourceFile}`);
+  if (partialPath.startsWith('/') || partialPath.split('/').includes('..')) {
+    failRender(`Error: invalid prompt partial path '${partialPath}' in ${sourceFile}`);
+  }
+
+  const vars = parseAssignments(assignments, sourceFile, /^[A-Za-z_][A-Za-z0-9_]*/);
+
+  return [partialPath, vars];
+}
+
+// Parses zero or more `key="value"` assignments (quoted-value, with
+// escaped-quote/backslash handling) out of a marker body -- shared by
+// parsePartial's variables and parseConfigMarker's value-keyed variants,
+// since both use the same `key="value"` grammar for the value half. The
+// key half differs: a partial variable name must match the identifier-only
+// `{{placeholder}}` syntax it substitutes into, while a config marker's
+// keys are config *values* (e.g. "follow-convention"), which can contain
+// hyphens -- so callers pass their own keyPattern rather than sharing one.
+function parseAssignments(assignments, sourceFile, keyPattern) {
+  const vars = {};
+  let i = 0;
+  const len = assignments.length;
+  const skipWs = () => {
+    while (i < len && /\s/.test(assignments[i])) i += 1;
+  };
+  for (;;) {
+    skipWs();
+    if (i >= len) break;
+    const keyMatch = keyPattern.exec(assignments.slice(i));
+    if (!keyMatch) failRender(`Error: malformed variable assignment near '${assignments.slice(i)}' in ${sourceFile}`);
+    const key = keyMatch[0];
+    i += key.length;
+    skipWs();
+    if (assignments[i] !== '=') failRender(`Error: expected '=' after variable '${key}' in ${sourceFile}`);
+    i += 1;
+    skipWs();
+    const valueMatch = /^"([^"\\]|\\.)*"/.exec(assignments.slice(i));
+    if (!valueMatch) failRender(`Error: expected quoted value for variable '${key}' in ${sourceFile}`);
+    const rawValue = valueMatch[0];
+    i += rawValue.length;
+    vars[key] = rawValue.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  }
+  return vars;
+}
+
+const CONFIG_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+
+// Parses the body of a {{xoch-config:...}} reference: a dotted config key
+// (first line, or first whitespace-delimited token if single-line),
+// followed by one or more `value="text"` assignments naming the text for
+// each possible resolved config value (plus an optional `default="..."`
+// for when the key is unset or doesn't match any listed value). Reuses
+// parseAssignments for the `value="text"` grammar, matching
+// {{xoch-partial:...}}'s variable syntax exactly.
+function parseConfigMarker(rawBody, sourceFile) {
+  const body = rawBody.trim();
+  if (!body) failRender(`Error: malformed prompt config reference in ${sourceFile}`);
+
+  let key;
+  let assignments;
+  if (body.includes('\n')) {
+    const lines = body.split('\n').map((line) => line.replace(/\r$/, ''));
+    const [firstLine, ...rest] = lines;
+    key = firstLine.trim();
+    assignments = rest.join('\n');
+  } else {
+    // body is non-empty and trimmed, so \S+ always matches.
+    const match = /^(\S+)(?:\s+([\s\S]*))?$/.exec(body);
+    key = match[1];
+    assignments = match[2] || '';
+  }
+
+  // Unlike a partial path, a config key has no "./"-stripping step that
+  // could reduce a non-empty token to empty, so -- given body already
+  // passed the empty-body check above -- key is always non-empty here;
+  // only its format needs validating.
+  if (!CONFIG_KEY_RE.test(key)) failRender(`Error: invalid prompt config key '${key}' in ${sourceFile}`);
+
+  const variants = parseAssignments(assignments, sourceFile, /^[A-Za-z_][A-Za-z0-9_-]*/);
+  return [key, variants];
+}
+
+// Resolves a dotted key (e.g. "coverage.strictness") directly out of
+// ~/.xoch/config.json for {{xoch-config:...}} rendering. Returns
+// undefined when any segment of the key is missing -- callers treat
+// that the same as an explicit "unset" value. Deliberately has no
+// existsSync guard or try/catch around the read/parse: by the time
+// renderPrompts() calls this, seedConfig() has already run and always
+// leaves the file in place with valid JSON, so a missing file or a
+// parse failure here would mean it was removed or corrupted in the
+// narrow window between those two calls -- a genuine anomaly that
+// should surface through renderPromptFile's own outer catch (which
+// already reports "Error rendering ...") rather than being silently
+// swallowed here.
+function resolveConfigValue(key) {
+  const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  return key.split('.').reduce((node, segment) => (
+    node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, segment)
+      ? node[segment]
+      : undefined
+  ), data);
+}
+
+function renderPromptFile(promptsSourceDir, sourceFile, outputFile) {
+  const partialsDir = path.join(promptsSourceDir, 'partials');
+  let source;
+  try {
+    source = fs.readFileSync(sourceFile, 'utf8');
+  } catch (e) {
+    failRender(`Error rendering ${sourceFile}: ${e.message}`);
+    return;
+  }
+
+  try {
+    let rendered = source.replace(/\{\{xoch-partial:(.*?)\}\}/gs, (match, rawBody) => {
+      const [partialPath, vars] = parsePartial(rawBody, sourceFile);
+      const partialFile = path.join(partialsDir, partialPath);
+      if (!fs.existsSync(partialFile) || !fs.statSync(partialFile).isFile()) {
+        failRender(`Error: prompt partial not found: ${partialFile}`);
+      }
+      let partialText = fs.readFileSync(partialFile, 'utf8');
+      const used = new Set();
+      partialText = partialText.replace(/\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}/g, (m, key) => {
+        if (!(key in vars)) failRender(`Error: missing variable '${key}' for partial '${partialPath}' in ${sourceFile}`);
+        used.add(key);
+        return vars[key];
+      });
+      const unused = Object.keys(vars).filter((key) => !used.has(key));
+      if (unused.length) {
+        process.stderr.write(`Warning: unused variable(s) for partial '${partialPath}' in ${sourceFile}: ${unused.join(', ')}\n`);
+      }
+      return partialText;
+    });
+
+    // Runs after the partial pass, over the whole partial-substituted
+    // string, so a {{xoch-config:...}} marker embedded inside a
+    // partial's own body still resolves normally.
+    rendered = rendered.replace(/\{\{xoch-config:(.*?)\}\}/gs, (match, rawBody) => {
+      const [key, variants] = parseConfigMarker(rawBody, sourceFile);
+      const value = resolveConfigValue(key);
+      const variantText = value !== undefined && Object.prototype.hasOwnProperty.call(variants, value)
+        ? variants[value]
+        : variants.default;
+      if (variantText === undefined) {
+        failRender(`Error: no text for config key '${key}' resolved to '${value !== undefined ? value : '(unset)'}' in ${sourceFile}`);
+      }
+      return variantText;
+    });
+
+    fs.writeFileSync(outputFile, rendered);
+  } catch (e) {
+    failRender(`Error rendering ${sourceFile}: ${e.message}`);
+  }
+}
+
+// Every caller (renderPrompts' two listings, each install* function's own
+// listing of the already-rendered PROMPTS_DIR) only calls this once its
+// own existence has already been established.
+function listMdFiles(dir) {
+  return fs.readdirSync(dir)
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => path.join(dir, name))
+    .filter((full) => fs.statSync(full).isFile());
+}
+
+function hasUnresolvedPartial(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (hasUnresolvedPartial(full)) return true;
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      if (fs.readFileSync(full, 'utf8').includes('{{xoch-partial:')) return true;
+    }
+  }
+  return false;
+}
+
+function renderPrompts() {
+  console.log('Rendering prompts...');
+
+  fs.rmSync(PROMPTS_DIR, { recursive: true, force: true });
+  fs.mkdirSync(PROMPTS_DIR, { recursive: true });
+
+  // README is excluded here, and only here -- every install* function's
+  // own listMdFiles(PROMPTS_DIR) scan already reads this filtered output,
+  // so none of them need their own redundant README check.
+  for (const promptFile of listMdFiles(PROMPTS_SOURCE_DIR)) {
+    const filename = path.basename(promptFile, '.md');
+    if (filename === 'README') continue;
+    renderPromptFile(PROMPTS_SOURCE_DIR, promptFile, path.join(PROMPTS_DIR, `${filename}.md`));
+  }
+
+  if (fs.existsSync(CORE_PROMPTS_SOURCE_DIR) && fs.statSync(CORE_PROMPTS_SOURCE_DIR).isDirectory()) {
+    fs.mkdirSync(CORE_PROMPTS_DIR, { recursive: true });
+    for (const coreFile of listMdFiles(CORE_PROMPTS_SOURCE_DIR)) {
+      const filename = path.basename(coreFile, '.md');
+      renderPromptFile(PROMPTS_SOURCE_DIR, coreFile, path.join(CORE_PROMPTS_DIR, `${filename}.md`));
+    }
+  }
+
+  // Same documented coverage exception as failRender() above: only
+  // reachable when rendering leaves a stray marker, which real,
+  // well-formed prompts/ content never does.
+  if (hasUnresolvedPartial(PROMPTS_DIR)) {
+    console.error(`${RED}Error: unresolved prompt partial found in rendered prompts${NC}`);
+    process.exit(1);
+  }
+
+  const renderedCount = listMdFiles(PROMPTS_DIR).length;
+  const coreRenderedCount = fs.existsSync(CORE_PROMPTS_DIR) ? listMdFiles(CORE_PROMPTS_DIR).length : 0;
+  console.log(`  ${GREEN}✓${NC} Rendered prompts -> ${PROMPTS_DIR} (${renderedCount} files, ${coreRenderedCount} core)`);
+  console.log('');
+}
+
+// Ensures ~/.xoch/config.json exists and its tokenBudgets object has an
+// entry for every skill in DEFAULT_SKILL_BUDGETS, without ever overwriting
+// a value the engineer already set (by hand or via `xoch config`).
+function seedConfig() {
+  let data = {};
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    } catch {
+      data = {};
+    }
+  }
+  data.version = data.version || 1;
+  data.tokenBudgets = data.tokenBudgets || {};
+
+  let added = 0;
+  for (const [skill, value] of Object.entries(DEFAULT_SKILL_BUDGETS)) {
+    if (!(skill in data.tokenBudgets)) {
+      data.tokenBudgets[skill] = value;
+      added += 1;
+    }
+  }
+
+  fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+  fs.writeFileSync(CONFIG_PATH, `${JSON.stringify(data, null, 2)}\n`);
+
+  if (added > 0) {
+    console.log(`${GREEN}✓${NC} Seeded ${added} default token budget(s) in ${CONFIG_PATH}`);
+  } else {
+    console.log(`${GREEN}✓${NC} Token budgets already present in ${CONFIG_PATH}`);
+  }
+  console.log('');
+}
+
+// Deletes installed entries in `target`'s folder whose source prompt no
+// longer exists (or that are a stray README), leaving anything that isn't
+// shaped like one of Xoch's own entries alone.
+function cleanupTarget(target) {
+  const dir = targetDir(target);
+  if (!isDirNoFollow(dir)) return;
+
+  let removed = 0;
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.startsWith('xoch-') || !name.endsWith(target.suffix)) continue;
+    const installedPath = path.join(dir, name);
+    if (!target.isEntry(installedPath)) continue;
+
+    const installedName = name.slice('xoch-'.length, name.length - target.suffix.length);
+    const sourceExists = fs.existsSync(path.join(PROMPTS_DIR, `${installedName}.md`));
+    if (installedName === 'README' || !sourceExists) {
+      target.removeEntry(installedPath);
+      console.log(`  ${YELLOW}✗${NC} Removed orphaned: xoch-${installedName}`);
+      removed += 1;
+    }
+  }
+
+  if (removed > 0) console.log('');
+}
+
+// Installs every rendered prompt into `target`'s folder, creating it first
+// when needed.
+function installTarget(target) {
+  const dir = targetDir(target);
+  if (!isDirNoFollow(dir)) {
+    console.log(`${YELLOW}${target.dirDescription} directory not found. Creating...${NC}`);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  console.log(`Installing for ${target.installHeading}...`);
+
+  for (const promptFile of listMdFiles(PROMPTS_DIR)) {
+    const filename = path.basename(promptFile, '.md');
+    target.install(promptFile, filename, dir);
+    console.log(`  ${GREEN}✓${NC} xoch-${filename} → ${target.label}`);
+  }
+}
+
+// Renders and (re)installs prompts to every INSTALL_TARGETS tool --
+// everything `main()` does except seedConfig(), which callers that already
+// just wrote config.json (config.js's mutating commands) don't need to
+// repeat. This is the single function `xoch config` calls after any config
+// write, so installed prompts never drift from the engineer's current
+// settings.
+function reinstall() {
+  renderPrompts();
+  for (const target of INSTALL_TARGETS) cleanupTarget(target);
+  INSTALL_TARGETS.forEach((target, idx) => {
+    if (idx > 0) console.log('');
+    installTarget(target);
+  });
+}
+
+function main() {
+  console.log('Xoch Init');
+  console.log('====================');
+  console.log('');
+
+  // Same documented coverage exception as failRender() above: only
+  // reachable when this file's own package (real or scratch-copied)
+  // lacks a prompts/ directory, which this repo's real, installed copy
+  // never does.
+  if (!fs.existsSync(PROMPTS_SOURCE_DIR)) {
+    console.error(`${RED}Error: prompts/ directory not found${NC}`);
+    process.exit(1);
+  }
+
+  const promptCount = listMdFiles(PROMPTS_SOURCE_DIR).filter((f) => path.basename(f) !== 'README.md').length;
+  console.log(`Found ${promptCount} prompt(s) to install`);
+  console.log('');
+
+  seedConfig();
+  reinstall();
+
+  console.log('');
+  console.log(`${GREEN}Initialization complete!${NC}`);
+  console.log('');
+  console.log('Usage:');
+  for (const target of INSTALL_TARGETS) {
+    for (const line of target.usage) console.log(`  ${line}`);
+  }
+  console.log('');
+  console.log("Note: You may need to restart your AI tool if its skills directory was just created.");
+}
+
+if (isMainModule(import.meta.url)) {
+  main();
+}
+
+export {
+  SCRIPT_DIR,
+  PROMPTS_SOURCE_DIR,
+  CORE_PROMPTS_SOURCE_DIR,
+  XOCH_RUNTIME_DIR,
+  PROMPTS_DIR,
+  CORE_PROMPTS_DIR,
+  renderPromptFile,
+  renderPrompts,
+  seedConfig,
+  listMdFiles,
+  hasUnresolvedPartial,
+  injectFrontmatterLine,
+  cleanupTarget,
+  installTarget,
+  reinstall,
+  main,
+};

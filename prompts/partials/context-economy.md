@@ -1,33 +1,26 @@
 ## Context Economy
 
-Treat token budgets as pressure to be selective, not targets to fill.
+Read selectively. Budgets are limits, not targets.
 
-Before reading a file, check whether this conversation already contains enough current context for the decision at hand. Do not reread files just to reacquire background you already have. Reread only when exact text, fresh state, line numbers, recent edits, or validation evidence matter.
+- Do not reread a file whose current content is already in this conversation. Reread only for exact text, fresh state, line numbers, recent edits, or validation evidence.
+- Before any full-file read other than active Xoch pointer/state files, run the budget check and show its output in your response before reading:
 
-Before any full-file read beyond active Xoch pointer/state files, check the read against this skill's budget:
+  ```bash
+  xoch token-estimator budget check --skill [skill] --files [files...]
+  ```
 
-```bash
-~/.xoch/bin/token-estimator.js budget check --skill [skill] --files [files...]
-```
-
-Prefer the smallest useful read:
-
-- use `rg`, `git diff`, `git status`, file outlines, or targeted line ranges before full-file reads
-- read snippets around relevant symbols before reading whole files
-- if `budget check` reports FAIL (over budget), stop. Reading past budget is not a judgment call the agent is authorized to make on its own -- ask the engineer for an explicit waiver before reading further:
+- Prefer the smallest useful read: `rg`, `git diff`, `git status`, file outlines, targeted line ranges, or snippets around relevant symbols.
+- If `budget check` reports FAIL, stop. Do not read further without an explicit engineer waiver:
 
   ```text
   This read is over the [skill] budget ([tokens] / [budget] tokens). Reading it needs your explicit approval -- give a reason to proceed, or say how to narrow the read instead.
   ```
 
-  Narrow the read or rely on existing context, or proceed only once the engineer gives an explicit reason. When a job is active and the engineer grants a waiver, record it so it's tracked in the job's usage report:
+  Narrow the read, rely on existing context, or proceed once the engineer gives a reason. With an active job, record the waiver:
 
   ```bash
-  ~/.xoch/bin/token-estimator.js budget record --skill [skill] --job [job-id] --waiver "[engineer-approved reason]" --files [files...]
+  xoch token-estimator budget record --skill [skill] --job [job-id] --waiver "[engineer-approved reason]" --files [files...]
   ```
 
-When building understanding of existing, unfamiliar code before working on it, prefer this order: nearby README/doc context first, then its tests (when present and current), then raw source — stop as soon as you understand enough to proceed. This is a preference, not a gate: fall back straight to source when no README exists, or when tests are missing, sparse, or don't cover the area in question. It does not apply when reviewing an actual diff or change — reviewing still requires reading the real change regardless of what tests describe.
-
-Always show the estimator's output in your response before the read proceeds — this is not conditional on budget size or read strategy.
-
-When recording token usage, distinguish files actually read from files only inspected by search, diff, or prior conversation context.
+- To learn unfamiliar code, read nearby README/docs, then current tests, then source; stop once you understand enough. Go straight to source when docs or tests are missing or do not cover the area. This order does not apply to reviewing a diff: always read the actual change.
+- When recording token usage, separate files actually read from files only inspected by search, diff, or prior context.

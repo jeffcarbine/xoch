@@ -1,10 +1,13 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'docs-target.js');
 
@@ -101,7 +104,7 @@ test('a README directly beside the changed file is reported as a sibling', () =>
   }
 });
 
-test('a root-level file with no nested README and no manifest falling back to bare README.md is not a sibling', () => {
+test('a root-level file with no nested README falling back to bare README.md is not a sibling', () => {
   const ctx = scratch();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'top.js'), '');
@@ -115,7 +118,7 @@ test('a root-level file with no nested README and no manifest falling back to ba
   }
 });
 
-test('a root-level file with no nested README and an existing manifest routes through it', () => {
+test('a root-level file routes to the root README even when an old packet manifest exists', () => {
   const ctx = scratch();
   try {
     fs.mkdirSync(path.join(ctx.cwd, '.xoch', 'docs'), { recursive: true });
@@ -124,15 +127,15 @@ test('a root-level file with no nested README and an existing manifest routes th
     const result = runScript(SCRIPT, ['resolve', '--root', ctx.cwd, '--path', 'top.js', '--json'], ctx);
     const data = JSON.parse(result.stdout);
     assert.strictEqual(data.scope, 'root');
-    assert.strictEqual(data.target, '.xoch/docs/readme-packets.json');
-    assert.strictEqual(data.reason, 'route through approved root packet manifest');
+    assert.strictEqual(data.target, 'README.md');
+    assert.strictEqual(data.reason, 'no nested README found');
     assert.strictEqual(data.sibling, false);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('a root-level file with no nested README and no manifest falls back to README.md', () => {
+test('a root-level file with no nested README falls back to README.md', () => {
   const ctx = scratch();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'top.js'), '');
@@ -140,7 +143,7 @@ test('a root-level file with no nested README and no manifest falls back to READ
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Scope: root/);
     assert.match(result.stdout, /Target: README\.md/);
-    assert.match(result.stdout, /no nested README or packet manifest found/);
+    assert.match(result.stdout, /Reason: no nested README found/);
   } finally {
     cleanup(ctx);
   }
@@ -166,40 +169,6 @@ test('omitting --root defaults to the current working directory', () => {
     const result = runScript(SCRIPT, ['resolve', '--path', 'top.js'], ctx);
     assert.strictEqual(result.status, 0);
     assert.match(result.stdout, /Scope: root/);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a --manifest path that escapes the root is not stripped to a relative path', () => {
-  const ctx = scratch();
-  try {
-    fs.writeFileSync(path.join(ctx.cwd, 'top.js'), '');
-    const outsideManifest = path.join(path.dirname(ctx.cwd), 'outside-manifest.json');
-    fs.writeFileSync(outsideManifest, '{}');
-    try {
-      const result = runScript(SCRIPT, ['resolve', '--root', ctx.cwd, '--path', 'top.js', '--manifest', '../outside-manifest.json', '--json'], ctx);
-      const data = JSON.parse(result.stdout);
-      assert.strictEqual(data.scope, 'root');
-      // The manifest resolves outside root, so it is reported as the full
-      // absolute path rather than a root-relative slice.
-      assert.strictEqual(data.target, outsideManifest);
-    } finally {
-      fs.rmSync(outsideManifest, { force: true });
-    }
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('a custom --manifest path is honored', () => {
-  const ctx = scratch();
-  try {
-    fs.writeFileSync(path.join(ctx.cwd, 'custom-manifest.json'), '{}');
-    fs.writeFileSync(path.join(ctx.cwd, 'top.js'), '');
-    const result = runScript(SCRIPT, ['resolve', '--root', ctx.cwd, '--path', 'top.js', '--manifest', 'custom-manifest.json', '--json'], ctx);
-    const data = JSON.parse(result.stdout);
-    assert.strictEqual(data.target, 'custom-manifest.json');
   } finally {
     cleanup(ctx);
   }

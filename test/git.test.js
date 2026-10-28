@@ -1,12 +1,12 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { execFileSync } = require('child_process');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup } = require('./lib/cli.js');
-const { git } = require('../bin/lib/git.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { execFileSync } from 'child_process';
+import { test, run } from './lib/runner.js';
+import { scratch, cleanup } from './lib/cli.js';
+import { git } from '../bin/lib/git.js';
 
 test('git returns trimmed non-empty stdout on success', () => {
   const ctx = scratch();

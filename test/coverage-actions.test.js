@@ -1,10 +1,13 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'coverage-actions.js');
 
@@ -25,7 +28,7 @@ function makeJob(ctx, jobId, { spec = '', plan = '', review = '', snapshots = {}
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -36,7 +39,7 @@ test('--help prints usage', () => {
 });
 
 test('no command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 2);
@@ -46,7 +49,7 @@ test('no command prints usage and exits 2', () => {
 });
 
 test('an unrecognized command (with a valid job) exits 1 with "Unknown command"', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'AC-001' });
     const result = runScript(SCRIPT, ['bogus', '--job', 'job1', '--root', ctx.cwd], ctx);
@@ -58,7 +61,7 @@ test('an unrecognized command (with a valid job) exits 1 with "Unknown command"'
 });
 
 test('missing --job exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['compare'], ctx);
     assert.strictEqual(result.status, 2);
@@ -69,7 +72,7 @@ test('missing --job exits 2', () => {
 });
 
 test('a job folder that does not exist exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['compare', '--job', 'nope', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -80,7 +83,7 @@ test('a job folder that does not exist exits 1', () => {
 });
 
 test('compare with no acceptance criteria in spec.md exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'no criteria here' });
     const result = runScript(SCRIPT, ['compare', '--job', 'job1', '--root', ctx.cwd], ctx);
@@ -92,7 +95,7 @@ test('compare with no acceptance criteria in spec.md exits 1', () => {
 });
 
 test('compare with an invalid --require exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'AC-001' });
     const result = runScript(SCRIPT, ['compare', '--job', 'job1', '--root', ctx.cwd, '--require', 'bogus'], ctx);
@@ -104,7 +107,7 @@ test('compare with an invalid --require exits 1', () => {
 });
 
 test('compare defaults --require to "all" and reports missing/orphaned AC ids across every stage, in JSON mode', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', {
       spec: 'AC-001, AC-002, AC-NF-003',
@@ -128,7 +131,7 @@ test('compare defaults --require to "all" and reports missing/orphaned AC ids ac
 });
 
 test('compare with everything covered exits 0, in text mode, with lowercase AC ids uppercased and deduped', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', {
       spec: 'ac-001 AC-001 AC-001',
@@ -146,7 +149,7 @@ test('compare with everything covered exits 0, in text mode, with lowercase AC i
 });
 
 test('compare --require plan only checks the plan stage, ignoring snapshot/review gaps', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', {
       spec: 'AC-001',
@@ -162,7 +165,7 @@ test('compare --require plan only checks the plan stage, ignoring snapshot/revie
 });
 
 test('compare --require snapshots checks plan and snapshots but not review', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', {
       spec: 'AC-001',
@@ -178,7 +181,7 @@ test('compare --require snapshots checks plan and snapshots but not review', () 
 });
 
 test('compare with a job that has no snapshots directory treats snapshot ids as empty', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'AC-001', plan: 'AC-001', review: 'AC-001' });
     const result = runScript(SCRIPT, ['compare', '--job', 'job1', '--root', ctx.cwd, '--require', 'review', '--json'], ctx);
@@ -192,7 +195,7 @@ test('compare with a job that has no snapshots directory treats snapshot ids as 
 });
 
 test('create-review with no acceptance criteria in spec.md exits 1', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'no criteria' });
     const result = runScript(SCRIPT, ['create-review', '--job', 'job1', '--root', ctx.cwd], ctx);
@@ -204,7 +207,7 @@ test('create-review with no acceptance criteria in spec.md exits 1', () => {
 });
 
 test('create-review scaffolds a review.md with a row per AC id', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const jobDir = makeJob(ctx, 'job1', { spec: 'AC-001 AC-002', review: null });
     const result = runScript(SCRIPT, ['create-review', '--job', 'job1', '--root', ctx.cwd], ctx);
@@ -219,7 +222,7 @@ test('create-review scaffolds a review.md with a row per AC id', () => {
 });
 
 test('create-review refuses to overwrite an existing review.md without --force', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJob(ctx, 'job1', { spec: 'AC-001', review: 'existing content' });
     const result = runScript(SCRIPT, ['create-review', '--job', 'job1', '--root', ctx.cwd], ctx);
@@ -231,7 +234,7 @@ test('create-review refuses to overwrite an existing review.md without --force',
 });
 
 test('create-review --force overwrites an existing review.md', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const jobDir = makeJob(ctx, 'job1', { spec: 'AC-001', review: 'existing content' });
     const result = runScript(SCRIPT, ['create-review', '--job', 'job1', '--root', ctx.cwd, '--force'], ctx);
@@ -239,6 +242,23 @@ test('create-review --force overwrites an existing review.md', () => {
     const content = fs.readFileSync(path.join(jobDir, 'review.md'), 'utf8');
     assert.notStrictEqual(content, 'existing content');
     assert.match(content, /AC-001/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, compare finds the job in the project\'s centralized root', () => {
+  const ctx = scratch();
+  try {
+    const job = path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'j1');
+    fs.mkdirSync(job, { recursive: true });
+    fs.writeFileSync(path.join(job, 'spec.md'), '- AC-001: thing\n');
+    fs.writeFileSync(path.join(job, 'plan.md'), '| AC-001 | Phase 1 |\n');
+    const result = runScript(SCRIPT, ['compare', '--job', 'j1', '--require', 'plan', '--json'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    const data = JSON.parse(result.stdout);
+    assert.deepStrictEqual(data.spec, ['AC-001']);
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
   } finally {
     cleanup(ctx);
   }

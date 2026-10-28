@@ -9,11 +9,13 @@
 // whatever was last recorded, so it's only as reliable as the calling
 // agent's discipline in keeping it updated.
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { parseFlags } = require('./lib/args.js');
-const { readJson, updateJson } = require('./lib/json-store.js');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { readJson, updateJson } from './lib/json-store.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -26,11 +28,11 @@ function computeHash(filePath) {
 }
 
 function ledgerPath(root, job) {
-  return path.join(root, '.xoch', 'work', 'jobs', job, 'context-ledger.json');
+  return path.join(storageRoot(root), 'work', 'jobs', job, 'context-ledger.json');
 }
 
 function requireJobDir(root, job) {
-  const jobDir = path.join(root, '.xoch', 'work', 'jobs', job);
+  const jobDir = path.join(storageRoot(root), 'work', 'jobs', job);
   if (!fs.existsSync(jobDir) || !fs.statSync(jobDir).isDirectory()) {
     console.error(`Job folder not found: ${jobDir}`);
     process.exit(1);
@@ -125,8 +127,8 @@ function main(argv) {
   process.exit(2);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { computeHash, runCheck, runRecord, main };
+export { computeHash, runCheck, runRecord, main };

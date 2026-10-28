@@ -3,20 +3,20 @@
 
 // Resolve a changed path to the nearest durable documentation boundary.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
 
 function usage() {
   console.log('Usage:');
-  console.log('  docs-target.js resolve --path PATH [--root ROOT] [--manifest FILE] [--json]');
+  console.log('  docs-target.js resolve --path PATH [--root ROOT] [--json]');
 }
 
 function resolve(argv) {
   const flags = parseFlags(argv, ['json']);
   const root = path.resolve(flags.root || '.');
   const inputPath = flags.path;
-  const manifest = flags.manifest || '.xoch/docs/readme-packets.json';
   const jsonMode = Boolean(flags.json);
 
   if (!inputPath) {
@@ -49,7 +49,6 @@ function resolve(argv) {
     firstIteration = false;
   }
 
-  const manifestPath = path.resolve(root, manifest);
   const rootPrefix = `${root}${path.sep}`;
   let result;
   if (readme) {
@@ -61,12 +60,11 @@ function resolve(argv) {
       sibling,
     };
   } else {
-    const manifestExists = fs.existsSync(manifestPath) && fs.statSync(manifestPath).isFile();
     result = {
       path: inputPath,
       scope: 'root',
-      target: manifestExists ? (manifestPath.startsWith(rootPrefix) ? manifestPath.slice(rootPrefix.length) : manifestPath) : 'README.md',
-      reason: manifestExists ? 'route through approved root packet manifest' : 'no nested README or packet manifest found',
+      target: 'README.md',
+      reason: 'no nested README found',
       sibling: false,
     };
   }
@@ -94,8 +92,8 @@ function main(argv) {
   resolve(rest);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { resolve, main };
+export { resolve, main };

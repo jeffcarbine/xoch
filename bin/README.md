@@ -5,9 +5,41 @@ state mechanics -- job/arc bookkeeping, git/coverage inspection, documentation r
 setup. Prompts prefer these over free-form edits so routine mechanics are consistent and
 testable; agents still use judgment for specs, plans, reviews, summaries, and scope decisions.
 
-All filenames use kebab-case. During installation, everything under `bin/` (including `bin/lib/`)
-is copied to `~/.xoch/bin/`, so installed prompts invoke helpers from there rather than depending
-on a project containing Xoch's own source tree. Every script supports `-h`/`--help`.
+All filenames use kebab-case. Once installed via npm, `bin/xoch.js` (the package's `bin` entry)
+imports its sibling modules in-process and forwards `xoch <namespace> <command> ...` to each
+one's own exported `main(argv)`/`run(argv)` -- no scripts are copied anywhere, so installed
+prompts invoke helpers through the `xoch` CLI rather than depending on a project containing
+Xoch's own source tree. Command examples below show that `xoch <namespace>` form; every script
+also still supports `-h`/`--help` when run directly (e.g. `node bin/xoch-actions.js --help` from
+a clone of this repo).
+
+## Package Lifecycle
+
+### `init.js`
+
+Renders `prompts/` (resolving `{{xoch-partial:...}}` references) into `~/.xoch/prompts`, seeds
+`~/.xoch/config.json` with default token budgets, and installs the rendered top-level commands
+into every AI tool listed in `lib/install-targets.js` (Copilot, Codex, Claude Code, Kiro by
+default), removing any stale `xoch-*` entry whose source prompt no longer exists.
+
+```text
+xoch init
+```
+
+### `remove.js`
+
+Reverses `init.js`: removes every installed `xoch-*` entry from each listed tool's directory and
+deletes `~/.xoch` outright (rendered prompts, `config.json`, and any leftover `~/.xoch/bin` from a
+pre-migration install), without touching unrelated files in any tool's directory. `npm uninstall -g`
+alone can't do this, since it only cleans `node_modules`.
+
+Also home to `verify()` -- the check the `xoch-meow` prompt runs to confirm both the CLI and
+rendered prompts are correctly in place, reporting exactly which is missing when either fails.
+
+```text
+xoch remove
+xoch verify
+```
 
 ## Job, Arc, And Phase Mechanics
 
@@ -15,42 +47,159 @@ on a project containing Xoch's own source tree. Every script supports `-h`/`--he
 
 Job, arc, pointer, state, snapshot, and phase mechanics -- the helper prompts reach for most.
 
+Every helper resolves where Xoch data lives through `bin/lib/storage-root.js` -- `~/.xoch/projects/<slug>/` when centralized (the default), `<project>/.xoch/` when in-repo -- and `--root`, where a helper takes it, means the project directory, not the storage root.
+
+Job state (`state.json`), phases (`phases.json`), arc state (`state.json`), and arc membership
+(`jobs.json`) are JSON documents owned by these helpers. Each is read and validated through its
+shape class in `bin/lib/` (`JobState`, `Phases`, `ArcState`, `ArcJobs`, `CurrentPointer`); every
+write is validated first and refused, with nothing written, when it doesn't fit.
+
 ```text
-xoch-actions.js job current [--json]
-xoch-actions.js job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH]
-xoch-actions.js job set-current --job ID
-xoch-actions.js state set --job ID --field FIELD --value VALUE
-xoch-actions.js pointer clear --job ID
-xoch-actions.js workflow begin --job ID --name NAME [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
-xoch-actions.js workflow update --job ID [--name NAME] [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
-xoch-actions.js workflow complete --job ID [--name NAME] [--next COMMAND]
-xoch-actions.js workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
-xoch-actions.js arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
-xoch-actions.js snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
-xoch-actions.js phase advance --job ID --phase N [--next-phase N] [--next-title TITLE] [--next-goal TEXT] [--next-type implementation|checkpoint] [--next-files CSV] [--next-ac CSV] [--next-validation CSV]
-xoch-actions.js config root
-xoch-actions.js job evidence --job ID [--json]
-xoch-actions.js arc evidence --arc ID [--json]
-xoch-actions.js file write --job ID --path PATH [--append]
-xoch-actions.js file read --job ID --path PATH
-xoch-actions.js file edit --job ID --path PATH [--replace-all]
+xoch job current [--json]
+xoch job open --id ID --title TITLE [--description TEXT] [--arc ARC] [--doc-scope SCOPE] [--doc-path PATH] [--type standard|qa]
+xoch job set-current --job ID
+xoch job close --job ID
+xoch state get --job ID [--field FIELD] [--json]
+xoch state set --job ID --field FIELD --value VALUE [--json]
+xoch state update --job ID                       # JSON object on stdin
+xoch pointer clear --job ID
+xoch workflow begin --job ID --name NAME [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
+xoch workflow update --job ID [--name NAME] [--stage STAGE] [--pending ACTION] [--artifact PATH] [--return COMMAND]
+xoch workflow complete --job ID [--name NAME] [--next COMMAND]
+xoch workflow abandon --job ID [--name NAME] --reason TEXT [--next COMMAND]
+xoch arc open --id ID --title TITLE [--purpose TEXT] [--success TEXT] [--doc-scope SCOPE] [--doc-path PATH] [--adopt-active]
+xoch arc job-move --arc ID --job ID --to active|planned|complete|parked [--from ID] [--title TITLE]
+xoch arc get --arc ID [--json]
+xoch arc close --arc ID
+xoch arc update --arc ID                         # JSON object on stdin
+xoch snapshot create --job ID --phase N --title TITLE [--status STATUS] [--next NEXT] [--body-file FILE]
+xoch phase write --job ID                        # phases JSON on stdin
+xoch phase get --job ID [--phase N] [--json]
+xoch phase show --job ID [--phase N]
+xoch phase start --job ID
+xoch phase advance --job ID --phase N
+xoch job step-advance --job ID
+xoch config root
+xoch job evidence --job ID [--json]
+xoch arc evidence --arc ID [--json]
+xoch file write --job ID --path PATH [--append]
+xoch file read --job ID --path PATH
+xoch file edit --job ID --path PATH [--old-string TEXT --new-string TEXT] [--replace-all]
+xoch discovery write --topic TOPIC
+xoch discovery read --path PATH
+xoch handoff write --source discovery|trace|qa --topic TOPIC   # body on stdin
+xoch handoff list [--pending] [--json]
+xoch handoff get --id ID [--json]
+xoch handoff claim --id ID --job JOB
+xoch qa confirm-env --job ID --env dev|staging --target TEXT
+xoch qa capabilities --job ID --browser yes|no --http yes|no --shell yes|no
 ```
 
-`phase advance`'s `--next-type` marks the phase being advanced *into* as `implementation`
-(default) or `checkpoint` -- a checkpoint phase carries no implementation of its own; it's where
-the engineer verifies everything built so far live and collaborates on corrections. The type is
-persisted as `current_phase_type` in `state.md` and, when the target phase's own `phases.md` entry
-declares `**Type**: Checkpoint`, echoed into that phase's `phase_index` entry too.
+`job open --type` sets the job's `job_type` (default `standard`; any other value is rejected). A
+`qa` job starts with `next_command: xoch-qa`. `job_type` is projected into `current.json` alongside
+`next_command` and `current_step`, and a job whose state has no `job_type` is read as
+`standard`.
+
+`qa confirm-env` records `qa_environment`, `qa_target`, and `qa_environment_confirmed: true` for a
+QA job, and refuses any `--env` other than `dev` or `staging`. `phase advance` refuses to enter
+phase 1 of a QA job until this confirmation is recorded. `qa capabilities` records what the agent
+checked it can do -- drive a browser, send HTTP requests, run shell commands -- as a single
+`qa_capabilities` string, so planning can limit phases the agent cannot run to engineer or
+collaborative ownership.
+
+`state get` prints the whole job state as JSON, or one field (a string field prints raw unless
+`--json`; an absent field prints `null`). `state set` stores `--value` as a string, parses it as
+JSON with `--json` (lists, numbers, objects), and treats a plain `null` as clearing the field.
+`state update` merges a JSON object from stdin, all fields or none. Both stamp `last_updated`.
+
+`phase write` validates a whole phases document from stdin and saves it, then refreshes job state's
+`phase_count` and `phase_index` -- and, when the document names a `current_phase`, the
+current-phase fields -- from it; completed phases keep their `status`, so `xoch-revise` can rewrite
+the remaining phases. A phase's number is always its position in the list. `phase get` prints the
+document, or one phase (with its position as `phase`), as JSON; `phase show` renders it as readable
+text with the current phase marked.
+
+`phase start` marks the current phase `in_progress` and records the commit work begins from as its
+`start_ref` (implementation calls it first, after the previous phase was committed); a phase already
+started is left alone. `phase advance --phase N` marks phase N complete and makes phase N+1 current, taking its title,
+goal, type, files, acceptance criteria, and validation (a QA phase's case IDs) from the phases
+document; `phase_index` is rebuilt from the document, so it always matches it. `--phase 0` enters
+phase 1 without marking anything. Advancing past the last phase sets `status:
+implementation_complete`, clears every current-phase field, and routes `current_step` to
+`final_review`. Entering a phase records the commit it starts from (`start_ref`, or `null`
+outside git or before the first commit). A phase's `type` is `implementation` or `checkpoint` -- a checkpoint phase carries no
+implementation of its own; it's where the engineer verifies everything built so far live and
+collaborates on corrections.
+
+`snapshot create --job ID --phase N` writes `snapshots/phase-N.md`. The mechanical parts come from the
+phases document and git: title, date, next phase (or "Final review"), every file changed since the
+phase's `start_ref` (committed, uncommitted, and untracked, excluding the Xoch storage root;
+renames show their old name), and each of the phase's acceptance criteria not reported on, marked
+"not recorded". The judgment sections -- `## What Changed`, `## Acceptance Criteria`,
+`## Validation`, `## Additional Notes` -- come from markdown on stdin; any left out are "TBD", and a
+terminal stdin just yields the template. `--title`, `--status`, and `--next` override; `--body-file`
+copies a complete snapshot verbatim.
 
 `file write`/`file read`/`file edit` operate only on paths inside the given job's directory --
-they reject path traversal outside it.
+they reject path traversal outside it. `file write` and `file edit` also refuse `state.json` and
+`phases.json`, which only the state and phase helpers may change. `file edit` takes the old and new
+text either from `--old-string`/`--new-string` (both required together, taken literally -- a `\n`
+stays two characters) or from stdin as old text, a `-----XOCH-EDIT-SEPARATOR-----` line, then new
+text.
+
+Every command that reads stdin (`file write`, `file edit`, `discovery write`, `state update`,
+`phase write`, `arc update`) fails at once with its usage when stdin is an interactive terminal,
+rather than waiting for input that was never piped in. `discovery write`/`discovery read` are the one exception to
+job-scoping in this file: they read and write `[xoch-root]/discoveries/`, a directory shared
+across every job (and reachable with no job active at all), so accepted discovery findings stay
+findable by a later, unrelated job instead of disappearing inside whichever job happened to be
+active when the research ran. `discovery write` derives its own filename
+(`[date]-[topic-slug]-discovery.md`) from `--topic` and prints the path it wrote; a same-day
+rewrite of the same topic gets a numeric suffix rather than overwriting the earlier finding.
+
+`handoff write` leaves information a side workflow (discovery, trace, or QA) wants a later
+`xoch-open` to use as source requirements: one JSON file under `[xoch-root]/handoffs/`, named
+`[date]-[topic-slug]` (numeric suffix when taken), starting `pending`. `handoff list --pending`
+shows what `xoch-open` should offer, `handoff get` prints one in full, and `handoff claim` marks it
+claimed by the job that used it -- refusing a second claim -- so the same findings are never picked
+up twice. Handoffs are never deleted.
+
+`job current`/`job set-current` project a job's `next_command` and `current_step` into
+`current.json` alongside `workflow`, self-healing on every `job current` read so a bundled
+multi-step command (`xoch-open`, `xoch-do`) can tell exactly where it is from that one call.
+`job step-advance` moves `current_step` forward for a transition with no phase-index bookkeeping
+and no outcome to judge, following the job type's step table: `title`->`spec`->`plan` for a
+standard job, `title`->`intake`->`plan` for a QA job, and `implement`->`advance` for both -- it refuses to
+move past `plan` or `advance` (those cross a phase boundary; use `phase advance`, which sets
+`current_step` too) or past `final_review` (leaving it depends on the review's own pass/fail
+outcome, not a fixed lookup).
+
+`arc job-move` moves one job's entry between the `active`, `planned`, `complete`, and `parked`
+lists of an arc's `jobs.json`, adding it when the arc doesn't list it yet (and starting `jobs.json`
+for an arc that has none). The entry keeps its title and any extra details. `--from` names a
+differently-keyed entry -- typically a Planned placeholder -- to replace and take the title from
+(the job's own entry wins when both are listed); `--title` overrides the title. `xoch-open`,
+`xoch-close`, and `xoch-next` use it to keep arc membership current as jobs open and close.
+
+`job close` closes a job only when every closing gate holds, otherwise refusing with the full list
+of unmet conditions: every phase complete or deferred (or `status: implementation_complete` for a job
+with no phases document); for a standard job, `review_status` `pass` or `pass_with_waivers` and a
+recorded `documentation_status`; for a QA job, `qa-report.md` and a `qa_decision`. On success it
+writes `closure.md` from state (summary, phases, review or QA decision, documentation, waivers),
+marks the job closed, clears `current.json` only when it points to this job, and marks the job
+Complete in its arc (reporting any jobs still Planned, or that the arc could not be found).
+`arc close` closes an arc only when no job is still Active or Planned, writing `closure.md` with its
+Complete and Parked jobs.
+
+`arc get` prints an arc's state and membership, as JSON (`{"state": ..., "jobs": ...}`) or readable
+text. `arc update` merges a JSON object from stdin into arc state, all fields or none.
 
 ### `generate-job-id.js`
 
 Normalize a human-readable identifier into a slug, or generate a fresh one.
 
 ```text
-generate-job-id.js [--id ID]
+xoch generate-id [--id ID]
 ```
 
 ### `coverage-actions.js`
@@ -59,42 +208,65 @@ Compare acceptance-criteria (AC) IDs across a job's spec, plan, snapshots, and r
 missing or orphaned references, and generate a review skeleton.
 
 ```text
-coverage-actions.js compare --job ID [--root ROOT] [--require plan|snapshots|review|all] [--json]
-coverage-actions.js create-review --job ID [--root ROOT] [--force]
+xoch coverage compare --job ID [--root ROOT] [--require plan|snapshots|review|all] [--json]
+xoch coverage create-review --job ID [--root ROOT] [--force]
 ```
 
 ## Configuration
 
 ### `config.js`
 
-Not under `bin/` -- it lives at the repo root, run from a clone of this repo (`node config.js` or
-`./config.js`), since it's an engineer-facing setup tool rather than something prompts shell out
-to at runtime. Prompts that need a config value read `~/.xoch/config.json` directly instead.
+Not under `bin/` -- it lives at the repo root, since it's an engineer-facing setup tool rather
+than something prompts shell out to at runtime. `xoch config` forwards to it (except `xoch config
+root`, which is `xoch-actions.js`'s own `config:root` storage-root lookup, merged under the same
+namespace). Contributors working from a clone of this repo may also run it directly (`node
+config.js` or `./config.js`).
 
 ```text
-node config.js                          Interactive mode
-node config.js show                     Print resolved config
-node config.js get storage.mode         Print current storage.mode
-node config.js set storage.mode VALUE   Set storage.mode (in-repo|centralized)
-node config.js get documentation.commentMode       Print documentation.commentMode
-node config.js set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
-node config.js get tokenBudgets.SKILL       Print SKILL's resolved read budget
-node config.js set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
-node config.js budgets                      Interactively review/update token budgets
+xoch config                          Interactive mode
+xoch config show                     Print resolved config
+xoch config get storage.mode         Print current storage.mode
+xoch config set storage.mode VALUE [--scan DIR] [--dry-run] [--yes]
+                                     Move every known repo's Xoch data, then set storage.mode (in-repo|centralized)
+xoch config get documentation.commentMode       Print documentation.commentMode
+xoch config set documentation.commentMode VALUE Set documentation.commentMode (always|follow-convention)
+xoch config get coverage.strictness       Print coverage.strictness
+xoch config set coverage.strictness VALUE Set coverage.strictness (required|recommended)
+xoch config get conventions.strictness       Print conventions.strictness
+xoch config set conventions.strictness VALUE Set conventions.strictness (required|recommended)
+xoch config get git.behavior              Print git.behavior
+xoch config set git.behavior VALUE        Set git.behavior (ask|generate|commit|push|none)
+xoch config get tokenBudgets.SKILL       Print SKILL's resolved read budget
+xoch config set tokenBudgets.SKILL VALUE Set SKILL's read budget (positive integer)
+xoch config budgets                      Interactively review/update token budgets
 ```
 
 Keys:
 
-- **`storage.mode`** (`in-repo` default | `centralized`) -- where job/arc state lives. See
-  [Storage Location](../README.md#storage-location) in the root README.
-- **`documentation.commentMode`** (`always` default | `follow-convention`) -- whether `xoch-make`
-  always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
+- **`storage.mode`** (`in-repo` | `centralized` default) -- where job/arc state lives. Setting it
+  first moves every known repo's data (`bin/storage-migrate.js`): a preview, refusal on any
+  collision, confirmation unless `--yes`, undo on a failed move, and the setting changes only after
+  every move succeeded. `--dry-run` only previews; `--scan DIR` adds repos found directly under
+  `DIR`. See [Storage Location](../README.md#storage-location) in the root README.
+- **`documentation.commentMode`** (`always` | `follow-convention` default) -- whether `xoch-do`'s
+  `implement` step always adds inline documentation (JSDoc, docstrings, or the equivalent per language) to new
   code, or instead follows whatever convention the target project's file/module already has,
   including having none.
+- **`coverage.strictness`** (`required` | `recommended` default) -- whether the 100%-coverage gate
+  (`bin/init.js#coverage-gate`) is unwaivable before a job can close, or instead reports a gap and
+  asks the engineer live whether to close it now or accept it and proceed.
+- **`conventions.strictness`** (`required` | `recommended` default) -- whether unresolved findings
+  against `confirmed` conventions block a passing `final_review` (`required`), or are reported for
+  the engineer to fix or accept (`recommended`). Findings against `inferred` rules never block. Not
+  part of the interactive walkthrough; set it with `xoch config set`.
+- **`git.behavior`** (`ask` default | `generate` | `commit` | `push` | `none`) -- what `xoch-do`'s
+  `advance` step does with git changes: ask each time (`[G]enerate a commit message, [C]ommit,
+  commit and [P]ush, or [N]othing?`), or always draft a message for the engineer to commit, commit,
+  commit and push, or leave git alone.
 - **`tokenBudgets.<skill>`** -- per-skill read-budget override in tokens (built-in defaults: spec
   5,000, plan 7,000; 5,000 for anything unlisted).
 
-All three are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
+All six are stored in `~/.xoch/config.json`, which can be edited by hand if `config.js` isn't
 available:
 
 ```json
@@ -102,11 +274,21 @@ available:
   "version": 1,
   "storage": { "mode": "centralized" },
   "documentation": { "commentMode": "follow-convention" },
+  "coverage": { "strictness": "recommended" },
+  "conventions": { "strictness": "recommended" },
+  "git": { "behavior": "ask" },
   "tokenBudgets": { "spec": 6000 }
 }
 ```
 
 Missing or invalid values fall back to their defaults.
+
+Prompts never read `~/.xoch/config.json` themselves. A prompt source file that needs config-dependent
+text uses a `{{xoch-config:key value1="..." value2="..." default="..."}}` marker (see
+[Partials](../prompts/README.md#partials) in the prompts README); `init.js` resolves it once, at
+render time, into the installed prompt. Every config-writing command in `config.js` finishes by
+calling `init.js`'s `reinstall()` (render + reinstall to all four tool targets), so installed
+prompts never drift from the config that produced them.
 
 ## Context And Budgets
 
@@ -115,10 +297,10 @@ Missing or invalid values fall back to their defaults.
 Estimate context cost before broad reads, and check/record reads against per-skill budgets.
 
 ```text
-token-estimator.js <file_path> [mode]
-token-estimator.js --batch <file1> <file2> ...
-token-estimator.js budget check --skill NAME [--json] --files <file1> <file2> ...
-token-estimator.js budget record --skill NAME --job ID [--arc ID] [--root ROOT] [--waiver TEXT] [--json] --files <file1> <file2> ...
+xoch token-estimator <file_path> [mode]
+xoch token-estimator --batch <file1> <file2> ...
+xoch token-estimator budget check --skill NAME [--json] --files <file1> <file2> ...
+xoch token-estimator budget record --skill NAME --job ID [--arc ID] [--root ROOT] [--waiver TEXT] [--json] --files <file1> <file2> ...
 ```
 
 A `budget check` `FAIL` is a hard stop: reading past budget needs an explicit engineer waiver, not
@@ -127,11 +309,12 @@ agent judgment.
 ### `context-tracker.js`
 
 Track whether a previously-read file has changed since a job last recorded reading it, to avoid
-needless rereads.
+needless rereads. Not wired into the `xoch` CLI dispatcher (no prompt currently invokes it), so
+it's still run directly:
 
 ```text
-context-tracker.js check --file PATH --job ID [--root ROOT] [--json]
-context-tracker.js record --file PATH --job ID [--root ROOT] [--json]
+node bin/context-tracker.js check --file PATH --job ID [--root ROOT] [--json]
+node bin/context-tracker.js record --file PATH --job ID [--root ROOT] [--json]
 ```
 
 ## Discovery
@@ -141,7 +324,7 @@ context-tracker.js record --file PATH --job ID [--root ROOT] [--json]
 List every top-level command with its description, read from each prompt's own frontmatter.
 
 ```text
-help-actions.js list [--root ROOT] [--json]
+xoch help list [--root ROOT] [--json]
 ```
 
 ### `project-commands.js`
@@ -150,7 +333,7 @@ Detect likely test, lint, typecheck, and build commands for the current project 
 them -- an advisory candidate list, not a guarantee.
 
 ```text
-project-commands.js detect [--root ROOT] [--json]
+xoch project-commands detect [--root ROOT] [--json]
 ```
 
 ## Git
@@ -160,40 +343,10 @@ project-commands.js detect [--root ROOT] [--json]
 Report branch, upstream, dirty, ahead/behind, and conflict state without mutating anything.
 
 ```text
-git-state.js inspect [--root ROOT] [--json]
+xoch git-state inspect [--root ROOT] [--json]
 ```
 
 ## Documentation
-
-### `readme-actions.js`
-
-Assemble approved root-README packets (from `.xoch/docs/`) in manifest order into the actual
-`README.md`.
-
-```text
-readme-actions.js assemble [options] [packet.md ...]
-
-Options:
-  --root ROOT         Project root. Default: current directory.
-  --manifest FILE     JSON manifest containing title, output, and ordered packets.
-  --output FILE       README output path, relative to root. Default: README.md.
-  --title TITLE       Top-level README title.
-  --stdout            Print assembled markdown instead of writing it.
-  --dry-run           Validate and report the assembly without writing.
-```
-
-Manifest shape:
-
-```json
-{
-  "title": "Project Name",
-  "output": "README.md",
-  "packets": [
-    ".xoch/docs/OVERVIEW.md",
-    { "path": ".xoch/docs/SETUP.md", "enabled": true }
-  ]
-}
-```
 
 ### `docs-drift.js`
 
@@ -201,31 +354,31 @@ Report changed source paths that may affect durable docs, against a recorded bas
 means "worth a look," not "documentation is definitely stale."
 
 ```text
-docs-drift.js baseline [--root ROOT] [--baseline FILE]
-docs-drift.js check [--root ROOT] [--baseline FILE] [--since REF] [--json]
+xoch docs-drift baseline [--root ROOT] [--baseline FILE]
+xoch docs-drift check [--root ROOT] [--baseline FILE] [--since REF] [--json]
 ```
 
 ### `docs-target.js`
 
-Route a changed path to the nearest nested `README.md`, or the approved root-packet manifest when
-no nested README applies.
+Route a changed path to the nearest nested `README.md`, or the root `README.md` when no nested
+README applies.
 
 ```text
-docs-target.js resolve --path PATH [--root ROOT] [--manifest FILE] [--json]
+xoch docs-target resolve --path PATH [--root ROOT] [--json]
 ```
 
 The JSON result's `sibling` field is `true` only when the resolved README sits directly beside the
 changed path -- `xoch-doc` asks the engineer to confirm before writing whenever it's `false`
-(an ancestor-directory match or a root-manifest fallback).
+(an ancestor-directory match or the root `README.md` fallback).
 
 ### `prompt-check.js`
 
 Validate every helper script's syntax/naming and render all prompts end-to-end in an isolated
 `HOME`, failing on any unresolved `{{xoch-partial:...}}`/`{{VAR}}` marker. Run after any prompt or
-helper change.
+helper change. Contributor-only tooling, not wired into the `xoch` CLI dispatcher -- run directly:
 
 ```text
-node prompt-check.js run [--root XOCH_REPO]
+bin/prompt-check.js run [--root XOCH_REPO]
 ```
 
 ## Repo Hygiene
@@ -235,17 +388,17 @@ node prompt-check.js run [--root XOCH_REPO]
 Maintain explicit ignore rules for local-only Xoch state vs. shareable docs.
 
 ```text
-gitignore-actions.js ensure [--root ROOT] [--mode shared-docs|local-all] [--repair] [--dry-run]
+xoch gitignore ensure [--root ROOT] [--mode shared-docs|local-all] [--repair] [--dry-run]
 ```
 
 ### `archive-actions.js`
 
-Dry-run, archive, and restore Xoch jobs or arcs safely (moves them out of active `.xoch/work/`
+Dry-run, archive, and restore Xoch jobs or arcs safely (moves them out of active `[xoch-root]/work/`
 without deleting anything).
 
 ```text
-archive-actions.js archive --kind job|arc --id ID [--root ROOT] [--dry-run]
-archive-actions.js restore --kind job|arc [--id ID | --archive PATH] [--root ROOT] [--dry-run]
+xoch archive archive --kind job|arc --id ID [--root ROOT] [--dry-run]
+xoch archive restore --kind job|arc [--id ID | --archive PATH] [--root ROOT] [--dry-run]
 ```
 
 ## Multi-Project Jobs
@@ -257,11 +410,11 @@ These only matter for a job with a `projects.json` -- standalone jobs never need
 Create, validate, and query a multi-project job's canonical primary/participant repository scope.
 
 ```text
-project-scope.js create --job ID --primary NAME=PATH --participant NAME=PATH [--participant NAME=PATH ...]
-project-scope.js validate --scope PATH [--json]
-project-scope.js role --scope PATH [--cwd PATH] [--json]
-project-scope.js primary-job --scope PATH
-project-scope.js projects --scope PATH [--json]
+xoch project-scope create --job ID --primary NAME=PATH --participant NAME=PATH [--participant NAME=PATH ...]
+xoch project-scope validate --scope PATH [--json]
+xoch project-scope role --scope PATH [--cwd PATH] [--json]
+xoch project-scope primary-job --scope PATH
+xoch project-scope projects --scope PATH [--json]
 ```
 
 ### `context-sync.js`
@@ -270,32 +423,61 @@ Mirror canonical Xoch job artifacts (never source files or `current.json`) from 
 repository to participant repositories.
 
 ```text
-context-sync.js sync --scope PATH [--dry-run]
-context-sync.js check --scope PATH
+xoch context-sync sync --scope PATH [--dry-run]
+xoch context-sync check --scope PATH
 ```
 
 ### `dependency-actions.js`
 
-Resolve a job's shareable dependency declarations (`.xoch/docs/dependencies.json`) against the
+Resolve a job's shareable dependency declarations (`[xoch-root]/docs/dependencies.json`) against the
 local, machine-only workspace map, printing JSON and exiting 1 when a declared project can't be
 resolved.
 
 ```text
-dependency-actions.js resolve [--dependencies PATH] [--map PATH] [--scope PATH]
+xoch dependency resolve [--dependencies PATH] [--map PATH] [--scope PATH]
 ```
 
 Defaults: `dependencies` is `.xoch/docs/dependencies.json`; `map` is `~/.xoch/workspace-map.json`.
 
+### `conventions-actions.js`
+
+Deterministic side of `xoch-conventions`: where the conventions document lives
+(`[xoch-root]/docs/conventions.md`, following `storage.mode`), which of its rules apply to given
+files, and what convention signals history offers. Rule parsing lives in `lib/conventions-doc.js`,
+scope matching in `lib/glob.js` (built in: `*`, `**`, `?`, leading `!`), and the pure signal
+helpers in `lib/conventions-scan.js`.
+
+```text
+xoch conventions rules [--json] --files <path> [<path> ...]
+xoch conventions scan [--json] [--base BRANCH] [--limit N] [--min-occurrences N] [--min-prs N]
+                      [--max-prs N] [--include-bots]
+```
+
+`rules` returns the document path, `exists`, the repo-relative `files`, any `unmatched` paths
+outside the repository, and only the rules whose scope matches at least one file, each with its
+`matched` list. A rule with no scope matches every file; a scope of only exclusions means
+everything except those files. A missing document exits 0 with `exists: false`; a malformed one
+exits 1 with the offending `line`.
+
+`scan` reports the base branch (`--base`, else `origin/HEAD`, `main`, `master`, `HEAD`), commits
+scanned, small review follow-up commits (subjects like nits, lint, rename, typo, fixup, addressing
+review; at most 10 changed lines; no binary changes), single-token substitutions meeting
+`--min-occurrences` (default 3) across `--min-prs` (default 2) PRs or commits, review comments from
+up to `--max-prs` (default 50) merged PRs when `gh` is available and authenticated, and linter or
+formatter configs at the repo root. Bots are excluded unless `--include-bots`. A missing,
+unauthenticated, or failing `gh` is reported in `gh_reason`, never as an error. Author and reviewer
+names never appear in the output. Usage errors exit 2; running outside a git repository exits 1.
+
 ### `workspace-actions.js`
 
-Maintain the machine-local project-name-to-repository-path map that `dependency-actions.js` and
+Maintain the machine-local project-name-to-repository-path map that `xoch dependency` and
 multi-project routing resolve names against.
 
 ```text
-workspace-actions.js list [--map PATH] [--json]
-workspace-actions.js add --name NAME --path PATH [--map PATH] [--replace]
-workspace-actions.js remove --name NAME [--map PATH]
-workspace-actions.js validate [--map PATH] [--json]
+xoch workspace list [--map PATH] [--json]
+xoch workspace add --name NAME --path PATH [--map PATH] [--replace]
+xoch workspace remove --name NAME [--map PATH]
+xoch workspace validate [--map PATH] [--json]
 ```
 
 Default map path: `~/.xoch/workspace-map.json`.

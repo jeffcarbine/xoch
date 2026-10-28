@@ -1,0 +1,556 @@
+'use strict';
+
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { test, run as runTests } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+import {
+  COPILOT, CODEX, CLAUDE, INSTALL_TARGETS, targetDir, installedName,
+} from '../bin/lib/install-targets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const SCRIPT = path.join(__dirname, '..', 'bin', 'xoch.js');
+const XOCH_ACTIONS = path.join(__dirname, '..', 'bin', 'xoch-actions.js');
+const CONFIG_SCRIPT = path.join(__dirname, '..', 'config.js');
+const GENERATE_ID_SCRIPT = path.join(__dirname, '..', 'bin', 'generate-job-id.js');
+const ARCHIVE_SCRIPT = path.join(__dirname, '..', 'bin', 'archive-actions.js');
+const GIT_STATE_SCRIPT = path.join(__dirname, '..', 'bin', 'git-state.js');
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+
+// Tool-specific checks only apply when that tool is in INSTALL_TARGETS, so a
+// build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+const listed = (target) => INSTALL_TARGETS.includes(target);
+
+function run(args, ctx, input) {
+  return runScript(SCRIPT, args, ctx, input);
+}
+
+test('xoch --version prints the installed package version', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['--version'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.strictEqual(result.stdout.trim(), pkg.version);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch with no arguments prints usage and exits 1', () => {
+  const ctx = scratch();
+  try {
+    const result = run([], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stdout, /Usage:/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch -h prints usage and exits 0', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['-h'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Usage:/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch --help prints usage and exits 0', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['--help'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Usage:/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('an unknown top-level command errors clearly and exits 1', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['bogus-command'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /unknown command: bogus-command/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch job current --json produces the same output as invoking xoch-actions.js directly', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['job', 'current', '--json'], ctx);
+    const direct = runScript(XOCH_ACTIONS, ['job', 'current', '--json'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch qa capabilities produces the same output as invoking xoch-actions.js directly', () => {
+  const ctx = scratch();
+  try {
+    const args = ['qa', 'capabilities', '--job', 'missing', '--browser', 'yes', '--http', 'yes', '--shell', 'yes'];
+    const viaDispatcher = run(args, ctx);
+    const direct = runScript(XOCH_ACTIONS, args, ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+    assert.strictEqual(viaDispatcher.stderr, direct.stderr);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch arc job-move produces the same output as invoking xoch-actions.js directly', () => {
+  const ctxA = scratch();
+  const ctxB = scratch();
+  try {
+    for (const ctx of [ctxA, ctxB]) {
+      fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+      fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+      const arcDir = path.join(ctx.cwd, '.xoch', 'work', 'arcs', 'a1');
+      fs.mkdirSync(arcDir, { recursive: true });
+      fs.writeFileSync(path.join(arcDir, 'state.json'), JSON.stringify({ arc_id: 'a1', title: 'A1' }));
+      fs.writeFileSync(path.join(arcDir, 'jobs.json'), JSON.stringify({ planned: [{ id: 'j1', title: 'Job one' }] }));
+    }
+    const args = ['arc', 'job-move', '--arc', 'a1', '--job', 'j1', '--to', 'active'];
+    const viaDispatcher = run(args, ctxA);
+    const direct = runScript(XOCH_ACTIONS, args, ctxB);
+    assert.strictEqual(viaDispatcher.status, 0);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctxA);
+    cleanup(ctxB);
+  }
+});
+
+test('xoch discovery write produces the same output as invoking xoch-actions.js directly', () => {
+  const ctxA = scratch();
+  const ctxB = scratch();
+  try {
+    for (const ctx of [ctxA, ctxB]) {
+      fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+      fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+    }
+    const viaDispatcher = run(['discovery', 'write', '--topic', 'Dispatch Check'], ctxA, 'content\n');
+    const direct = runScript(XOCH_ACTIONS, ['discovery', 'write', '--topic', 'Dispatch Check'], ctxB, 'content\n');
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    // xochRoot() in in-repo mode is relative ('.xoch'), so the printed
+    // path never embeds either context's absolute cwd -- a plain
+    // comparison is safe, unlike the config-set comparison above.
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctxA);
+    cleanup(ctxB);
+  }
+});
+
+test('an xoch-actions.js group with a missing action produces the same error as invoking it directly', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['job'], ctx);
+    const direct = runScript(XOCH_ACTIONS, ['job'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stderr, direct.stderr);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch conventions --help produces the same output as invoking conventions-actions.js directly', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['conventions', '--help'], ctx);
+    const direct = runScript(path.join(__dirname, '..', 'bin', 'conventions-actions.js'), ['--help'], ctx);
+    assert.strictEqual(viaDispatcher.status, 0);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch config root produces the same output as xoch-actions.js config:root', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['config', 'root'], ctx);
+    const direct = runScript(XOCH_ACTIONS, ['config', 'root'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch config show produces the same output as config.js show', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['config', 'show'], ctx);
+    const direct = runScript(CONFIG_SCRIPT, ['show'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch config get storage.mode produces the same output as config.js get storage.mode', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['config', 'get', 'storage.mode'], ctx);
+    const direct = runScript(CONFIG_SCRIPT, ['get', 'storage.mode'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch config set documentation.commentMode follow-convention produces the same output as config.js set', () => {
+  const ctxA = scratch();
+  const ctxB = scratch();
+  try {
+    const viaDispatcher = run(['config', 'set', 'documentation.commentMode', 'follow-convention'], ctxA);
+    const direct = runScript(CONFIG_SCRIPT, ['set', 'documentation.commentMode', 'follow-convention'], ctxB);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    // The set now triggers a real reinstall, whose output embeds each
+    // context's own (randomly named) scratch $HOME path -- normalize that
+    // one difference away before comparing, since it isn't a behavioral
+    // difference between the dispatcher and a direct invocation.
+    assert.strictEqual(
+      viaDispatcher.stdout.split(ctxA.home).join('<HOME>'),
+      direct.stdout.split(ctxB.home).join('<HOME>')
+    );
+  } finally {
+    cleanup(ctxA);
+    cleanup(ctxB);
+  }
+});
+
+test('xoch config bogus-key produces the same error as config.js bogus-key', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['config', 'bogus-key'], ctx);
+    const direct = runScript(CONFIG_SCRIPT, ['bogus-key'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch generate-id --id "My Job" produces the same output as generate-job-id.js --id "My Job"', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['generate-id', '--id', 'My Job'], ctx);
+    const direct = runScript(GENERATE_ID_SCRIPT, ['--id', 'My Job'], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch archive with no arguments produces the same output as archive-actions.js with no arguments', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['archive'], ctx);
+    const direct = runScript(ARCHIVE_SCRIPT, [], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+    assert.strictEqual(viaDispatcher.stderr, direct.stderr);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('xoch git-state with no arguments produces the same output as git-state.js with no arguments', () => {
+  const ctx = scratch();
+  try {
+    const viaDispatcher = run(['git-state'], ctx);
+    const direct = runScript(GIT_STATE_SCRIPT, [], ctx);
+    assert.strictEqual(viaDispatcher.status, direct.status);
+    assert.strictEqual(viaDispatcher.stdout, direct.stdout);
+    assert.strictEqual(viaDispatcher.stderr, direct.stderr);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('every xoch-actions.js group namespace reaches xoch-actions.js without a dispatcher wiring error', () => {
+  const groups = ['job', 'state', 'arc', 'pointer', 'workflow', 'snapshot', 'phase', 'file', 'qa'];
+  for (const group of groups) {
+    const ctx = scratch();
+    try {
+      const result = run([group], ctx);
+      assert.notStrictEqual(result.status, null, `${group}: process was killed by a signal`);
+      assert.ok(!/Cannot find module|is not a function/.test(result.stderr), `${group}: ${result.stderr}`);
+    } finally {
+      cleanup(ctx);
+    }
+  }
+});
+
+test('every standalone-script namespace reaches its module without a dispatcher wiring error', () => {
+  const namespaces = [
+    'init', 'remove', 'verify', 'archive', 'generate-id', 'docs-drift', 'docs-target', 'git-state', 'gitignore',
+    'coverage', 'context-sync', 'dependency', 'project-scope', 'conventions',
+    'project-commands', 'token-estimator', 'help', 'workspace',
+  ];
+  for (const namespace of namespaces) {
+    const ctx = scratch();
+    try {
+      const result = run([namespace], ctx);
+      assert.notStrictEqual(result.status, null, `${namespace}: process was killed by a signal`);
+      assert.ok(!/Cannot find module|is not a function/.test(result.stderr), `${namespace}: ${result.stderr}`);
+    } finally {
+      cleanup(ctx);
+    }
+  }
+});
+
+// ---------------------------------------------------------------------
+// xoch init -- real (non-scratch) coverage. bin/init.js resolves its
+// prompts/ source from its own __dirname, not cwd, so running it through
+// the real dispatcher here always renders/installs THIS repo's actual
+// prompts/ -- unlike test/init.test.js's scratch-copied bin/init.js,
+// which relocates the script to control a synthetic prompts/ fixture for
+// malformed-input edge cases that can't occur against real, well-formed
+// content. These tests close the real file's happy-path, idempotent-
+// rerun, and orphan-cleanup coverage, which only a genuine install run
+// against this repo's real prompts/ can reach.
+//
+// No test here deliberately exercises failRender() or its call sites
+// (bin/init.js:68, malformed-partial/malformed-config/render-failure
+// paths), the unresolved-partial check (bin/init.js:301), or the
+// "prompts/ directory not found" branch (bin/init.js:413) -- see the
+// DOCUMENTED COVERAGE EXCEPTION comments at those sites in bin/init.js.
+// Those exact behaviors are already covered at 100% by
+// test/init.test.js's scratch-copied bin/init.js, which relocates the
+// script specifically to substitute the malformed content these
+// branches require.
+// ---------------------------------------------------------------------
+
+function xochDir(ctx) {
+  return path.join(ctx.home, '.xoch');
+}
+
+function copilotDir(ctx) {
+  return targetDir(COPILOT, ctx.home);
+}
+
+function codexDir(ctx) {
+  return targetDir(CODEX, ctx.home);
+}
+
+function claudeDir(ctx) {
+  return targetDir(CLAUDE, ctx.home);
+}
+
+
+test('a real xoch init renders and installs this repo\'s actual prompts to every listed target', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Initialization complete!/);
+    assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'meow.md')));
+    assert.ok(fs.existsSync(path.join(xochDir(ctx), 'prompts', 'core')));
+    for (const target of INSTALL_TARGETS) {
+      assert.ok(fs.existsSync(path.join(targetDir(target, ctx.home), installedName(target, 'meow'))), target.label);
+    }
+    if (listed(COPILOT)) assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+    if (listed(CODEX)) assert.ok(fs.existsSync(path.join(codexDir(ctx), 'xoch-meow', 'SKILL.md')));
+    if (listed(CLAUDE)) assert.ok(fs.existsSync(path.join(claudeDir(ctx), 'xoch-meow', 'SKILL.md')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a second real xoch init run is idempotent, replaces any existing Copilot symlinks, and reports no orphans', () => {
+  const ctx = scratch();
+  try {
+    run(['init'], ctx);
+    const second = run(['init'], ctx);
+    assert.strictEqual(second.status, 0);
+    assert.ok(!second.stdout.includes('Removed orphaned'));
+    assert.match(second.stdout, /Token budgets already present/);
+    if (listed(COPILOT)) assert.ok(fs.lstatSync(path.join(copilotDir(ctx), 'xoch-meow.prompt.md')).isSymbolicLink());
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a real xoch init cleans up a stray orphaned entry in every listed tool directory', () => {
+  const ctx = scratch();
+  try {
+    // Each stray is written by the tool's own install step, so it has
+    // exactly the shape a real (since-deleted) prompt would have left.
+    const strayPrompt = path.join(ctx.home, 'nonexistent.md');
+    fs.writeFileSync(strayPrompt, '---\nname: nonexistent\n---\n\nstray\n');
+    const strayEntry = (target) => path.join(targetDir(target, ctx.home), installedName(target, 'nonexistent'));
+    for (const target of INSTALL_TARGETS) {
+      fs.mkdirSync(targetDir(target, ctx.home), { recursive: true });
+      target.install(strayPrompt, 'nonexistent', targetDir(target, ctx.home));
+      assert.ok(fs.existsSync(strayEntry(target)), target.label);
+    }
+
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Removed orphaned: xoch-nonexistent/);
+    for (const target of INSTALL_TARGETS) assert.ok(!fs.existsSync(strayEntry(target)), target.label);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('bin/init.js run directly (not through the dispatcher) still completes a real install', () => {
+  const ctx = scratch();
+  try {
+    const result = runScript(path.join(__dirname, '..', 'bin', 'init.js'), [], ctx);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Initialization complete!/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a real xoch init installs xoch-conventions for every target, renders its two cores, and installs neither the cores nor the partial as commands', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['init'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    for (const target of INSTALL_TARGETS) {
+      const dir = targetDir(target, ctx.home);
+      assert.ok(fs.existsSync(path.join(dir, installedName(target, 'conventions'))), target.label);
+      for (const name of ['conventions-generate-core', 'conventions-validate-core', 'conventions-check']) {
+        assert.ok(!fs.existsSync(path.join(dir, installedName(target, name))), `${target.label}: ${name}`);
+      }
+    }
+    const core = (name) => fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'core', `${name}.md`), 'utf8');
+    const validate = core('conventions-validate-core');
+    const generate = core('conventions-generate-core');
+    const router = fs.readFileSync(path.join(xochDir(ctx), 'prompts', 'conventions.md'), 'utf8');
+    assert.match(router, /^name: xoch-conventions$/m);
+    assert.match(router, /conventions-generate-core\.md/);
+    assert.match(router, /conventions-validate-core\.md/);
+    // The shared partial is rendered into the validate core in check mode.
+    assert.match(validate, /xoch conventions rules --json --files/);
+    assert.match(validate, /Mode: `check`/);
+    assert.match(validate, /conventions-check\.md/);
+    assert.match(generate, /xoch conventions scan --json/);
+    assert.match(generate, /status: inferred/);
+    for (const text of [router, validate, generate]) assert.ok(!/\{\{/.test(text));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('a real xoch init renders the conventions partial into the code-touching cores, and final review blocks on conventions only under required strictness', () => {
+  const render = (config) => {
+    const ctx = scratch();
+    try {
+      if (config) {
+        fs.mkdirSync(xochDir(ctx), { recursive: true });
+        fs.writeFileSync(path.join(xochDir(ctx), 'config.json'), JSON.stringify(config));
+      }
+      const result = run(['init'], ctx);
+      assert.strictEqual(result.status, 0, result.stderr);
+      const read = (rel) => fs.readFileSync(path.join(xochDir(ctx), 'prompts', rel), 'utf8');
+      return {
+        plan: read('core/plan-core.md'),
+        revisePlan: read('core/revise-plan-core.md'),
+        implement: read('core/implement-core.md'),
+        patch: read('patch.md'),
+        review: read('core/review-core.md'),
+        validate: read('core/conventions-validate-core.md'),
+        spec: read('core/spec-core.md'),
+        open: read('core/open-core.md'),
+        close: read('close.md'),
+      };
+    } finally {
+      cleanup(ctx);
+    }
+  };
+
+  const defaults = render(null);
+  for (const name of ['plan', 'revisePlan', 'implement', 'patch']) {
+    assert.match(defaults[name], /Mode: `apply`/, name);
+    assert.match(defaults[name], /xoch conventions rules --json --files/, name);
+  }
+  assert.match(defaults.review, /Mode: `check`/);
+  for (const name of ['spec', 'open', 'close']) {
+    assert.ok(!/xoch conventions rules/.test(defaults[name]), `${name} must not load conventions`);
+  }
+  // One shared findings template, labeled by where the check ran.
+  assert.match(defaults.review, /\*\*Source\*\*: final_review/);
+  assert.match(defaults.validate, /\*\*Source\*\*: xoch-conventions validate/);
+  assert.match(defaults.review, /Conventions findings do not block/);
+  assert.ok(!/unresolved finding against a `confirmed` rule blocks/.test(defaults.review));
+
+  const required = render({ conventions: { strictness: 'required' } }).review;
+  assert.match(required, /unresolved finding against a `confirmed` rule blocks/);
+  assert.ok(!/Conventions findings do not block/.test(required));
+});
+
+test('a real xoch init seeds config.json fresh, preserves an existing override, and recovers from a corrupt existing file', () => {
+  const fresh = scratch();
+  try {
+    const result = run(['init'], fresh);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 2 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(fresh), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(fresh);
+  }
+
+  const override = scratch();
+  try {
+    fs.mkdirSync(xochDir(override), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(override), 'config.json'), JSON.stringify({ version: 1, tokenBudgets: { spec: 9999 } }));
+    const result = run(['init'], override);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Seeded 1 default token budget\(s\)/);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(override), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 9999);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(override);
+  }
+
+  const corrupt = scratch();
+  try {
+    fs.mkdirSync(xochDir(corrupt), { recursive: true });
+    fs.writeFileSync(path.join(xochDir(corrupt), 'config.json'), 'not valid json{{{');
+    const result = run(['init'], corrupt);
+    assert.strictEqual(result.status, 0);
+    const config = JSON.parse(fs.readFileSync(path.join(xochDir(corrupt), 'config.json'), 'utf8'));
+    assert.strictEqual(config.tokenBudgets.spec, 5000);
+    assert.strictEqual(config.tokenBudgets.plan, 7000);
+  } finally {
+    cleanup(corrupt);
+  }
+});
+
+test('xoch readme is no longer a command', () => {
+  const ctx = scratch();
+  try {
+    const result = run(['readme', 'assemble'], ctx);
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /unknown command: readme/);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+runTests();

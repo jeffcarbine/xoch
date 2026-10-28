@@ -1,138 +1,59 @@
 ---
 name: xoch-spec-core
-description: Full reference workflow for xoch-spec
+description: Full reference workflow for xoch-open's spec step
 ---
 
 # Xoch - Spec Core
 
-This is the full reference workflow for `xoch-spec`. It is rendered to `~/.xoch/prompts/core/spec-core.md` and is not installed as a command.
-
-Capture what should change before implementation planning begins.
-
-## Purpose
-
-Turn a job idea, issue, bug, or copied requirements into a clear job specification with acceptance criteria, constraints, current-state analysis, and traceable notes.
-
-`xoch-spec` normally runs after `xoch-open-job`.
-
-Target flow:
-
-```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
-```
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Expected files after this command:
-
-```text
-.xoch/work/current.json
-.xoch/work/jobs/[job-id]/state.md
-.xoch/work/jobs/[job-id]/spec.md
-```
-
-Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` points to an active job and no `.xoch/work/current.json` exists, continue that legacy job in place and do not move it automatically.
+The `spec` step of `xoch-open`: turn source requirements into an accepted `spec.md` with acceptance criteria, current-state analysis, and notes. Usually runs right after `title` in the same invocation.
 
 {{xoch-partial:project-routing.md}}
 
-## Process
-
 {{xoch-partial:context-economy.md}}
 
-### Step 1: Identify Current Job
+## Process
 
-Use the `xoch-actions.js job current --json` result from the command wrapper. Run it now if the result is unavailable.
+### Step 1: Confirm Job State
 
-If a current job exists, use its job ID and job folder.
-
-If no current job exists, ask the engineer for:
-
-- job ID or short name
-- job title
-- documentation target if known
-
-Generate or clean job IDs with:
+Use the job from the `xoch job current --json` result; run it if the result is unavailable. Confirm its state is readable:
 
 ```bash
-~/.xoch/bin/generate-job-id.js --id "[provided-id]"
-~/.xoch/bin/generate-job-id.js
+xoch state get --job "[job-id]" --json
 ```
 
-### Step 2: Ensure Job State
+If no job is current or its state is missing, the job was never opened through `xoch job open`: return to `open-core.md`'s Fresh Job flow instead of creating state by hand. Otherwise mark the spec in progress:
 
-For target-model jobs, ensure:
-
-```text
-.xoch/work/jobs/[job-id]/state.md
-.xoch/work/current.json
+```bash
+xoch state set --job "[job-id]" --field status --value spec_in_progress
 ```
 
-If `state.md` does not exist, create it with:
+### Step 2: Gather Source Requirements
 
-```yaml
-job_id: [job-id]
-title: [job title]
-status: spec_in_progress
-arc: [arc-id or standalone]
-current_phase: null
-phase_count: 0
-current_phase_title: null
-current_phase_goal: null
-current_phase_files: []
-current_phase_acceptance_criteria: []
-current_phase_validation: []
-phase_index: []
-documentation_targets:
-  - [README path, docs packet, or project-wide]
-decisions: []
-risks: []
-active_workflow: null
-workflow_stage: null
-pending_action: null
-workflow_artifact: null
-return_command: null
-workflow_started_at: null
-review_status: null
-closure_status: null
-next_command: xoch-spec
-started: [today]
-last_updated: [today]
-```
-
-For legacy jobs, update the legacy context files in place.
-
-### Step 3: Gather Source Requirements
-
-Do not draft a spec from only a job ID, job title, branch name, file name, or project context. Those can orient the conversation, but they are not source requirements.
-
-If the engineer invoked `xoch-spec` without providing a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions, stop and ask them to provide that source. Do not infer or invent requirements from the job name.
+A job ID, title, branch name, file name, or project context orients the conversation but is not a source requirement. If this step is reached without a problem statement, desired outcome, issue text, pasted notes, explicit acceptance criteria, or direct answers to clarification questions, stop and ask the engineer for one. Do not infer requirements from the job name.
 
 Ask for or extract:
 
 - problem statement
 - desired outcome
-- in-scope work
-- out-of-scope work
+- in-scope and out-of-scope work
 - acceptance criteria
 - constraints
 - documentation targets
 - risks or unknowns
 
-Read relevant accepted `notes/discovery-*.md` findings when they already exist. Treat their accepted conclusions and assumptions as spec inputs while preserving any unresolved questions.
+{{xoch-partial:storage-root.md}}
 
-If the engineer provides an issue/spec with explicit requirements, treat it as the source baseline. If later clarifications conflict, surface the conflict and ask which source should win.
+Other inputs:
 
-Only continue to current-state analysis and draft spec once source requirements exist.
+- Handoffs chosen and claimed during `open` (`xoch handoff get --id "[id]"`): use what they say should change, and confirm it with the engineer like any other source.
+- Accepted findings in `[xoch-root]/discoveries/*-discovery.md`, when present: treat accepted conclusions and assumptions as inputs, and preserve unresolved questions.
+- An engineer-provided issue or spec with explicit requirements is the source baseline. If later clarifications conflict with it, surface the conflict and ask which source wins.
 
-### Step 4: Clarify Requirements
+Continue only once source requirements exist.
 
-Ask targeted questions until these are clear:
+### Step 3: Clarify Requirements
+
+Ask a few targeted questions until these are clear:
 
 - measurable success outcome
 - scope boundaries
@@ -140,10 +61,9 @@ Ask targeted questions until these are clear:
 - documentation targets
 - constraints and non-goals
 - important edge cases
+- version impact: `none`, `patch`, `minor`, or `major`, with the reason, and whether the project keeps a changelog (`CHANGELOG.md` or equivalent). Recommend a level (breaking -> major, new capability -> minor, fix -> patch, internal-only -> none); the engineer decides. `xoch-doc` applies it after review passes.
 
-Prefer a few high-signal questions over a long questionnaire.
-
-If a material unknown remains and the engineer cannot answer it:
+If a material unknown remains that the engineer cannot answer:
 
 1. State the unknown and the requirement, criterion, constraint, or decision it blocks.
 2. Do not substitute model background knowledge or unsupported inference.
@@ -153,40 +73,26 @@ If a material unknown remains and the engineer cannot answer it:
    This spec has an unresolved unknown. Start discovery? [Y]es / [N]o
    ```
 
-4. If `[Y]`, keep `status: spec_in_progress`, set `next_command: xoch-discovery`, and stop without drafting or accepting `spec.md`.
-5. If `[N]`, continue only after the engineer explicitly accepts a documented assumption, narrows the spec, or defers the affected requirement.
+4. On `[Y]`, keep `status: spec_in_progress`, set `next_command: xoch-discovery`, and stop without drafting or accepting `spec.md`.
+5. On `[N]`, continue only after the engineer explicitly accepts a documented assumption, narrows the spec, or defers the affected requirement.
 
 When discovery returns, incorporate its accepted findings and cite the discovery note in `Clarifications & Notes`.
 
-### Step 5: Current-State Analysis
+### Step 4: Current-State Analysis
 
-Read the target README or docs when available. Compare current documented behavior against the proposed change.
+Read the target README or docs when available and compare documented behavior against the proposed change. Summarize current state, proposed changes, what stays the same, and potential impacts.
 
-Summarize:
-
-- current state
-- proposed changes
-- staying the same
-- potential impacts
-
-For a multi-project job, identify requirements, current state, proposed changes, documentation targets, and acceptance evidence by project. Keep one shared specification; do not create separate specs for listed participants.
+For a multi-project job, identify requirements, current state, proposed changes, documentation targets, and acceptance evidence by project, in one shared spec. Do not create separate specs for participants.
 
 Ask the engineer whether the change analysis is correct.
 
-### Step 6: Assess Job Versus Arc Fit
+### Step 5: Assess Job Versus Arc Fit
 
-Before writing the final job spec, decide whether the requested work still looks like one focused job or whether it would be healthier as an arc with multiple jobs.
+Before writing the spec, decide whether the work is one focused job or arc-sized. Arc signals:
 
-Use these signals for arc-sized work:
+{{xoch-partial:arc-signals.md}}
 
-- multiple independent outcomes or workstreams
-- several features, packages, services, or repositories with different validation paths
-- substantial sequencing where one piece should be planned or reviewed separately from another
-- several documentation targets with different owners or audiences
-- acceptance criteria that naturally cluster into multiple jobs
-- uncertainty high enough that a shared arc spec would help before job-level specs continue
-
-If the work appears to fit one focused job, continue normally and optionally note:
+If it fits one job, continue and optionally note:
 
 ```markdown
 ## Arc Fit
@@ -194,17 +100,16 @@ If the work appears to fit one focused job, continue normally and optionally not
 This work appears suitable for a single job because [reason].
 ```
 
-If the work appears arc-sized:
+If it is arc-sized:
 
-1. Explain the signals that make it larger than one job.
-2. Recommend `xoch-open-arc` before continuing job-level planning.
-3. Ask the engineer whether to:
-   - run `xoch-open-arc` now
+1. Explain the signals and recommend setting up an arc before job-level planning.
+2. Ask whether to:
+   - set up the arc now
    - continue this job spec anyway
-   - narrow this job spec to the first job in the arc
-4. If the engineer chooses `xoch-open-arc`, stop after summarizing the recommended arc purpose and candidate jobs.
+   - narrow this spec to the first job in the arc
+3. To set up the arc now, follow `open-core.md`'s Set Up An Arc, adopting this job with `--adopt-active` and skipping its final Continue step. Then return here in the same response and continue this spec, scoped to this job's part of the arc.
 
-When continuing a job spec that belongs to or may belong to an arc, include:
+When the spec belongs or may belong to an arc, include:
 
 ```markdown
 ## Arc Fit
@@ -215,31 +120,27 @@ When continuing a job spec that belongs to or may belong to an arc, include:
 - Candidate related jobs: [list or none]
 ```
 
-This check is advisory. Do not block a deliberately single-job spec if the engineer chooses to continue.
+This check is advisory; do not block a deliberately single-job spec.
 
-### Step 7: Present Draft Spec
+### Step 6: Present Draft Spec
 
-Before writing the spec file, present the draft spec in chat using the structure below. Keep it concise enough to review, but complete enough that the engineer can see requirements, acceptance criteria, current state, proposed changes, risks, and arc fit.
-
-Then ask:
+Present the draft spec in chat, using the structure in Step 7, with enough detail to review requirements, acceptance criteria, current state, proposed changes, risks, and arc fit. Then ask:
 
 {{xoch-partial:accept-or-modify.md artifact="spec"}}
 
-If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Repeat until the engineer accepts.
+On `[M]`, ask what to modify, revise the draft, and ask again until the engineer accepts. Do not write `spec.md` or mark spec state complete before `[A]`.
 
-Do not write `spec.md` or mark spec state complete until the engineer chooses `[A]`.
+### Step 7: Write Accepted Spec
 
-### Step 8: Write Accepted Spec
-
-Write `spec.md` with:
+Write `spec.md`:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path spec.md <<'XOCHEOF'
+xoch file write --job "[job-id]" --path spec.md <<'XOCHEOF'
 [spec.md content]
 XOCHEOF
 ```
 
-Use this structure:
+Structure:
 
 ```markdown
 # Specification - [job-id]
@@ -293,6 +194,14 @@ Use this structure:
 
 ---
 
+## Version Impact
+
+- Level: [none | patch | minor | major]
+- Reason: [why this level]
+- Changelog: [path to the project's changelog, or none]
+
+---
+
 ## Project Scope
 
 [For multi-project jobs: each project, its role, requirement ownership, contracts affected, and documentation targets. Omit for standalone jobs.]
@@ -307,34 +216,31 @@ Use this structure:
 
 ## Token Usage (Spec Phase)
 
-Budget: [current value reported by `token-estimator.js budget check --skill spec`]
+Budget: [current value reported by `xoch token-estimator budget check --skill spec`]
 [Files read and estimates]
 ```
 
-### Step 9: Update State
 
-Update `state.md`:
+### Step 8: Update State
 
-```yaml
-status: spec_complete
-spec_status: accepted
-next_command: xoch-plan
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "spec_complete", "spec_status": "accepted", "last_updated": "[today]"}
+XOCHEOF
 ```
-
-If writing a legacy migration job, update the existing `.xoch/context/[job-id]/spec.md` and current pointer instead.
 
 For a multi-project job, write the accepted spec and state to the primary job, then sync participant context. Do not finish successfully if sync fails.
 
 ## Output
 
-End with:
+Report:
 
 ```text
 Specification captured.
 Job: [job-id]
-{{xoch-partial:next-step.md command="xoch-plan"}}
 ```
+
+Then run `xoch job step-advance --job "[job-id]"` to move `current_step` from `spec` to `plan`, and continue into the `plan` step (`plan-core.md`'s Step 1 onward) in this same response. Do not stop or print a `Ready for next step` line for this transition.
 
 ## Rules
 
@@ -343,14 +249,5 @@ Job: [job-id]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Specs describe change, not implementation details.
-- Do not draft a spec without engineer-provided source requirements.
-- Do not invent requirements from a job name, branch name, file name, or project context.
-- Route material unknowns to `xoch-discovery` instead of manufacturing certainty.
-- Multi-project specs identify project ownership without splitting the job into independent specifications.
-- Present the draft spec and get `[A]` acceptance before writing `spec.md`.
-- If the engineer chooses `[M]`, ask for modifications and revise before writing.
-- Acceptance criteria must be binary and testable.
-- Use AC IDs for traceability.
-- Always make an explicit job-versus-arc recommendation before routing to `xoch-plan`.
-- Do not silently contradict a provided source requirement.
-- Do not move active legacy job folders during the migration.
+- Acceptance criteria are binary, testable, and carry AC IDs.
+- Always make an explicit job-versus-arc recommendation before continuing to `plan`.

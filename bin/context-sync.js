@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { parseFlags } = require('./lib/args.js');
-const { scopeErrors } = require('./lib/project-scope-validator.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { scopeErrors } from './lib/project-scope-validator.js';
+import { prettyGenerate } from './lib/ruby-json.js';
 
 const SHARED_ITEMS = [
-  'state.md', 'spec.md', 'plan.md', 'phases.md', 'phases', 'snapshots', 'notes', 'revisions', 'review.md', 'closure.md',
+  'state.json', 'spec.md', 'plan.md', 'phases.json', 'snapshots', 'notes', 'revisions', 'review.md', 'closure.md',
 ];
 
 // context-sync.sh's own validate_scope! wording -- distinct from
@@ -76,7 +77,7 @@ function validateScope(data) {
 }
 
 function jobRoot(project) {
-  return path.join(path.resolve(project.path), project.job_path);
+  return path.resolve(project.path, project.job_path);
 }
 
 function digestPath(target, hash, prefix) {
@@ -260,8 +261,8 @@ function main(argv) {
   run(command, argv.slice(1));
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { run, main, contextDigest, samePath };
+export { run, main, contextDigest, samePath };

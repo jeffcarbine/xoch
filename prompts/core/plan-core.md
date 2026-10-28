@@ -1,43 +1,15 @@
 ---
 name: xoch-plan-core
-description: Full reference workflow for xoch-plan
+description: Full reference workflow for xoch-open's plan step
 ---
 
 # Xoch - Plan Core
 
-This is the full reference workflow for `xoch-plan`. It is rendered to `~/.xoch/prompts/core/plan-core.md` and is not installed as a command.
-
-Create the implementation approach and phase breakdown for the active job.
-
-## Purpose
-
-Turn an accepted job spec into a practical plan with clear phases, file ownership notes, validation expectations, risks, and acceptance-criteria traceability.
-
-Target flow:
-
-```text
-open-job -> spec -> plan -> make -> next -> review -> close-job
-```
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Expected files after this command:
-
-```text
-.xoch/work/jobs/[job-id]/plan.md
-.xoch/work/jobs/[job-id]/phases.md
-.xoch/work/jobs/[job-id]/state.md
-```
-
-Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/current.md` is active and no target-model job exists, continue that legacy job in place.
+The `plan` step of `xoch-open`: turn the accepted spec into `plan.md` and a phases document with file ownership, validation, risks, and AC traceability. Usually runs right after `spec` in the same invocation.
 
 {{xoch-partial:project-routing.md}}
+
+{{xoch-partial:context-economy.md}}
 
 ## Process
 
@@ -45,17 +17,7 @@ Legacy migration jobs may still live under `.xoch/context/`. If `.xoch/context/c
 
 {{xoch-partial:job-evidence.md}}
 
-Then read:
-
-- `state` when returned
-- `spec`
-- relevant documentation target README/docs
-
-{{xoch-partial:context-economy.md}}
-
-{{xoch-partial:state-phase-index.md}}
-
-Confirm the job before planning.
+Read job state, `spec`, and the relevant documentation-target README/docs. Confirm the job before planning.
 
 ### Step 2: Validate Spec Readiness
 
@@ -63,13 +25,13 @@ Check that `spec.md` contains:
 
 - job requirements
 - acceptance criteria with AC IDs
-- an explicit Arc Fit section or equivalent job-versus-arc recommendation
+- an Arc Fit section or equivalent job-versus-arc recommendation
 - current-state/proposed-change analysis
-- constraints or explicit "none"
+- constraints, or an explicit "none"
 
-If AC IDs are missing, add them during planning only after confirming they preserve the spec meaning.
+If AC IDs are missing, add them only after confirming they preserve the spec's meaning.
 
-If the spec recommends an arc and the job is still standalone, ask whether the engineer wants to run `xoch-open-arc` before creating the job plan. Continue planning only when the engineer confirms this job should proceed independently or as the first job inside an arc.
+If the spec recommends an arc and the job is still standalone, ask whether to set up an arc (`open-core.md`'s Set Up An Arc) first. Continue only when the engineer confirms this job proceeds independently or as the first job in an arc.
 
 ### Step 3: Gather Architectural Approach
 
@@ -82,41 +44,29 @@ Ask the engineer for:
 - testing expectations
 - dependency concerns
 
-For multi-project jobs, establish the owning project for every file, validation command, contract change, and implementation task.
+For multi-project jobs, establish the owning project for every file, validation command, contract change, and task.
 
 If the engineer asks the agent to decide, infer a conservative approach from the spec and existing docs.
 
 ### Step 4: Focused Architecture Read
 
-Identify files needed to understand the implementation approach:
-
-- related prompt files or source files
-- docs describing patterns
-- helper scripts
-- installer/configuration files
-- test or validation examples
+Identify the files needed to understand the approach: related prompt or source files, pattern docs, helper scripts, installer/configuration files, and test or validation examples.
 
 {{xoch-partial:budget-check.md skill="plan"}}
 
-When validation commands are not already established by project context, detect advisory candidates with:
+When validation commands are not established by project context, detect advisory candidates, including coverage commands (`kind: coverage`):
 
 ```bash
-~/.xoch/bin/project-commands.js detect --json
+xoch project-commands detect --json
 ```
 
-This also surfaces coverage-command candidates (`kind: coverage`) when the target project's tooling signals one.
+Load the conventions for the files the plan expects to create or modify, and list each phase's applicable rule IDs in that phase's `notes`:
+
+{{xoch-partial:conventions-check.md mode="apply"}}
 
 ### Step 5: Analyze Approach
 
-Provide a concise architecture analysis:
-
-- proposed approach
-- strengths
-- concerns
-- suggestions
-- integration points
-
-Revise until the approach is clear enough to plan.
+Give a concise analysis: proposed approach, strengths, concerns, suggestions, and integration points. Revise until the approach is clear enough to plan.
 
 ### Step 6: Derive Phases
 
@@ -124,46 +74,40 @@ Revise until the approach is clear enough to plan.
 
 {{xoch-partial:coverage-gate.md}}
 
-Break the work into phases. Each phase should have:
+Break the work into independently reviewable phases. Each phase has:
 
-- a clear goal
+- a goal
 - files likely touched
 - acceptance criteria covered
-- the behaviors/tests this phase introduces or turns green, mapped to the AC(s) they cover
-- whether the phase's targeted files already have full code coverage — when they don't, explicit phase work to backfill coverage for the existing, already-correct code, identified now rather than discovered mid-`xoch-make`
+- behavior tests it introduces or turns green, mapped to ACs (see Behavior Tests)
+- coverage-backfill work for targeted files lacking full coverage (see Coverage Gate)
 - dependencies on earlier phases
 - completion criteria
-- evidence that `xoch-next` should capture before advancing
+- evidence the `advance` step should capture
 
-Prefer phases that can be reviewed independently.
+**Checkpoints.** When several phases must land together before the engineer can tell whether they work, consider a checkpoint phase (`"type": "checkpoint"`) right after that slice. It has no implementation: the engineer exercises everything built so far in real conditions and corrects issues directly with the agent, without a revise cycle. Checkpoints are declared only at plan time, never mid-job. Most jobs need none; when unsure, ask the engineer where one would help.
 
-When several phases must land together before the engineer can tell whether they actually work — a coherent, testable slice of the job — consider inserting a **checkpoint** immediately after that slice: a phase of `**Type**: Checkpoint` with no implementation of its own. At a checkpoint, the engineer exercises everything built so far in real conditions and collaborates directly with the agent on any corrections, without a formal revise cycle. Checkpoints are declared only here, at plan time; they are not inserted ad hoc mid-job. Most jobs need none. When in doubt, ask the engineer where a checkpoint would help most before finalizing the phase breakdown.
-
-In a multi-project job, every phase task and file path must name one project from `projects.json`. A phase may span projects when the work is one coherent contract change, but its per-project validation and commit evidence must remain distinct.
+In a multi-project job, every phase task and file path names one project from `projects.json`. A phase may span projects for one coherent contract change, but per-project validation and commit evidence stay distinct.
 
 ### Step 7: Present Draft Plan
 
-Before writing plan files, present the draft implementation plan and phase breakdown in chat. Include the architectural approach, likely files, phases, validation, risks, and acceptance-criteria coverage.
-
-Then ask:
+Present the draft plan in chat: architectural approach, likely files, phases, validation, risks, and acceptance-criteria coverage. Then ask:
 
 {{xoch-partial:accept-or-modify.md artifact="plan"}}
 
-If the engineer chooses `[M]`, ask what they want modified, revise the draft, and ask again. Repeat until the engineer accepts.
-
-Do not write `plan.md`, `phases.md`, individual phase files, or mark plan state complete until the engineer chooses `[A]`.
+On `[M]`, ask what to modify, revise the draft, and ask again until the engineer accepts. Do not write `plan.md`, the phases document, or plan state before `[A]`.
 
 ### Step 8: Write Accepted Plan
 
-Write `plan.md` with:
+Write `plan.md`:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path plan.md <<'XOCHEOF'
+xoch file write --job "[job-id]" --path plan.md <<'XOCHEOF'
 [plan.md content]
 XOCHEOF
 ```
 
-Use this structure:
+Structure:
 
 ```markdown
 # Implementation Plan - [job-id]
@@ -176,7 +120,7 @@ Use this structure:
 
 ## Token Usage (Plan Phase)
 
-Budget: [current value reported by `token-estimator.js budget check --skill plan`]
+Budget: [current value reported by `xoch token-estimator budget check --skill plan`]
 [Files read and estimates]
 
 ---
@@ -220,120 +164,80 @@ Budget: [current value reported by `token-estimator.js budget check --skill plan
 
 ### Step 9: Write Accepted Phases
 
-Write `phases.md` with:
+Write the phases document through the helper, which validates it and refuses a malformed document without writing:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path phases.md <<'XOCHEOF'
-[phases.md content]
+xoch phase write --job "[job-id]" <<'XOCHEOF'
+[phases JSON]
 XOCHEOF
 ```
 
-Use this structure:
+Shape (phases are numbered by list position; never write a phase number):
 
-```markdown
-# Phases - [Job Title]
-
-## Current Phase: 1
-
----
-
-## Phase 1: [Title]
-
-[Description]
-
-**Type**: Implementation
-
-**Projects:**
-- [project name]
-
-**Files to modify/create:**
-- `[project]` `[file]` - [why]
-
-**Acceptance criteria covered:**
-- AC-001
-
-**Behavior tests (write first):**
-- [test description] - covers AC-00X, or "None - this phase doesn't add or change testable code behavior"
-
-**Existing coverage backfill:**
-- [file] - [gap to backfill], or "None - file(s) already at full coverage"
-
-**Testing requirements:**
-- [check]
-
-**Completion evidence:**
-- [diff, validation, manual test, doc update, or other evidence]
-
-**Status**: Not Started
+```json
+{
+  "phases": [
+    {
+      "title": "[Title]",
+      "goal": "[one-sentence goal]",
+      "description": "[what this phase does and why]",
+      "type": "implementation",
+      "projects": ["[project name]"],
+      "files": [
+        { "path": "[file]", "project": "[project]", "note": "[why]" }
+      ],
+      "acceptance_criteria": ["AC-001"],
+      "behavior_tests": ["[test description] - covers AC-00X"],
+      "coverage_backfill": ["[file] - [gap to backfill]"],
+      "testing_requirements": ["[check]"],
+      "completion_evidence": ["[diff, validation, manual test, doc update, or other evidence]"]
+    }
+  ]
+}
 ```
 
-Omit `**Type**:` (or leave it `Implementation`) for a normal phase. A checkpoint phase carries no
-implementation of its own, so its entry drops the Files/Behavior-tests/Coverage-backfill fields:
+- Leave a list empty (`[]`) instead of writing "None": `behavior_tests` is `[]` when the phase adds or changes no testable behavior, and `coverage_backfill` is `[]` when targeted files already have full coverage.
+- `projects` and each file's `project` are only needed for multi-project jobs.
+- Every phase starts as `not_started`; do not set `status` or `start_ref`.
+- Put extra detail in the phase's `notes` list.
 
-```markdown
-## Phase [N]: Checkpoint - [what it verifies]
+A checkpoint phase sets `"type": "checkpoint"` and uses `verification_focus` instead of files, behavior tests, and coverage backfill:
 
-[What the engineer should exercise live, and why this is the right point to pause]
-
-**Type**: Checkpoint
-
-**Acceptance criteria covered:**
-- AC-001
-
-**Verification focus:**
-- [what to test live, tied to the phases it follows]
-
-**Completion evidence:**
-- [checkpoint-[N].md snapshot: what was tested, what was found, what was corrected]
-
-**Status**: Not Started
+```json
+{
+  "title": "Checkpoint - [what it verifies]",
+  "goal": "[what the engineer confirms live]",
+  "description": "[what the engineer should exercise live, and why this is the right point to pause]",
+  "type": "checkpoint",
+  "acceptance_criteria": ["AC-001"],
+  "verification_focus": ["[what to test live, tied to the phases it follows]"],
+  "completion_evidence": ["checkpoint-[N].md snapshot: what was tested, what was found, what was corrected"]
+}
 ```
 
-Optionally create individual phase files under:
-
-```text
-.xoch/work/jobs/[job-id]/phases/phase-[N].md
-```
-
-when a phase needs more detail than belongs in `phases.md`.
+Use `xoch phase show --job "[job-id]"` to read the result back as text when useful.
 
 ### Step 10: Update State
 
-Update `state.md`:
-
-```yaml
-status: plan_complete
-plan_status: accepted
-current_phase: 1
-phase_count: [number of phases]
-current_phase_title: [phase 1 title]
-current_phase_goal: [one-sentence phase goal]
-current_phase_type: [implementation or checkpoint, from phase 1's Type field]
-current_phase_files:
-  - [path]
-current_phase_acceptance_criteria:
-  - AC-001
-current_phase_validation:
-  - [expected check]
-phase_index:
-  - phase: 1
-    title: [title]
-    status: not_started
-review_status: null
-closure_status: null
-next_command: xoch-make
-last_updated: [today]
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "plan_complete", "plan_status": "accepted", "review_status": null, "closure_status": null, "last_updated": "[today]"}
+XOCHEOF
 ```
 
-For legacy migration jobs, write `plan.md` and `milestones.md` in the existing legacy folder until the migration job is closed.
-
-After accepted plan artifacts are written, verify acceptance-criteria references when practical:
+Enter phase 1 through the helper; never hand-write phase fields. It reads the phases document, builds `phase_index`, and sets `current_phase`, `phase_count`, the `current_phase_*` fields, `next_command: xoch-do`, and `current_step: implement`. `--phase 0` marks nothing complete; it only makes phase 1 current:
 
 ```bash
-~/.xoch/bin/coverage-actions.js compare --job "[job-id]" --require plan --json
+xoch phase advance --job "[job-id]" --phase 0
 ```
 
-At plan time, missing snapshot/review coverage is expected; treat `missing_from_plan` and orphaned plan IDs as the actionable fields.
+Verify acceptance-criteria references:
+
+```bash
+xoch coverage compare --job "[job-id]" --require plan --json
+```
+
+At plan time, missing snapshot/review coverage is expected; act on `missing_from_plan` and orphaned plan IDs.
 
 For a multi-project job, run coverage from the primary project, then sync the accepted plan, phases, and state to participants. Stop and report any sync refusal.
 
@@ -344,8 +248,10 @@ End with:
 ```text
 Implementation plan created.
 Current phase: Phase 1 - [title]
-{{xoch-partial:next-step.md command="xoch-make"}}
+{{xoch-partial:next-step.md command="xoch-do"}}
 ```
+
+This is a real stop: entering phase 1 needs a fresh `xoch-do` invocation.
 
 ## Rules
 
@@ -354,10 +260,5 @@ Current phase: Phase 1 - [title]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Engineer direction wins when explicit.
-- Present the draft plan and get `[A]` acceptance before writing plan artifacts.
-- If the engineer chooses `[M]`, ask for modifications and revise before writing.
 - Plans describe how; specs describe what.
-- Phases replace milestones for new work.
 - Preserve AC traceability.
-- Multi-project plan tasks and paths must have explicit project ownership.
-- Do not move active legacy job folders during the migration.

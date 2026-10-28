@@ -15,24 +15,22 @@ Generate a copyable pull request title and Markdown body for completed work in t
 
 ### 1. Identify the active job
 
-Use the `~/.xoch/bin/xoch-actions.js job current --json` result from the workflow boundary. A branch name, job ID, title, or supplied change summary is not enough to substitute for an active job.
+Use the `xoch job current --json` result from the workflow boundary. A branch name, job ID, title, or supplied change summary is not enough to substitute for an active job.
 
-If no current job exists, ask the engineer to run `xoch-open-job` first. Do not generate a PR draft.
+If no current job exists, ask the engineer to run `xoch-open` first. Do not generate a PR draft.
 
 Resolve available job artifacts before reading them:
 
 ```bash
-~/.xoch/bin/xoch-actions.js job evidence --job "[job-id]" --json
+xoch job evidence --job "[job-id]" --json
 ```
 
-Read the active job's `state.md`. Use the smallest sufficient evidence set for the requested draft, preferring:
+Read the active job's state with `xoch state get --job "[job-id]" --json`. Use the smallest sufficient evidence set, preferring targeted sections and existing evidence over broad repository inspection:
 
 1. completed phase snapshots and recorded validation evidence;
 2. accepted `spec.md` and `plan.md` for scope and acceptance criteria;
 3. `review.md` or `closure.md` when present;
 4. explicit engineer-provided change and testing details.
-
-Before each full read beyond active pointer/state files, run the estimator. Prefer targeted sections, snapshots, and existing evidence over broad repository inspection.
 
 ### 2. Establish evidence sufficiency
 
@@ -64,6 +62,7 @@ Use the active job evidence to produce exactly one title and one Markdown descri
   - Prefer recorded commands and results when they exist.
   - Otherwise derive reviewer steps from implemented behavior and acceptance criteria without claiming they have already been run.
   - If evidence cannot support actionable steps, ask the engineer rather than producing generic or invented instructions.
+- Do not add attribution to the model used or the company that provides it, such as a `Generated with` footer or `Co-Authored-By` lines.
 
 Return the result as two independently copyable `bash` code blocks, without extra commentary after the description. The title block contains only the title; the description block contains the complete Markdown description:
 
@@ -88,15 +87,14 @@ Description:
 After the title and description blocks, make the final line:
 
 ```text
-Ready for next step: `xoch-close-job`
+{{xoch-partial:next-step.md command="xoch-close"}}
 ```
 
 ## Rules
 
 - The active Xoch job is the canonical context source.
-- Preserve the standard pending-workflow boundary; never replace another workflow implicitly.
 - Ask for missing facts instead of manufacturing certainty.
 - Keep the generated content provider-neutral and copyable.
 - Do not call Git hosting or other external services.
 - Do not modify source code, Git state, job artifacts, or workflow state while generating the draft.
-- After the PR draft, the next step is always `xoch-close-job` — this command does not chain into it automatically.
+- After the PR draft, the next step is always `xoch-close`; do not chain into it.

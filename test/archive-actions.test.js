@@ -1,10 +1,13 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'archive-actions.js');
 
@@ -28,7 +31,7 @@ function setMarkdownPointer(root, jobId) {
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -39,7 +42,7 @@ test('--help prints usage', () => {
 });
 
 test('omitting --root defaults to the current working directory', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob'], ctx);
@@ -50,7 +53,7 @@ test('omitting --root defaults to the current working directory', () => {
 });
 
 test('no command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 2);
@@ -60,7 +63,7 @@ test('no command prints usage and exits 2', () => {
 });
 
 test('an unknown command is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus', '--kind', 'job', '--id', 'x', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -71,7 +74,7 @@ test('an unknown command is rejected', () => {
 });
 
 test('an invalid --kind is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['archive', '--kind', 'bogus', '--id', 'x', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -82,7 +85,7 @@ test('an invalid --kind is rejected', () => {
 });
 
 test('archive: an unsafe --id is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', '-bad', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -93,7 +96,7 @@ test('archive: an unsafe --id is rejected', () => {
 });
 
 test('archive: a missing source folder is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'nope', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -104,7 +107,7 @@ test('archive: a missing source folder is reported', () => {
 });
 
 test('archive: --dry-run plans the move without touching the filesystem', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd, '--dry-run'], ctx);
@@ -117,7 +120,7 @@ test('archive: --dry-run plans the move without touching the filesystem', () => 
 });
 
 test('archive: a real archive moves the folder under archive/ with a dated stem', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd], ctx);
@@ -133,7 +136,7 @@ test('archive: a real archive moves the folder under archive/ with a dated stem'
 });
 
 test('archive: a second archive of the same id on the same day gets a -2 suffix', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd], ctx);
@@ -149,7 +152,7 @@ test('archive: a second archive of the same id on the same day gets a -2 suffix'
 });
 
 test('archive: refuses to archive the active job (current.json points to it)', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     setJsonPointer(ctx.cwd, 'myjob');
@@ -162,7 +165,7 @@ test('archive: refuses to archive the active job (current.json points to it)', (
 });
 
 test('archive: proceeds when current.json points to a different job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     setJsonPointer(ctx.cwd, 'other-job');
@@ -173,21 +176,20 @@ test('archive: proceeds when current.json points to a different job', () => {
   }
 });
 
-test('archive: refuses to archive the active job via the legacy current.md fallback', () => {
-  const ctx = scratch();
+test('archive: a leftover markdown work/current.md naming the job does not block archiving', () => {
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     setMarkdownPointer(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd], ctx);
-    assert.strictEqual(result.status, 1);
-    assert.match(result.stderr, /Clear or pause the active job before archiving/);
+    assert.strictEqual(result.status, 0, result.stderr);
   } finally {
     cleanup(ctx);
   }
 });
 
 test('archive: no pointer at all proceeds normally', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     makeJobFolder(ctx.cwd, 'myjob');
     const result = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob', '--root', ctx.cwd], ctx);
@@ -198,7 +200,7 @@ test('archive: no pointer at all proceeds normally', () => {
 });
 
 test('archive: --kind arc uses the arcs/ directory and never checks the job pointer', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const dir = path.join(ctx.cwd, '.xoch', 'work', 'arcs', 'myarc');
     fs.mkdirSync(dir, { recursive: true });
@@ -213,7 +215,7 @@ test('archive: --kind arc uses the arcs/ directory and never checks the job poin
 });
 
 test('restore: an unsafe --id (when no --archive path given) is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['restore', '--kind', 'job', '--id', '-bad', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -224,7 +226,7 @@ test('restore: an unsafe --id (when no --archive path given) is rejected', () =>
 });
 
 test('restore: no archive found for --id is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['restore', '--kind', 'job', '--id', 'nope', '--root', ctx.cwd], ctx);
     assert.strictEqual(result.status, 1);
@@ -235,7 +237,7 @@ test('restore: no archive found for --id is reported', () => {
 });
 
 test('restore: by --id picks the most recently modified matching archive', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archiveRoot = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive');
     const older = path.join(archiveRoot, 'myjob-archive-2026-01-01');
@@ -255,7 +257,7 @@ test('restore: by --id picks the most recently modified matching archive', () =>
 });
 
 test('restore: by --id picks the newest even when created in reverse (newest first) order', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archiveRoot = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive');
     const newer = path.join(archiveRoot, 'myjob-archive-2026-06-01');
@@ -277,7 +279,7 @@ test('restore: by --id picks the newest even when created in reverse (newest fir
 });
 
 test('restore: by --id keeps the current newest when the alphabetically-first entry is actually newer', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     // Directory readdir order tends to follow name order, not creation
     // time, on this filesystem -- both other "picks the newest" tests
@@ -303,7 +305,7 @@ test('restore: by --id keeps the current newest when the alphabetically-first en
 });
 
 test('restore: by --archive path outside the archive root is rejected', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const outside = path.join(ctx.cwd, 'elsewhere');
     fs.mkdirSync(outside, { recursive: true });
@@ -316,7 +318,7 @@ test('restore: by --archive path outside the archive root is rejected', () => {
 });
 
 test('restore: by --archive path within the archive root, deriving the id from the folder name', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archived = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive', 'myjob-archive-2026-01-01');
     fs.mkdirSync(archived, { recursive: true });
@@ -330,7 +332,7 @@ test('restore: by --archive path within the archive root, deriving the id from t
 });
 
 test('restore: an explicit --id overrides the id derived from the archive folder name', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archived = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive', 'myjob-archive-2026-01-01');
     fs.mkdirSync(archived, { recursive: true });
@@ -343,7 +345,7 @@ test('restore: an explicit --id overrides the id derived from the archive folder
 });
 
 test('restore: a missing archive folder (found via --id but deleted) is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     // Construct an --archive path that does not exist, bypassing the
     // --id candidate search entirely, to reach the "Archive folder not
@@ -359,7 +361,7 @@ test('restore: a missing archive folder (found via --id but deleted) is reported
 });
 
 test('restore: refuses to overwrite an existing active job with the same id', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archived = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive', 'myjob-archive-2026-01-01');
     fs.mkdirSync(archived, { recursive: true });
@@ -373,7 +375,7 @@ test('restore: refuses to overwrite an existing active job with the same id', ()
 });
 
 test('restore: --dry-run plans the move without touching the filesystem', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const archived = path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'archive', 'myjob-archive-2026-01-01');
     fs.mkdirSync(archived, { recursive: true });
@@ -382,6 +384,29 @@ test('restore: --dry-run plans the move without touching the filesystem', () => 
     assert.match(result.stdout, /Restore plan:/);
     assert.ok(fs.existsSync(archived));
     assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch', 'work', 'jobs', 'myjob')));
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, archive and restore work in the project\'s centralized root and respect its current pointer', () => {
+  const ctx = scratch();
+  try {
+    const job = path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'myjob');
+    fs.mkdirSync(job, { recursive: true });
+    fs.writeFileSync(path.join(job, 'state.json'), '{}');
+    fs.writeFileSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'current.json'), JSON.stringify({ job: { id: 'myjob' } }));
+    const blocked = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob'], ctx);
+    assert.notStrictEqual(blocked.status, 0);
+    fs.rmSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'current.json'));
+    const archived = runScript(SCRIPT, ['archive', '--kind', 'job', '--id', 'myjob'], ctx);
+    assert.strictEqual(archived.status, 0, archived.stderr);
+    assert.ok(!fs.existsSync(job));
+    assert.strictEqual(fs.readdirSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'archive')).length, 1);
+    const restored = runScript(SCRIPT, ['restore', '--kind', 'job', '--id', 'myjob'], ctx);
+    assert.strictEqual(restored.status, 0, restored.stderr);
+    assert.ok(fs.existsSync(path.join(job, 'state.json')));
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
   } finally {
     cleanup(ctx);
   }

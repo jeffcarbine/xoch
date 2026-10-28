@@ -5,16 +5,26 @@
 // require()'d in-process) so its own process.exit() calls never affect
 // the test runner itself.
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { spawnSync } = require('child_process');
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { spawnSync } from 'child_process';
 
 function scratch() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-test-home-'));
   const cwd = path.join(home, 'proj');
   fs.mkdirSync(cwd, { recursive: true });
   return { home, cwd };
+}
+
+// A scratch environment pinned to in-repo storage, for tests whose
+// fixtures live under <cwd>/.xoch (storage otherwise defaults to
+// centralized, under <home>/.xoch/projects/).
+function scratchInRepo() {
+  const ctx = scratch();
+  fs.mkdirSync(path.join(ctx.home, '.xoch'), { recursive: true });
+  fs.writeFileSync(path.join(ctx.home, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+  return ctx;
 }
 
 function cleanup(ctx) {
@@ -31,4 +41,6 @@ function runScript(scriptPath, args, ctx, input) {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-module.exports = { scratch, cleanup, runScript };
+export {
+  scratch, scratchInRepo, cleanup, runScript,
+};

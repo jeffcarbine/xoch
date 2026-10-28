@@ -3,10 +3,15 @@
 
 // Validate Xoch helper naming/syntax and prompt rendering in an isolated HOME.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { execFileSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+import { INSTALL_TARGETS, targetDir } from './lib/install-targets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function usage() {
   console.log(`Usage:
@@ -56,12 +61,12 @@ function resolveRoot(root) {
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     // Matches bash's `cd "$root"` failing under `set -e`: the script dies
     // immediately with cd's own error and exit code 1, never reaching the
-    // "install.sh not found" check below (that message is only reachable
-    // when root exists but lacks install.sh/install.js).
+    // "bin/xoch.js not found" check below (that message is only reachable
+    // when root exists but lacks bin/xoch.js).
     fail(`cd: ${root}: No such file or directory`, 1);
   }
-  if (!fs.existsSync(path.join(resolved, 'install.js'))) {
-    fail(`install.js not found: ${resolved}`, 2);
+  if (!fs.existsSync(path.join(resolved, 'bin', 'xoch.js'))) {
+    fail(`bin/xoch.js not found: ${resolved}`, 2);
   }
   return resolved;
 }
@@ -95,7 +100,7 @@ function listJsFilesRecursive(dir) {
 }
 
 function checkSyntax(root) {
-  const files = [...listJsFilesRecursive(path.join(root, 'bin')), path.join(root, 'install.js')];
+  const files = listJsFilesRecursive(path.join(root, 'bin'));
   for (const file of files) {
     try {
       execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
@@ -115,9 +120,9 @@ function checkSyntax(root) {
   }
 }
 
-function runInstall(root, tempHome) {
+function runInit(root, tempHome) {
   try {
-    execFileSync(process.execPath, [path.join(root, 'install.js')], {
+    execFileSync(process.execPath, [path.join(root, 'bin', 'xoch.js'), 'init'], {
       env: { ...process.env, HOME: tempHome },
       stdio: ['ignore', 'ignore', 'inherit'],
     });
@@ -126,11 +131,12 @@ function runInstall(root, tempHome) {
   }
 }
 
-// Matches prompt-check.sh's rg scan: catches both an unresolved
-// {{xoch-partial:...}} reference and a stray unsubstituted {{VAR}}
-// placeholder left in a rendered prompt -- a broader net than install.js's
-// own hasUnresolvedPartial, which only looks for the partial marker.
-const UNRESOLVED_MARKER_RE = /\{\{xoch-partial:|\{\{[A-Za-z_][A-Za-z0-9_]*\}\}/;
+// Matches prompt-check.sh's rg scan: catches an unresolved
+// {{xoch-partial:...}} reference, an unresolved {{xoch-config:...}}
+// reference, and a stray unsubstituted {{VAR}} placeholder left in a
+// rendered prompt -- a broader net than init.js's own render-time checks,
+// which only look for their own marker.
+const UNRESOLVED_MARKER_RE = /\{\{xoch-partial:|\{\{xoch-config:|\{\{[A-Za-z_][A-Za-z0-9_]*\}\}/;
 
 function scanForUnresolvedMarkers(dir) {
   if (!fs.existsSync(dir)) return false;
@@ -145,22 +151,21 @@ function scanForUnresolvedMarkers(dir) {
   return false;
 }
 
-function checkClaudeSkill(tempHome) {
+// Runs each listed install target's own verify() (currently only Claude
+// Code has one) against every rendered prompt that init installed under
+// `tempHome`.
+function checkInstalledTargets(tempHome) {
   const promptsDir = path.join(tempHome, '.xoch', 'prompts');
-  const skillsDir = path.join(tempHome, '.claude', 'skills');
   if (!fs.existsSync(promptsDir)) return;
 
+  const checked = INSTALL_TARGETS.filter((target) => target.verify);
   for (const name of fs.readdirSync(promptsDir)) {
     const full = path.join(promptsDir, name);
     if (!fs.statSync(full).isFile() || !name.endsWith('.md')) continue;
     const promptName = path.basename(name, '.md');
-    const claudeSkill = path.join(skillsDir, `xoch-${promptName}`, 'SKILL.md');
-    if (!fs.existsSync(claudeSkill)) {
-      fail(`Prompt check failed: missing Claude skill xoch-${promptName}`, 1);
-    }
-    const content = fs.readFileSync(claudeSkill, 'utf8');
-    if (!/^disable-model-invocation: true$/m.test(content)) {
-      fail(`Prompt check failed: Claude skill xoch-${promptName} permits model invocation`, 1);
+    for (const target of checked) {
+      const problem = target.verify(targetDir(target, tempHome), promptName);
+      if (problem) fail(`Prompt check failed: ${problem}`, 1);
     }
   }
 }
@@ -174,13 +179,13 @@ function run(argv) {
 
   const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-prompt-check.'));
   try {
-    runInstall(root, tempHome);
+    runInit(root, tempHome);
 
     if (scanForUnresolvedMarkers(path.join(tempHome, '.xoch', 'prompts'))) {
       fail('Prompt check failed: unresolved partial or variable', 1);
     }
 
-    checkClaudeSkill(tempHome);
+    checkInstalledTargets(tempHome);
   } finally {
     fs.rmSync(tempHome, { recursive: true, force: true });
   }
@@ -188,19 +193,19 @@ function run(argv) {
   console.log('Xoch prompt and helper checks passed.');
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2));
 }
 
-module.exports = {
+export {
   usage,
   parseArgs,
   resolveRoot,
   checkHelperNaming,
   listJsFilesRecursive,
   checkSyntax,
-  runInstall,
+  runInit,
   scanForUnresolvedMarkers,
-  checkClaudeSkill,
+  checkInstalledTargets,
   run,
 };

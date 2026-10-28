@@ -1,8 +1,8 @@
 'use strict';
 
-const assert = require('assert');
-const { test, run } = require('./lib/runner.js');
-const { prettyGenerate } = require('../bin/lib/ruby-json.js');
+import assert from 'assert';
+import { test, run } from './lib/runner.js';
+import { prettyGenerate } from '../bin/lib/ruby-json.js';
 
 test('prettyGenerate renders primitives via plain JSON.stringify', () => {
   assert.strictEqual(prettyGenerate(null), 'null');

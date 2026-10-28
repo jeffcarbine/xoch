@@ -1,17 +1,30 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run: runTests } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { test, run as runTests } from './lib/runner.js';
+import { scratch, cleanup, runScript } from './lib/cli.js';
+import { CLAUDE, INSTALL_TARGETS } from '../bin/lib/install-targets.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'prompt-check.js');
-const REAL_INSTALL_JS = path.join(__dirname, '..', 'install.js');
+const REAL_XOCH_JS = path.join(__dirname, '..', 'bin', 'xoch.js');
+const REAL_INIT_JS = path.join(__dirname, '..', 'bin', 'init.js');
+const REAL_IS_MAIN_JS = path.join(__dirname, '..', 'bin', 'lib', 'is-main.js');
+const REAL_INSTALL_TARGETS_JS = path.join(__dirname, '..', 'bin', 'lib', 'install-targets.js');
 
-// Pure functions (no process.exit calls) -- safe to require in-process.
-const { listJsFilesRecursive, scanForUnresolvedMarkers } = require(SCRIPT);
+// Claude-specific checks only apply when Claude Code is in INSTALL_TARGETS,
+// so a build with a shortened list (e.g. a Kiro-only rebrand) still passes.
+function testWhenClaudeListed(name, fn) {
+  if (INSTALL_TARGETS.includes(CLAUDE)) test(name, fn);
+}
+
+// Pure functions (no process.exit calls) -- safe to import in-process.
+const { listJsFilesRecursive, scanForUnresolvedMarkers } = await import(pathToFileURL(SCRIPT).href);
 
 function run(args, ctx) {
   return runScript(SCRIPT, args, ctx);
@@ -20,11 +33,12 @@ function run(args, ctx) {
 // Direct call to an exported function that may call process.exit(),
 // isolated in its own subprocess so a failure exit doesn't kill the test
 // runner. Used for checkHelperNaming/checkSyntax/resolveRoot/
-// checkClaudeSkill, whose interesting failure branches are either faster
+// checkInstalledTargets, whose interesting failure branches are either faster
 // to construct directly than through the full `run` pipeline, or (for
-// checkClaudeSkill) impossible to reach through it at all -- see below.
+// checkInstalledTargets) impossible to reach through it at all -- see below.
 function callExported(fnName, args, ctx) {
-  const script = `require(${JSON.stringify(SCRIPT)}).${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')});`;
+  const specifier = JSON.stringify(pathToFileURL(SCRIPT).href);
+  const script = `import(${specifier}).then((m) => m.${fnName}(${args.map((a) => JSON.stringify(a)).join(', ')}));`;
   return spawnSync(process.execPath, ['-e', script], {
     cwd: ctx.cwd,
     env: { ...process.env, HOME: ctx.home },
@@ -108,14 +122,14 @@ test('a --root that does not exist fails like a shell cd, exit 1', () => {
   }
 });
 
-test('a --root with no install.js fails distinctly, exit 2', () => {
+test('a --root with no bin/xoch.js fails distinctly, exit 2', () => {
   const ctx = scratch();
   try {
     const emptyRoot = path.join(ctx.cwd, 'empty-root');
     fs.mkdirSync(emptyRoot);
     const result = run(['run', '--root', emptyRoot], ctx);
     assert.strictEqual(result.status, 2);
-    assert.match(result.stderr, /install\.js not found/);
+    assert.match(result.stderr, /bin\/xoch\.js not found/);
   } finally {
     cleanup(ctx);
   }
@@ -210,12 +224,11 @@ test('listJsFilesRecursive finds .js files at every nesting depth, ignoring non-
 // checkSyntax (direct call)
 // ---------------------------------------------------------------------
 
-test('checkSyntax passes for valid JS in bin/ and a valid install.js', () => {
+test('checkSyntax passes for valid JS in bin/', () => {
   const ctx = scratch();
   try {
     fs.mkdirSync(path.join(ctx.cwd, 'bin'));
     fs.writeFileSync(path.join(ctx.cwd, 'bin', 'ok.js'), 'const x = 1;\n');
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const y = 2;\n');
     const result = callExported('checkSyntax', [ctx.cwd], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
@@ -228,19 +241,6 @@ test('checkSyntax fails and exits with the syntax checker\'s own status for a br
   try {
     fs.mkdirSync(path.join(ctx.cwd, 'bin'));
     fs.writeFileSync(path.join(ctx.cwd, 'bin', 'broken.js'), 'const x = ;\n');
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const y = 2;\n');
-    const result = callExported('checkSyntax', [ctx.cwd], ctx);
-    assert.notStrictEqual(result.status, 0);
-  } finally {
-    cleanup(ctx);
-  }
-});
-
-test('checkSyntax also checks install.js itself', () => {
-  const ctx = scratch();
-  try {
-    fs.mkdirSync(path.join(ctx.cwd, 'bin'));
-    fs.writeFileSync(path.join(ctx.cwd, 'install.js'), 'const z = ;\n');
     const result = callExported('checkSyntax', [ctx.cwd], ctx);
     assert.notStrictEqual(result.status, 0);
   } finally {
@@ -253,11 +253,11 @@ test('checkSyntax also checks install.js itself', () => {
 // same site marked there). That branch only fires when the `node --check`
 // child is killed by a signal rather than exiting normally, and `--check`
 // never executes the file being checked -- so nothing in the checked file
-// can trigger it. Contrast with the "runInstall falls back to exit code 1
-// when install.js is killed by a signal" test below, which covers an
-// identical-looking `e.status || 1` fallback for runInstall: that one IS
-// testable, since the executed install.js can self-signal. See review.md
-// for the full investigation.
+// can trigger it. Contrast with the "runInit falls back to exit code 1
+// when the init subprocess is killed by a signal" test below, which covers
+// an identical-looking `e.status || 1` fallback for runInit: that one IS
+// testable, since the executed bin/xoch.js child can self-signal. See
+// review.md for the full investigation.
 
 // ---------------------------------------------------------------------
 // scanForUnresolvedMarkers (pure, in-process)
@@ -309,16 +309,16 @@ test('scanForUnresolvedMarkers detects a leftover {{VAR}} placeholder, even nest
   }
 });
 
-test('runInstall falls back to exit code 1 when install.js is killed by a signal rather than exiting normally', () => {
+test('runInit falls back to exit code 1 when the init subprocess is killed by a signal rather than exiting normally', () => {
   const ctx = scratch();
   try {
     const root = path.join(ctx.cwd, 'signal-root');
-    fs.mkdirSync(root, { recursive: true });
+    fs.mkdirSync(path.join(root, 'bin'), { recursive: true });
     // execFileSync's error has status: null (not a number) when the child
     // is killed by a signal instead of exiting -- the only way to force
     // the `e.status || 1` fallback rather than a real (truthy) exit code.
-    fs.writeFileSync(path.join(root, 'install.js'), "process.kill(process.pid, 'SIGTERM');\nsetTimeout(() => {}, 5000);\n");
-    const result = callExported('runInstall', [root, ctx.home], ctx);
+    fs.writeFileSync(path.join(root, 'bin', 'xoch.js'), "process.kill(process.pid, 'SIGTERM');\nsetTimeout(() => {}, 5000);\n");
+    const result = callExported('runInit', [root, ctx.home], ctx);
     assert.strictEqual(result.status, 1);
   } finally {
     cleanup(ctx);
@@ -326,9 +326,9 @@ test('runInstall falls back to exit code 1 when install.js is killed by a signal
 });
 
 // ---------------------------------------------------------------------
-// checkClaudeSkill (direct call)
+// checkInstalledTargets (direct call)
 //
-// This can't be reached through the full `run` pipeline: install.js
+// This can't be reached through the full `run` pipeline: xoch init
 // always installs a prompt and its Claude skill together (already proven
 // 100%-covered in its own test file), and the temp $HOME `run` uses is
 // randomly generated internally with no way to intercept it mid-run. So
@@ -342,35 +342,35 @@ function tempHomeFixture(ctx) {
   return home;
 }
 
-test('checkClaudeSkill is a no-op when the rendered prompts directory does not exist', () => {
+test('checkInstalledTargets is a no-op when the rendered prompts directory does not exist', () => {
   const ctx = scratch();
   try {
-    const result = callExported('checkClaudeSkill', [path.join(ctx.cwd, 'nonexistent-home')], ctx);
+    const result = callExported('checkInstalledTargets', [path.join(ctx.cwd, 'nonexistent-home')], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('checkClaudeSkill skips non-.md and non-file entries in the prompts directory', () => {
+test('checkInstalledTargets skips non-.md and non-file entries in the prompts directory', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
     fs.writeFileSync(path.join(home, '.xoch', 'prompts', 'README.txt'), 'ignore');
     fs.mkdirSync(path.join(home, '.xoch', 'prompts', 'core'));
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
   }
 });
 
-test('checkClaudeSkill fails when a rendered prompt has no matching Claude skill', () => {
+testWhenClaudeListed('checkInstalledTargets fails when a rendered prompt has no matching Claude skill', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
     fs.writeFileSync(path.join(home, '.xoch', 'prompts', 'meow.md'), 'body');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /missing Claude skill xoch-meow/);
   } finally {
@@ -378,7 +378,7 @@ test('checkClaudeSkill fails when a rendered prompt has no matching Claude skill
   }
 });
 
-test('checkClaudeSkill fails when the Claude skill permits model invocation', () => {
+testWhenClaudeListed('checkInstalledTargets fails when the Claude skill permits model invocation', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
@@ -386,7 +386,7 @@ test('checkClaudeSkill fails when the Claude skill permits model invocation', ()
     const skillDir = path.join(home, '.claude', 'skills', 'xoch-meow');
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: meow\n---\n\nBody, no invocation guard.\n');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 1);
     assert.match(result.stderr, /permits model invocation/);
   } finally {
@@ -394,7 +394,7 @@ test('checkClaudeSkill fails when the Claude skill permits model invocation', ()
   }
 });
 
-test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude skill', () => {
+testWhenClaudeListed('checkInstalledTargets passes when every prompt has a correctly-guarded Claude skill', () => {
   const ctx = scratch();
   try {
     const home = tempHomeFixture(ctx);
@@ -402,7 +402,7 @@ test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude s
     const skillDir = path.join(home, '.claude', 'skills', 'xoch-meow');
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: meow\ndisable-model-invocation: true\n---\n\nBody.\n');
-    const result = callExported('checkClaudeSkill', [home], ctx);
+    const result = callExported('checkInstalledTargets', [home], ctx);
     assert.strictEqual(result.status, 0);
   } finally {
     cleanup(ctx);
@@ -410,14 +410,29 @@ test('checkClaudeSkill passes when every prompt has a correctly-guarded Claude s
 });
 
 // ---------------------------------------------------------------------
-// full pipeline (`run`) -- real install.js, real subprocess, slower
+// full pipeline (`run`) -- real bin/xoch.js + bin/init.js, real
+// subprocess, slower
 // ---------------------------------------------------------------------
 
 function buildFixtureRoot(ctx) {
   const root = path.join(ctx.cwd, 'fixture-repo');
   fs.mkdirSync(path.join(root, 'bin', 'lib'), { recursive: true });
   fs.mkdirSync(path.join(root, 'prompts', 'partials'), { recursive: true });
-  fs.copyFileSync(REAL_INSTALL_JS, path.join(root, 'install.js'));
+  // bin/xoch.js's own module-load package.json read (readFileSync off an
+  // import.meta.url-derived path) needs a real file here regardless of
+  // which subcommand runs. "type": "module" is required too -- Node
+  // resolves each copied script's module system from the nearest
+  // package.json, and the copied bin/xoch.js and bin/init.js use ESM
+  // import/export syntax.
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.0-test', type: 'module' }));
+  fs.copyFileSync(REAL_XOCH_JS, path.join(root, 'bin', 'xoch.js'));
+  fs.copyFileSync(REAL_INIT_JS, path.join(root, 'bin', 'init.js'));
+  // Both copied scripts import ./lib/is-main.js (their require.main-
+  // equivalent CLI-entry guard) relative to their own location, so this
+  // fixture needs a real copy alongside them too.
+  fs.copyFileSync(REAL_IS_MAIN_JS, path.join(root, 'bin', 'lib', 'is-main.js'));
+  // ...and ./lib/install-targets.js, which both import for the tool list.
+  fs.copyFileSync(REAL_INSTALL_TARGETS_JS, path.join(root, 'bin', 'lib', 'install-targets.js'));
   fs.writeFileSync(path.join(root, 'bin', 'helper-one.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'bin', 'lib', 'sub-helper.js'), '// noop\n');
   fs.writeFileSync(path.join(root, 'prompts', 'meow.md'), '---\nname: meow\ndescription: A test prompt\n---\n\nHello, meow.\n');
@@ -449,7 +464,7 @@ test('run fails fast on a non-kebab-case helper before ever installing anything'
   }
 });
 
-test('run fails when install.js itself fails', () => {
+test('run fails when xoch init itself fails', () => {
   const ctx = scratch();
   try {
     const root = buildFixtureRoot(ctx);

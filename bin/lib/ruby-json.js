@@ -27,4 +27,4 @@ function prettyGenerate(value, indent = 0) {
   return JSON.stringify(value);
 }
 
-module.exports = { prettyGenerate };
+export { prettyGenerate };

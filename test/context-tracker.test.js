@@ -1,10 +1,13 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'context-tracker.js');
 
@@ -17,7 +20,7 @@ function ledgerPath(ctx, job) {
 }
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -30,7 +33,7 @@ test('--help prints usage', () => {
 });
 
 test('an unrecognized command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -41,7 +44,7 @@ test('an unrecognized command prints usage and exits 2', () => {
 });
 
 test('check requires --file', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['check', '--job', 'job-1'], ctx);
     assert.strictEqual(result.status, 2);
@@ -52,7 +55,7 @@ test('check requires --file', () => {
 });
 
 test('check requires --job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['check', '--file', 'a.md'], ctx);
     assert.strictEqual(result.status, 2);
@@ -63,7 +66,7 @@ test('check requires --job', () => {
 });
 
 test('check errors when the job folder does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['check', '--file', 'a.md', '--job', 'nope'], ctx);
     assert.strictEqual(result.status, 1);
@@ -74,7 +77,7 @@ test('check errors when the job folder does not exist', () => {
 });
 
 test('checking a file that was never recorded reports "unknown"', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -87,7 +90,7 @@ test('checking a file that was never recorded reports "unknown"', () => {
 });
 
 test('record requires --file', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['record', '--job', 'job-1'], ctx);
     assert.strictEqual(result.status, 2);
@@ -98,7 +101,7 @@ test('record requires --file', () => {
 });
 
 test('record requires --job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['record', '--file', 'a.md'], ctx);
     assert.strictEqual(result.status, 2);
@@ -109,7 +112,7 @@ test('record requires --job', () => {
 });
 
 test('record errors when the job folder does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
     const result = runScript(SCRIPT, ['record', '--file', 'a.md', '--job', 'nope'], ctx);
@@ -121,7 +124,7 @@ test('record errors when the job folder does not exist', () => {
 });
 
 test('record errors when the file itself does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     const result = runScript(SCRIPT, ['record', '--file', 'missing.md', '--job', 'job-1'], ctx);
@@ -133,7 +136,7 @@ test('record errors when the file itself does not exist', () => {
 });
 
 test('recording a file writes it into the job ledger', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -149,7 +152,7 @@ test('recording a file writes it into the job ledger', () => {
 });
 
 test('checking an unchanged file after recording it reports "fresh"', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -163,7 +166,7 @@ test('checking an unchanged file after recording it reports "fresh"', () => {
 });
 
 test('checking a file whose content changed since recording reports "stale"', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -178,7 +181,7 @@ test('checking a file whose content changed since recording reports "stale"', ()
 });
 
 test('checking a file that was deleted since recording reports "stale"', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -193,7 +196,7 @@ test('checking a file that was deleted since recording reports "stale"', () => {
 });
 
 test('re-recording an already-tracked file overwrites its ledger entry rather than duplicating it', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -210,7 +213,7 @@ test('re-recording an already-tracked file overwrites its ledger entry rather th
 });
 
 test('two different files tracked under the same job do not interfere with each other', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello a');
@@ -228,7 +231,7 @@ test('two different files tracked under the same job do not interfere with each 
 });
 
 test('check --json prints a machine-readable summary', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -245,7 +248,7 @@ test('check --json prints a machine-readable summary', () => {
 });
 
 test('check --json on a never-recorded file has a null "recorded" field', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -260,7 +263,7 @@ test('check --json on a never-recorded file has a null "recorded" field', () => 
 });
 
 test('record --json prints the recorded entry as JSON', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(jobDir(ctx, 'job-1'), { recursive: true });
     fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello');
@@ -270,6 +273,20 @@ test('record --json prints the recorded entry as JSON', () => {
     assert.strictEqual(data.file, 'a.md');
     assert.strictEqual(data.recorded, true);
     assert.ok(data.hash);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, the context ledger lives in the job\'s centralized folder', () => {
+  const ctx = scratch();
+  try {
+    fs.mkdirSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'job-1'), { recursive: true });
+    fs.writeFileSync(path.join(ctx.cwd, 'a.md'), 'hello\n');
+    const result = runScript(SCRIPT, ['record', '--file', 'a.md', '--job', 'job-1'], ctx);
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.ok(fs.existsSync(path.join(path.join(ctx.home, '.xoch', 'projects', path.basename(ctx.cwd)), 'work', 'jobs', 'job-1', 'context-ledger.json')));
+    assert.ok(!fs.existsSync(path.join(ctx.cwd, '.xoch')));
   } finally {
     cleanup(ctx);
   }

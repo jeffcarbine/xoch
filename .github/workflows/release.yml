@@ -1,0 +1,89 @@
+name: Release
+
+# Publishes package.json's version to npm when it isn't published yet, then
+# tags it and creates a GitHub Release from its CHANGELOG.md entry when that
+# tag is missing. Merges that don't bump the version publish nothing.
+#
+# npm authentication uses trusted publishing (OIDC): no npm token is stored.
+# The trusted publisher must be configured on npmjs.com -- see
+# CONTRIBUTING.md's Releasing section.
+
+on:
+  push:
+    branches: [main]
+  # Always a dry run: exercises the pipeline before merge, since
+  # workflow_dispatch only works once this file is on the default branch.
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Run every check and `npm publish --dry-run`, without publishing, tagging, or releasing
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # create the tag and GitHub Release
+  id-token: write # npm trusted publishing
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+
+      - name: Test
+        run: npm test
+
+      - name: Check release status
+        id: status
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          # Prints the version when it is published; prints nothing when the
+          # version doesn't exist and errors when the package doesn't exist yet.
+          PUBLISHED_AS=$(npm view "$NAME@$VERSION" version 2>/dev/null || true)
+          if [ "$PUBLISHED_AS" = "$VERSION" ]; then PUBLISH=false; else PUBLISH=true; fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then TAG=false; else TAG=true; fi
+          echo "Version $VERSION: publish=$PUBLISH tag=$TAG dry-run=$DRY_RUN"
+          {
+            echo "version=$VERSION"
+            echo "publish=$PUBLISH"
+            echo "tag=$TAG"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes
+        if: steps.status.outputs.publish == 'true' || steps.status.outputs.tag == 'true'
+        run: node scripts/changelog-entry.js "${{ steps.status.outputs.version }}" > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Publish to npm
+        if: steps.status.outputs.publish == 'true'
+        run: |
+          # Trusted publishing needs a newer npm than some Node releases bundle.
+          npm install -g npm@latest
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish --dry-run
+          else
+            npm publish
+          fi
+
+      - name: Tag and create GitHub Release
+        if: steps.status.outputs.tag == 'true' && env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.status.outputs.version }}" \
+            --target "$GITHUB_SHA" \
+            --title "v${{ steps.status.outputs.version }}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

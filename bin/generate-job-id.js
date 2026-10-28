@@ -8,8 +8,9 @@
 // 1. With user-provided ID: node generate-job-id.js --id "my-job-id"
 // 2. Auto-generate: node generate-job-id.js
 
-const crypto = require('crypto');
-const path = require('path');
+import crypto from 'crypto';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
 
 // Full clean: lowercase, replace non a-z0-9- with '-', collapse runs of
 // '-', strip leading/trailing '-'. Used for engineer-provided IDs and
@@ -55,14 +56,20 @@ function usage() {
   console.log('Usage: generate-job-id.js [--id ID]');
 }
 
-if (require.main === module) {
-  const args = process.argv.slice(2);
-  if (args[0] === '--help') {
+// Extracted so bin/xoch.js's dispatcher can call this in-process (like
+// every other helper script's exported main/run) instead of spawning a
+// subprocess just for this one script.
+function main(argv) {
+  if (argv[0] === '--help') {
     usage();
-  } else {
-    const id = args[0] === '--id' && args[1] ? args[1] : null;
-    console.log(generateJobId({ id }));
+    return;
   }
+  const id = argv[0] === '--id' && argv[1] ? argv[1] : null;
+  console.log(generateJobId({ id }));
 }
 
-module.exports = { generateJobId, cleanId, projectNameSlug };
+if (isMainModule(import.meta.url)) {
+  main(process.argv.slice(2));
+}
+
+export { generateJobId, cleanId, projectNameSlug, main };

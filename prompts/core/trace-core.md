@@ -5,35 +5,13 @@ description: Full reference workflow for xoch-trace
 
 # Xoch - Trace Core
 
-This is the full reference workflow for `xoch-trace`. It is rendered to `~/.xoch/prompts/core/trace-core.md` and is not installed as a command.
-
-Investigate a defect, failure, or unclear symptom before changing code.
-
-## Purpose
-
-Create a focused investigation trail that identifies likely root cause, evidence, risks, and recommended next steps.
-
-Use `xoch-trace` when the problem is not yet clear enough for `xoch-make` or when a bug needs disciplined investigation before a patch.
-
-## Work Model
+Investigate a defect, failure, or unclear symptom before changing code, when the problem is not yet clear enough for `xoch-do` or a bug needs disciplined investigation before a patch. Produce a focused trail: likely root cause, evidence, risks, and recommended next steps.
 
 When a job is active:
 
 {{xoch-partial:job-evidence.md}}
 
-Target-model trace notes live under its `notes_dir`:
-
-```text
-[notes-dir]/trace-[date].md
-```
-
-If no job exists, write findings only after asking whether to open a job with `xoch-open-job` or keep the trace as an ad hoc note.
-
-When a target-model job is active and `xoch-trace` is not already active, begin the workflow while preserving the job's prior next command:
-
-```bash
-~/.xoch/bin/xoch-actions.js workflow begin --job "[job-id]" --name xoch-trace --stage investigating --pending continue_trace --return "[current next command]"
-```
+Trace notes live at `[notes-dir]/trace-[date].md`. With no job, ask whether to open one with `xoch-open` or keep the trace as an ad hoc note before writing findings.
 
 {{xoch-partial:project-routing.md}}
 
@@ -41,25 +19,11 @@ When a target-model job is active and `xoch-trace` is not already active, begin 
 
 ### Step 1: Capture Symptom
 
-Ask for:
-
-- observed symptom
-- expected behavior
-- reproduction steps
-- environment
-- recent changes
-- logs, errors, screenshots, or test output
-- urgency and blast radius
+Ask for the observed symptom, expected behavior, reproduction steps, environment, recent changes, logs/errors/screenshots/test output, and urgency and blast radius.
 
 ### Step 2: Frame Investigation
 
-State:
-
-- what is known
-- what is unknown
-- initial hypotheses
-- files, logs, or docs to inspect
-- commands that may reproduce or narrow the issue
+State what is known, what is unknown, initial hypotheses, files/logs/docs to inspect, and commands that may reproduce or narrow the issue.
 
 {{xoch-partial:budget-check.md skill="trace"}}
 
@@ -70,50 +34,25 @@ State:
 When symptoms may involve an interrupted merge, rebase, cherry-pick, or revert, inspect read-only git state with:
 
 ```bash
-~/.xoch/bin/git-state.js inspect --json
+xoch git-state inspect --json
 ```
 
-Read only relevant:
-
-- source files
-- tests
-- logs
-- configuration
-- docs
-- job or arc notes
-
-Run focused commands when useful. If a command may mutate state, require engineer confirmation first.
+Read only relevant source, tests, logs, configuration, docs, and job or arc notes. Run focused commands when useful; get engineer confirmation before any command that may mutate state.
 
 ### Step 4: Test Hypotheses
 
-For each hypothesis, record:
-
-- hypothesis
-- evidence for
-- evidence against
-- command or inspection used
-- confidence
-
-Prefer proving or disproving one thing at a time.
+For each hypothesis, record evidence for and against, the command or inspection used, and confidence. Prove or disprove one thing at a time.
 
 ### Step 5: Identify Root Cause Or Next Narrowing Step
 
-Classify the result:
-
-- root cause identified
-- likely root cause
-- narrowed but not proven
-- blocked
-- not reproducible
-
-Do not overstate certainty.
+Classify the result as root cause identified, likely root cause, narrowed but not proven, blocked, or not reproducible. Do not overstate certainty.
 
 ### Step 6: Write Trace Note
 
-When a job exists, write to `[notes-dir]/trace-[date].md` (`notes_dir` from the Work Model's `job evidence` call) with:
+When a job exists, write the note with:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "notes/trace-[date].md" <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "notes/trace-[date].md" <<'XOCHEOF'
 [trace note content]
 XOCHEOF
 ```
@@ -123,8 +62,8 @@ For an ad hoc trace with no active job, write the note directly instead.
 Before writing the final trace note, update the boundary, then complete it after the note exists:
 
 ```bash
-~/.xoch/bin/xoch-actions.js workflow update --job "[job-id]" --name xoch-trace --stage finalizing --pending record_trace --artifact "notes/trace-[date].md"
-~/.xoch/bin/xoch-actions.js workflow complete --job "[job-id]" --name xoch-trace --next "[recommended or explicitly invoked command]"
+xoch workflow update --job "[job-id]" --name xoch-trace --stage finalizing --pending record_trace --artifact "notes/trace-[date].md"
+xoch workflow complete --job "[job-id]" --name xoch-trace --next "[recommended or explicitly invoked command]"
 ```
 
 Use this structure:
@@ -155,20 +94,28 @@ Use this structure:
 
 ## Recommended Next Step
 
-[xoch-patch | xoch-open-job | xoch-revise-plan | xoch-make | more trace]
+[xoch-patch | xoch-open | xoch-revise | xoch-do | more trace]
 ```
-
-For legacy migration jobs, write the note in the legacy job folder.
 
 ### Step 7: Route
 
 Recommend:
 
 - `xoch-patch` for a focused urgent fix
-- `xoch-open-job` for a new normal job
-- `xoch-revise-plan` if the active job plan needs adjustment
-- `xoch-make` if the current phase can implement the fix
+- `xoch-open` for a new normal job
+- `xoch-revise` if the active job's spec or plan needs adjustment
+- `xoch-do` if the current phase can implement the fix
 - continue tracing if evidence is insufficient
+
+When the route is `xoch-open`, leave a handoff so the next `xoch-open` picks the trace up as source requirements (and claims it, so it is never picked up twice):
+
+```bash
+xoch handoff write --source trace --topic "[topic]" <<'XOCHEOF'
+[symptom, root cause or best hypothesis, key evidence, the recommended change, and the trace note path]
+XOCHEOF
+```
+
+Report the handoff ID it prints.
 
 ## Output
 
@@ -188,8 +135,5 @@ Root cause: [summary]
 
 {{xoch-partial:xoch-file-helper-rule.md}}
 
-- Investigation comes before implementation.
-- Do not change code unless the engineer explicitly turns the trace into patch or make work.
+- Do not change code unless the engineer explicitly turns the trace into an `xoch-patch` or a job.
 - Do not invent logs, test output, or reproduction results.
-- Record uncertainty honestly.
-- Do not move active legacy job folders during the migration.

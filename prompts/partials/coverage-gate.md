@@ -1,11 +1,23 @@
 ## Coverage Gate
 
-Before planning phases, check whether the file(s) targeted for modification already have full code coverage. If a targeted file doesn't, add explicit phase work to backfill coverage for its existing, already-correct code — identified now, not discovered mid-`xoch-make`, which would otherwise force an `xoch-revise-plan` cycle partway through.
+Before planning phases, check whether each file targeted for modification has full coverage. If not, add phase work now to backfill coverage for its existing code, rather than discovering the gap mid-`xoch-do` and forcing an `xoch-revise`.
 
-Any file a job modifies with executable code must reach 100% coverage (line, branch, and function, when the project's tooling reports them separately) before the job can close. This applies to the whole file the job touches, not just the lines the job added or changed. Files with no code-coverage concept — markdown, configuration, prose — are exempt.
+{{xoch-config:coverage.strictness required="Any file a job modifies with executable code must reach 100% line, branch, and function coverage (as the tooling reports them) across the whole file, not just changed lines, before the job can close." default="Any file a job modifies with executable code should reach 100% line, branch, and function coverage (as the tooling reports them) across the whole file, not just changed lines, before the job closes. Under `recommended` strictness a gap is not auto-blocking: `xoch-do`'s `final_review` step or `xoch-close` reports the specific gap and asks the engineer whether to close it now or accept it and proceed. The engineer's answer decides; do not assume either outcome."}} Markdown, configuration, and prose files are exempt.
 
-This is not waivable in `xoch-review` or `xoch-close-job`. The only place a coverage waiver is permitted is inside an `xoch-patch` session, where speed intentionally outweighs full lifecycle ceremony.
+{{xoch-config:coverage.strictness required="Coverage is not waivable in `final_review` or `xoch-close`. Only an `xoch-patch` session may waive it." default="An `xoch-patch` session may waive coverage outright."}}
 
-A specific branch may instead be recorded as a **documented exception** — distinct from a waiver, and held to a much higher bar. An exception is valid only when both of these are verified, not merely asserted: (a) the branch is not removable dead code — deleting it would change real behavior for a real input; and (b) no known testing technique (direct function-level calls, subprocess isolation, dependency injection, signal/error simulation, and similar) can deterministically trigger it without introducing flakiness or non-determinism. A documented exception is not complete until it carries the specific file and line/branch, the investigation findings supporting both (a) and (b), and two durable code comments: one at the exception site in the source file explaining why it's intentionally uncovered, and one in the test file, at the point where the missing test would otherwise go, cross-referencing the source comment. The job-scoped review/closure record captures the investigation; the code comments are what make the exception discoverable to a future job or engineer who never reads that record. Nothing re-verifies a comment automatically — the next job to touch that file re-confirms the exception still holds as part of its own coverage-gate pass, rather than trusting it blindly.
+A specific branch may instead be recorded as a **documented exception**. This is not a waiver and has a higher bar. It is valid only when both conditions are verified, not asserted:
 
-When a target project has no coverage tooling at all, that is itself a plan-time gap to surface explicitly — recommend adding a coverage-capable test invocation as phase work — rather than silently skipping this rule.
+- (a) The branch is not dead code: deleting it would change behavior for a real input.
+- (b) No known technique (direct function calls, subprocess isolation, dependency injection, signal/error simulation, or similar) can trigger it deterministically.
+
+A documented exception requires:
+
+- the file and line/branch
+- investigation findings for (a) and (b), in the job's review/closure record
+- a comment at the exception site in the source file explaining why it is uncovered
+- a comment in the test file, where the missing test would go, cross-referencing the source comment
+
+Nothing re-verifies these comments. The next job that touches the file re-confirms the exception during its own coverage-gate pass.
+
+If the target project has no coverage tooling, surface that as a plan-time gap and recommend adding a coverage-capable test command as phase work.

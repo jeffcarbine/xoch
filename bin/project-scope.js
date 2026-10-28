@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
-const { prettyGenerate } = require('./lib/ruby-json.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { prettyGenerate } from './lib/ruby-json.js';
+import { jobPathFor } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -78,8 +80,6 @@ function scopeErrors(data) {
   const names = {};
   const paths = {};
   let primaryCount = 0;
-  const expectedJobPath = path.join('.xoch', 'work', 'jobs', String(data.job_id || ''));
-
   projects.forEach((project, index) => {
     if (typeof project !== 'object' || project === null || Array.isArray(project)) {
       errors.push(`projects[${index}] must be an object`);
@@ -103,7 +103,10 @@ function scopeErrors(data) {
     const expandedPath = path.resolve(projectPath);
     if (paths[expandedPath]) errors.push(`projects[${index}].path is also used by ${paths[expandedPath]}`);
     if (projectPath) paths[expandedPath] = name;
-    if (!jobPath || jobPath.startsWith('/') || jobPath.split('/').includes('..')) {
+    // In-repo, a job path is relative to its project; centralized, it is
+    // that project's absolute storage-root path.
+    const expectedJobPath = jobPathFor(expandedPath, String(data.job_id || ''));
+    if (!path.isAbsolute(expectedJobPath) && (!jobPath || jobPath.startsWith('/') || jobPath.split('/').includes('..'))) {
       errors.push(`projects[${index}].job_path must be relative`);
     }
     if (jobPath !== expectedJobPath) errors.push(`projects[${index}].job_path must be ${expectedJobPath}`);
@@ -152,8 +155,7 @@ function create(argv) {
   const names = projectSpecs.map(([name]) => name);
   if (new Set(names).size !== names.length) failWith('project names must be unique');
 
-  const jobPath = path.join('.xoch', 'work', 'jobs', job);
-  const outputPath = path.join(primaryPath, jobPath, 'projects.json');
+  const outputPath = path.resolve(primaryPath, jobPathFor(primaryPath, job), 'projects.json');
   if (fs.existsSync(outputPath)) failWith(`scope already exists: ${outputPath}`, 1);
 
   const data = {
@@ -164,7 +166,9 @@ function create(argv) {
     revision: 0,
     content_digest: null,
     last_synced_at: null,
-    projects: projectSpecs.map(([name, projectPath, role]) => ({ name, role, path: projectPath, job_path: jobPath })),
+    projects: projectSpecs.map(([name, projectPath, role]) => ({
+      name, role, path: projectPath, job_path: jobPathFor(projectPath, job),
+    })),
   };
   const errors = scopeErrors(data);
   if (errors.length) failWith(errors.join('; '));
@@ -215,7 +219,7 @@ function role(argv) {
       ...project,
       is_primary: project.role === 'primary',
       primary: data.primary,
-      canonical_job: path.join(primary.path, project.job_path),
+      canonical_job: path.resolve(primary.path, primary.job_path),
     };
   } else {
     result = { name: null, role: 'unmapped', cwd: expandedCwd, primary: data.primary };
@@ -233,7 +237,7 @@ function primaryJob(argv) {
   const errors = scopeErrors(data);
   if (errors.length) failWith(errors.join('; '), 1);
   const primary = data.projects.find((project) => project.role === 'primary');
-  console.log(path.join(primary.path, primary.job_path));
+  console.log(path.resolve(primary.path, primary.job_path));
 }
 
 function projects(argv) {
@@ -263,8 +267,8 @@ function main(argv) {
   else if (command === 'projects') projects(rest);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { scopeErrors, create, validate, role, primaryJob, projects, main };
+export { scopeErrors, create, validate, role, primaryJob, projects, main };

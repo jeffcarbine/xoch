@@ -3,9 +3,11 @@
 
 // Safe archive and restore operations for Xoch job and arc folders.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
+import fs from 'fs';
+import path from 'path';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+import { storageRoot } from './lib/storage-root.js';
 
 function usage() {
   console.log('Usage:');
@@ -26,19 +28,14 @@ function validId(id) {
   }
 }
 
-// Matches archive-actions.sh: checks current.json first, then falls back
-// to the legacy current.md pointer format ("**Job ID**: <id>") when
-// current.json is absent. A malformed current.json is not caught -- the
-// bash original's Ruby JSON.parse also raises uncaught in that case, so
-// both crash rather than silently treating it as "not pointing to job".
+// True when current.json points at this job. A malformed current.json is
+// not caught, so it crashes rather than silently treating the job as not
+// active.
 function pointsToJob(root, id) {
-  const jsonPointer = path.join(root, '.xoch', 'work', 'current.json');
-  if (fs.existsSync(jsonPointer)) {
-    const data = JSON.parse(fs.readFileSync(jsonPointer, 'utf8'));
-    return Boolean(data.job && data.job.id === id);
-  }
-  const markdownPointer = path.join(root, '.xoch', 'work', 'current.md');
-  return fs.existsSync(markdownPointer) && fs.readFileSync(markdownPointer, 'utf8').includes(`**Job ID**: ${id}`);
+  const jsonPointer = path.join(storageRoot(root), 'work', 'current.json');
+  if (!fs.existsSync(jsonPointer)) return false;
+  const data = JSON.parse(fs.readFileSync(jsonPointer, 'utf8'));
+  return Boolean(data.job && data.job.id === id);
 }
 
 function run(argv) {
@@ -68,7 +65,7 @@ function run(argv) {
   }
 
   const plural = kind === 'job' ? 'jobs' : 'arcs';
-  const base = path.join(root, '.xoch', 'work', plural);
+  const base = path.join(storageRoot(root), 'work', plural);
   const archiveRoot = path.join(base, 'archive');
 
   if (command === 'archive') {
@@ -134,8 +131,8 @@ function run(argv) {
   }
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2));
 }
 
-module.exports = { run };
+export { run };

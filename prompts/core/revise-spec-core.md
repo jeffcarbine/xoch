@@ -1,37 +1,11 @@
 ---
 name: xoch-revise-spec-core
-description: Full reference workflow for xoch-revise-spec
+description: Full reference workflow for xoch-revise's spec step
 ---
 
 # Xoch - Revise Spec Core
 
-This is the full reference workflow for `xoch-revise-spec`. It is rendered to `~/.xoch/prompts/core/revise-spec-core.md` and is not installed as a command.
-
-Revise a job's foundational requirements after the original spec needs to change.
-
-## Purpose
-
-Capture what changed, preserve the previous requirement history, update the job specification, and mark downstream plans/phases as needing review when necessary.
-
-Use `revise-spec` when the definition of done changes: scope, acceptance criteria, constraints, non-goals, documentation targets, or job purpose.
-
-Use `xoch-revise-plan` instead when the requirement is still correct but the implementation path needs to change.
-
-## Work Model
-
-Target-model job files live under:
-
-```text
-.xoch/work/jobs/[job-id]/
-```
-
-Revision notes live under:
-
-```text
-.xoch/work/jobs/[job-id]/revisions/
-```
-
-Legacy migration jobs may still live under `.xoch/context/`. Continue them in place and do not move them automatically.
+The spec step of `xoch-revise`, for when the definition of done changes (scope, acceptance criteria, constraints, non-goals, documentation targets, or job purpose). Record what changed and why, preserve requirement history, update `spec.md`, and flag downstream plan/phase impact. When both spec and plan change, this step runs first and continues into `revise-plan-core.md`. Revision notes live under the job's `revisions/` directory.
 
 {{xoch-partial:project-routing.md}}
 
@@ -41,31 +15,11 @@ Legacy migration jobs may still live under `.xoch/context/`. Continue them in pl
 
 {{xoch-partial:job-evidence.md}}
 
-Then load:
-
-- `state` when returned
-- `spec`
-- `plan`
-- `phases`
-- recent files under `revisions_dir`
-- relevant documentation target files when the spec change affects docs
-
-If no active job exists, ask for the job ID.
+Then load job state, `spec`, `plan`, phases (`xoch phase get --job "[job-id]" --json`), recent files under `revisions_dir`, and relevant documentation-target files when the change affects docs.
 
 ### Step 2: Identify The Spec Change
 
-Ask what changed:
-
-- requirement
-- acceptance criterion
-- scope boundary
-- non-goal
-- constraint
-- documentation target
-- risk or assumption
-- job purpose
-
-Clarify whether the change supersedes, adds to, or removes existing spec content.
+Ask what changed (requirement, acceptance criterion, scope boundary, non-goal, constraint, documentation target, risk or assumption, or job purpose) and whether it supersedes, adds to, or removes existing spec content.
 
 ### Step 3: Assess Impact
 
@@ -78,14 +32,26 @@ Identify:
 - documentation targets that need update
 - whether job status should move back from implementation/review/closure toward planning
 
-If the arc association changes, recommend `xoch-revise-arc` as well.
+If the arc association or the arc's own goal changes, offer to continue into `xoch-revise`'s arc step (`revise-arc-core.md`) after the job steps, in this same invocation.
 
-### Step 4: Write Revision Note
+If the impact includes plan changes and the confirmed mode was spec-only, say so and ask whether to continue into the plan step after this one.
 
-Write `spec-[date].md` with:
+### Step 4: Present Draft Revision
+
+Before writing anything, present the drafted revision in chat: the reason, the previous and updated requirement text, acceptance-criteria additions/changes/removals, and the impact assessment from Step 3.
+
+Then ask:
+
+{{xoch-partial:accept-or-modify.md artifact="spec revision"}}
+
+On `[M]`, ask what to modify, revise the draft, and ask again. Do not write the revision note, `spec.md`, or state before `[A]`.
+
+### Step 5: Write Revision Note
+
+Write the revision note:
 
 ```bash
-node ~/.xoch/bin/xoch-actions.js file write --job "[job-id]" --path "revisions/spec-[date].md" <<'XOCHEOF'
+xoch file write --job "[job-id]" --path "revisions/spec-[date].md" <<'XOCHEOF'
 [revision note content]
 XOCHEOF
 ```
@@ -117,16 +83,14 @@ Use this structure:
 
 ## Impact
 
-- Plan impact: [none | revise-plan required]
+- Plan impact: [none | plan revision required]
 - Phase impact: [summary]
 - Documentation impact: [summary]
 ```
 
-For legacy migration jobs, write the revision note in the legacy job folder.
+### Step 6: Update Spec
 
-### Step 5: Update Spec
-
-Update `spec.md` carefully:
+Update `spec.md`:
 
 - preserve the original job intent when still valid
 - use explicit AC IDs
@@ -134,44 +98,51 @@ Update `spec.md` carefully:
 - mark removed criteria as removed or superseded when history matters
 - update current-state, proposed-changes, clarifications, and impacts when needed
 
-### Step 6: Update State
+### Step 7: Update State
 
-For target-model jobs, update `state.md`:
+Update job state:
 
-```yaml
-status: spec_revised
-spec_status: revised
-review_status: null
-closure_status: null
-last_spec_revision: revisions/spec-[date].md
-last_updated: [today]
-next_command: xoch-revise-plan
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"status": "spec_revised", "spec_status": "revised", "review_status": null, "closure_status": null, "last_spec_revision": "revisions/spec-[date].md", "last_updated": "[today]", "next_command": "xoch-revise"}
+XOCHEOF
 ```
 
-If the plan is still valid, set:
+`next_command: xoch-revise` marks the plan step as still pending, so an interrupted invocation resumes there.
 
-```yaml
-next_command: xoch-make
+If the plan is still valid, also set:
+
+```bash
+xoch state update --job "[job-id]" <<'XOCHEOF'
+{"next_command": "xoch-do", "current_step": "implement"}
+XOCHEOF
 ```
 
 and record why no plan revision is needed.
 
-For legacy migration jobs, update the legacy tracker or notes in place.
-
 For multi-project jobs, preserve project ownership in the revised spec and sync the revision note, spec, and state from the primary job.
 
-### Step 7: Route
+### Step 8: Continue Or Route
 
-Recommend:
+When the plan also needs revision (mode **Both**, or the engineer agreed after Step 3), continue into the plan step (`revise-plan-core.md`'s Step 1 onward) in this same response, without a `Ready for next step` line.
 
-- `xoch-revise-plan` when phases or implementation strategy need updates
-- `xoch-make` when the current plan remains valid
-- `xoch-review` when the change only affects final verification
+Otherwise recommend:
+
+- `xoch-do` when the current plan remains valid
+- `xoch-do` (its `final_review` step) when the change only affects final verification
 - `xoch-doc` when docs need immediate refresh
 
 ## Output
 
-End with:
+When continuing into the plan step, report only:
+
+```text
+Spec revised.
+Job: [job-id]
+Revision: [revision path]
+```
+
+and carry on with the plan step. Otherwise end with:
 
 ```text
 Spec revised.
@@ -187,7 +158,5 @@ Revision: [revision path]
 {{xoch-partial:xoch-file-helper-rule.md}}
 
 - Specs define what success means.
-- Do not silently change acceptance criteria.
-- Preserve old AC IDs when practical.
-- Record why the spec changed before editing the spec.
-- Do not move active legacy job folders during the migration.
+- Do not silently change acceptance criteria; preserve old AC IDs when practical.
+- Record why the spec changed before editing it.

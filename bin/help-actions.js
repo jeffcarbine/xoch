@@ -6,9 +6,13 @@
 // from each prompt file's own frontmatter -- so this list can't drift out
 // of date the way a hand-maintained one would.
 
-const fs = require('fs');
-const path = require('path');
-const { parseFlags } = require('./lib/args.js');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { isMainModule } from './lib/is-main.js';
+import { parseFlags } from './lib/args.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function usage() {
   console.log('Usage:');
@@ -71,8 +75,8 @@ function main(argv) {
   process.exit(2);
 }
 
-if (require.main === module) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }
 
-module.exports = { listCommands, runList, main };
+export { listCommands, runList, main };

@@ -9,17 +9,13 @@ description: Resolve important unknowns before specification or implementation
 
 {{xoch-partial:managed-workflow.md command="xoch-discovery" pending="continue_discovery"}}
 
-Use this token-light wrapper for normal `xoch-discovery` work.
+For the workflow's `--return`, use the command to resume after discovery: `xoch-open` when discovery came from the open/spec flow, `xoch-revise` when an accepted spec must change, otherwise the job's prior `next_command`. Never `xoch-discovery` itself.
 
-If you already know the standard discovery workflow from this conversation, continue from that context and do not read the core prompt.
-
-If any required workflow detail, source-handling rule, note shape, confidence rule, or routing behavior is missing, read and follow:
+If you already know the discovery workflow from this conversation, continue from context. Otherwise, or when any workflow detail, source-handling rule, note shape, confidence rule, or routing behavior is missing, read and follow:
 
 ```text
 ~/.xoch/prompts/core/discovery-core.md
 ```
-
-Do not read the core prompt unless it is needed.
 
 {{xoch-partial:estimator-reminder.md}}
 
@@ -36,5 +32,5 @@ Do you want to [A]ccept the findings, request [M]odifications, or [R]esearch fur
 After accepted findings are recorded, make the final line the appropriate return step, usually:
 
 ```text
-Ready for next step: `xoch-spec`
+{{xoch-partial:next-step.md command="xoch-open"}}
 ```

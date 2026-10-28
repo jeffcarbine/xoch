@@ -1,12 +1,24 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const { test, run } = require('./lib/runner.js');
-const { scratch, cleanup, runScript } = require('./lib/cli.js');
-const { scopeErrors } = require('../bin/project-scope.js');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { spawnSync } from 'child_process';
+import { test, run } from './lib/runner.js';
+import { scratch, scratchInRepo, cleanup, runScript } from './lib/cli.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { scopeErrors } from '../bin/project-scope.js';
+import os from 'os';
+
+// scopeErrors resolves each project's expected job path from the storage
+// config; pin this process's HOME to in-repo storage for the in-process
+// tests (spawned tests get their own scratch HOME).
+const pinnedHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xoch-scope-home-'));
+fs.mkdirSync(path.join(pinnedHome, '.xoch'), { recursive: true });
+fs.writeFileSync(path.join(pinnedHome, '.xoch', 'config.json'), JSON.stringify({ storage: { mode: 'in-repo' } }));
+process.env.HOME = pinnedHome;
 
 const SCRIPT = path.join(__dirname, '..', 'bin', 'project-scope.js');
 
@@ -37,7 +49,7 @@ function validScope(ctx, overrides = {}) {
 }
 
 test('a fully valid two-project scope produces no errors', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     assert.deepStrictEqual(scopeErrors(validScope(ctx)), []);
   } finally {
@@ -46,7 +58,7 @@ test('a fully valid two-project scope produces no errors', () => {
 });
 
 test('wrong version, missing job_id, wrong mode, and missing primary are all reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { version: 2, job_id: '', mode: 'single', primary: '' });
     const errors = scopeErrors(data);
@@ -60,7 +72,7 @@ test('wrong version, missing job_id, wrong mode, and missing primary are all rep
 });
 
 test('a missing revision is reported as invalid', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     delete data.revision;
@@ -72,7 +84,7 @@ test('a missing revision is reported as invalid', () => {
 });
 
 test('a negative revision is reported as invalid', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { revision: -1 });
     const errors = scopeErrors(data);
@@ -83,7 +95,7 @@ test('a negative revision is reported as invalid', () => {
 });
 
 test('a non-array projects value is reported and stops all further checks', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { projects: 'not-an-array' });
     assert.deepStrictEqual(scopeErrors(data), ['projects must contain at least two entries']);
@@ -93,7 +105,7 @@ test('a non-array projects value is reported and stops all further checks', () =
 });
 
 test('fewer than two projects is reported but per-project checks still run', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const single = validScope(ctx).projects[0];
     single.role = 'owner';
@@ -107,7 +119,7 @@ test('fewer than two projects is reported but per-project checks still run', () 
 });
 
 test('non-object project entries (string, null, array) are each reported and skipped', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { projects: ['a string', null, []] });
     const errors = scopeErrors(data);
@@ -120,7 +132,7 @@ test('non-object project entries (string, null, array) are each reported and ski
 });
 
 test('a missing path falls back to an empty string, reported as not absolute and missing', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     delete data.projects[0].path;
@@ -133,7 +145,7 @@ test('a missing path falls back to an empty string, reported as not absolute and
 });
 
 test('a missing name is required and skips the duplicate-name check', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     delete data.projects[0].name;
@@ -146,7 +158,7 @@ test('a missing name is required and skips the duplicate-name check', () => {
 });
 
 test('a repeated name across projects is reported as a duplicate', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[1].name = 'a';
@@ -158,7 +170,7 @@ test('a repeated name across projects is reported as a duplicate', () => {
 });
 
 test('an invalid role is reported and does not count toward primaryCount', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].role = 'owner';
@@ -171,7 +183,7 @@ test('an invalid role is reported and does not count toward primaryCount', () =>
 });
 
 test('a relative path is reported as not absolute', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].path = 'relative/path';
@@ -183,7 +195,7 @@ test('a relative path is reported as not absolute', () => {
 });
 
 test('a path that does not exist is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const missing = path.join(ctx.cwd, 'missing');
@@ -196,7 +208,7 @@ test('a path that does not exist is reported', () => {
 });
 
 test('two projects sharing an absolute path are reported as duplicates', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[1].path = data.projects[0].path;
@@ -208,7 +220,7 @@ test('two projects sharing an absolute path are reported as duplicates', () => {
 });
 
 test('a missing job_path is reported as required to be relative', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     delete data.projects[0].job_path;
@@ -220,7 +232,7 @@ test('a missing job_path is reported as required to be relative', () => {
 });
 
 test('an absolute job_path is reported as required to be relative', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].job_path = '/etc/passwd';
@@ -232,7 +244,7 @@ test('an absolute job_path is reported as required to be relative', () => {
 });
 
 test('a job_path containing ".." is reported as required to be relative', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].job_path = '../escape';
@@ -244,7 +256,7 @@ test('a job_path containing ".." is reported as required to be relative', () => 
 });
 
 test('a job_path that does not match the expected value is reported separately from the relative check', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].job_path = 'wrong/relative/path';
@@ -257,7 +269,7 @@ test('a job_path that does not match the expected value is reported separately f
 });
 
 test('zero primary projects is reported as a primary-count error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[0].role = 'participant';
@@ -269,7 +281,7 @@ test('zero primary projects is reported as a primary-count error', () => {
 });
 
 test('two primary projects is reported as a primary-count error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     data.projects[1].role = 'primary';
@@ -281,7 +293,7 @@ test('two primary projects is reported as a primary-count error', () => {
 });
 
 test('primary not matching any listed project name is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { primary: 'nonexistent' });
     const errors = scopeErrors(data);
@@ -292,7 +304,7 @@ test('primary not matching any listed project name is reported', () => {
 });
 
 test('primary matching a listed name that is not the primary-role project is reported', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { primary: 'b' });
     const errors = scopeErrors(data);
@@ -304,7 +316,7 @@ test('primary matching a listed name that is not the primary-role project is rep
 });
 
 test('the job-1 multi-error fixture reports every failing check in bash-matched order', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const bDir = path.join(ctx.cwd, 'b');
     fs.mkdirSync(bDir);
@@ -333,7 +345,7 @@ test('the job-1 multi-error fixture reports every failing check in bash-matched 
 // --- CLI commands: subprocess, since these call process.exit() directly.
 
 test('--help prints usage', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['--help'], ctx);
     assert.strictEqual(result.status, 0);
@@ -344,7 +356,7 @@ test('--help prints usage', () => {
 });
 
 test('no command prints usage and exits 2', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, [], ctx);
     assert.strictEqual(result.status, 2);
@@ -354,7 +366,7 @@ test('no command prints usage and exits 2', () => {
 });
 
 test('an unknown command exits 2 with an error', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['bogus'], ctx);
     assert.strictEqual(result.status, 2);
@@ -365,7 +377,7 @@ test('an unknown command exits 2 with an error', () => {
 });
 
 test('create requires --job', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--primary', 'a=/x', '--participant', 'b=/y'], ctx);
     assert.strictEqual(result.status, 2);
@@ -376,7 +388,7 @@ test('create requires --job', () => {
 });
 
 test('create rejects a job ID with characters outside lowercase letters, numbers, and hyphens', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--job', 'Bad_Job', '--primary', 'a=/x', '--participant', 'b=/y'], ctx);
     assert.strictEqual(result.status, 2);
@@ -387,7 +399,7 @@ test('create rejects a job ID with characters outside lowercase letters, numbers
 });
 
 test('create requires --primary', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--job', 'demo', '--participant', 'b=/y'], ctx);
     assert.strictEqual(result.status, 2);
@@ -398,7 +410,7 @@ test('create requires --primary', () => {
 });
 
 test('create requires at least one --participant', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--job', 'demo', '--primary', 'a=/x'], ctx);
     assert.strictEqual(result.status, 2);
@@ -409,7 +421,7 @@ test('create requires at least one --participant', () => {
 });
 
 test('create rejects a project spec that is not NAME=PATH', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--job', 'demo', '--primary', 'noequals', '--participant', 'b=/y'], ctx);
     assert.strictEqual(result.status, 2);
@@ -420,7 +432,7 @@ test('create rejects a project spec that is not NAME=PATH', () => {
 });
 
 test('create rejects a project name with invalid characters', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     fs.mkdirSync(path.join(ctx.cwd, 'primary'));
     const result = runScript(SCRIPT, ['create', '--job', 'demo', '--primary', `bad name=${path.join(ctx.cwd, 'primary')}`, '--participant', 'b=/y'], ctx);
@@ -432,7 +444,7 @@ test('create rejects a project name with invalid characters', () => {
 });
 
 test('create rejects a project path that does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['create', '--job', 'demo', '--primary', `a=${path.join(ctx.cwd, 'missing')}`, '--participant', 'b=/y'], ctx);
     assert.strictEqual(result.status, 1);
@@ -443,7 +455,7 @@ test('create rejects a project path that does not exist', () => {
 });
 
 test('create rejects duplicate project names across --primary/--participant', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const primaryDir = path.join(ctx.cwd, 'primary');
     const participantDir = path.join(ctx.cwd, 'participant');
@@ -462,7 +474,7 @@ test('create rejects duplicate project names across --primary/--participant', ()
 });
 
 test('create rejects a primary and participant that resolve to the same path (post-construction scopeErrors failure)', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const sharedDir = path.join(ctx.cwd, 'shared');
     fs.mkdirSync(sharedDir);
@@ -475,7 +487,7 @@ test('create rejects a primary and participant that resolve to the same path (po
 });
 
 test('create rejects an already-existing scope', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const primaryDir = path.join(ctx.cwd, 'primary');
     const participantDir = path.join(ctx.cwd, 'participant');
@@ -491,7 +503,7 @@ test('create rejects an already-existing scope', () => {
 });
 
 test('create writes a well-formed projects.json and prints its location', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const primaryDir = path.join(ctx.cwd, 'primary');
     const participantDir = path.join(ctx.cwd, 'participant');
@@ -514,7 +526,7 @@ test('create writes a well-formed projects.json and prints its location', () => 
 });
 
 test('create accepts multiple --participant flags', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const primaryDir = path.join(ctx.cwd, 'primary');
     const bDir = path.join(ctx.cwd, 'b');
@@ -541,7 +553,7 @@ function writeScope(ctx, data, name = 'scope.json') {
 }
 
 test('validate requires --scope', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['validate'], ctx);
     assert.strictEqual(result.status, 2);
@@ -552,7 +564,7 @@ test('validate requires --scope', () => {
 });
 
 test('validate rejects a scope file that does not exist', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const result = runScript(SCRIPT, ['validate', '--scope', path.join(ctx.cwd, 'missing.json')], ctx);
     assert.strictEqual(result.status, 1);
@@ -563,7 +575,7 @@ test('validate rejects a scope file that does not exist', () => {
 });
 
 test('validate rejects invalid scope JSON', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const scopePath = path.join(ctx.cwd, 'scope.json');
     fs.writeFileSync(scopePath, '{ not json');
@@ -576,7 +588,7 @@ test('validate rejects invalid scope JSON', () => {
 });
 
 test('validate reports a valid scope in text and --json modes', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -595,7 +607,7 @@ test('validate reports a valid scope in text and --json modes', () => {
 });
 
 test('validate reports an invalid scope with each error on its own line', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { version: 2 });
     const scopePath = writeScope(ctx, data);
@@ -609,7 +621,7 @@ test('validate reports an invalid scope with each error on its own line', () => 
 });
 
 test('role reports the primary project when cwd is inside it', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -626,7 +638,7 @@ test('role reports the primary project when cwd is inside it', () => {
 });
 
 test('role reports a participant project as not primary, from a nested cwd', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -644,7 +656,7 @@ test('role reports a participant project as not primary, from a nested cwd', () 
 });
 
 test('role reports an unmapped cwd in text mode, one field per line', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -660,7 +672,7 @@ test('role reports an unmapped cwd in text mode, one field per line', () => {
 });
 
 test('role fails when the scope itself is invalid', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { version: 2 });
     const scopePath = writeScope(ctx, data);
@@ -673,7 +685,7 @@ test('role fails when the scope itself is invalid', () => {
 });
 
 test('role prefers the PWD environment variable over the real process cwd when --cwd is omitted', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -692,7 +704,7 @@ test('role prefers the PWD environment variable over the real process cwd when -
 });
 
 test('role falls back to the real process cwd when neither --cwd nor PWD is set', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     // Record the *realpath* of the primary so it matches process.cwd()'s
@@ -716,7 +728,7 @@ test('role falls back to the real process cwd when neither --cwd nor PWD is set'
 });
 
 test('primary-job prints the canonical job directory', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -729,7 +741,7 @@ test('primary-job prints the canonical job directory', () => {
 });
 
 test('primary-job fails when the scope itself is invalid', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { version: 2 });
     const scopePath = writeScope(ctx, data);
@@ -742,7 +754,7 @@ test('primary-job fails when the scope itself is invalid', () => {
 });
 
 test('projects fails when the scope itself is invalid', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx, { version: 2 });
     const scopePath = writeScope(ctx, data);
@@ -755,7 +767,7 @@ test('projects fails when the scope itself is invalid', () => {
 });
 
 test('projects lists each project in text and --json modes', () => {
-  const ctx = scratch();
+  const ctx = scratchInRepo();
   try {
     const data = validScope(ctx);
     const scopePath = writeScope(ctx, data);
@@ -767,6 +779,31 @@ test('projects lists each project in text and --json modes', () => {
     const jsonResult = runScript(SCRIPT, ['projects', '--scope', scopePath, '--json'], ctx);
     const parsed = JSON.parse(jsonResult.stdout);
     assert.strictEqual(parsed.length, 2);
+  } finally {
+    cleanup(ctx);
+  }
+});
+
+test('under centralized storage, create records each project\'s centralized job path and validate accepts it', () => {
+  const ctx = scratch();
+  try {
+    const api = path.join(ctx.cwd, 'api');
+    const web = path.join(ctx.cwd, 'web');
+    fs.mkdirSync(api, { recursive: true });
+    fs.mkdirSync(web, { recursive: true });
+    const created = runScript(SCRIPT, ['create', '--job', 'j1', '--primary', `api=${api}`, '--participant', `web=${web}`], ctx);
+    assert.strictEqual(created.status, 0, created.stderr);
+    const scopePath = path.join(ctx.home, '.xoch', 'projects', 'api', 'work', 'jobs', 'j1', 'projects.json');
+    const data = JSON.parse(fs.readFileSync(scopePath, 'utf8'));
+    assert.deepStrictEqual(data.projects.map((p) => p.job_path), [
+      path.join(ctx.home, '.xoch', 'projects', 'api', 'work', 'jobs', 'j1'),
+      path.join(ctx.home, '.xoch', 'projects', 'web', 'work', 'jobs', 'j1'),
+    ]);
+    assert.ok(!fs.existsSync(path.join(api, '.xoch')));
+    const valid = runScript(SCRIPT, ['validate', '--scope', scopePath, '--json'], ctx);
+    assert.strictEqual(valid.status, 0, valid.stdout + valid.stderr);
+    const primaryJob = runScript(SCRIPT, ['primary-job', '--scope', scopePath], ctx);
+    assert.strictEqual(primaryJob.stdout.trim(), path.join(ctx.home, '.xoch', 'projects', 'api', 'work', 'jobs', 'j1'));
   } finally {
     cleanup(ctx);
   }
