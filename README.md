@@ -41,6 +41,8 @@ Xoch is a lightweight workflow system for AI-assisted development work[^1]. It k
 
 ## Quick Start
 
+Requires Node.js 20 or later.
+
 **Installing:**
 
 ```bash

@@ -1,7 +1,7 @@
 {
   "name": "@jeffcarbine/xoch",
   "version": "1.0.0",
-  "description": "A spec-driven development tool that puts engineers first",
+  "description": "A lightweight workflow system for AI-assisted development work.",
   "keywords": [
     "sdd"
   ],
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/jeffcarbine/xoch.git"
   },
-  "license": "ISC",
+  "license": "MIT",
   "author": "Jeff Carbine",
   "type": "module",
   "bin": {
@@ -27,7 +27,10 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=14.14.0"
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "test": "node --test --experimental-test-coverage test/*.test.js"
